@@ -35,7 +35,9 @@ Top-level keys:
 - `transitions.default`: `fly` (default) | `cut` | `fade` | `zoom-through`, or
   `{ type, duration, easing }`.
 - `layout`: `{ algorithm: layered | force | grid | manual, direction: right | down | left | up,
-  spacing: <number>, wrap: <bool> }`. Layered layouts wrap long chains into rows unless `wrap: false`.
+  spacing: <number>, wrap: <bool> }`. Use `layered` (default) for a talk with a main line and detours,
+  `force` for a web of topics without one main path. Layered layouts wrap long chains into rows unless
+  `wrap: false`; `direction` applies to layered only.
 - `math.macros`: path to a LaTeX macros file (default `macros.tex` if it exists).
 - `nodes`: map of node id → entry. The key is the id; the value may be `{}` (content then comes from
   `nodes/<id>.md`). Entry fields (all optional):
@@ -44,7 +46,8 @@ Top-level keys:
   - `title` — display title; defaults to frontmatter title, first heading, then id
   - `children` — frame only: ids of the nodes inside it (a node has at most one parent frame)
   - `layout` — frame only: layout for its children (same shape as top-level `layout`)
-  - `pin: [x, y]` — exact position, overrides the layout; `size: [w, h]`; `scale: <number>`
+  - `pin: [x, y]` — exact position, overrides the layout; `size: [w, h]` (default 1600×900; frames
+    default to 1×–2× that, growing with their children); `scale: <number>`
   - `near`: `{ left-of | right-of | above | below: <id> }` layout hint
   - `transition` — default transition for edges *into* this node
 - `edges`: list of `"a -> b"`, `"a -> b": { options }`, or chains `a -> b -> c` (one edge per arrow,

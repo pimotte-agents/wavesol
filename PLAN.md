@@ -30,7 +30,7 @@ Where things are documented:
 | Hierarchy | **Frames** are nodes that contain a subgraph, drawn smaller inside them. Layout runs recursively per frame. |
 | Navigation | Directed edges with optional labels. Each node may mark one **default** edge. There is a separate history **back** stack. All outgoing edges are available at any time. |
 | Steps | Nodes have internal steps (fragments, Lean tactics, animation sections). `step` advances within the node, and when the node is done it follows the default edge. Taking an edge early skips the remaining steps. |
-| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview, `e` = edges panel, `?` = help, `f` = fullscreen. |
+| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview (wheel/pinch/+/− zoom, drag pans), `e` = edges panel, `?` = help, `f` = fullscreen. |
 | Source format | Directory: `talk.yaml` (graph, layout hints, theme, transitions) + `nodes/*.md` with frontmatter + `lean/` lake project + `figures/`, `refs.bib`, `macros.tex`. |
 | Build | `wavesol build` → `dist/` static site, base-path aware. `wavesol dev` = live reload. `wavesol serve` = local presenting from the laptop (phone control still needs internet, e.g. via phone hotspot). |
 | Stack | TypeScript + Vite + React for core UI. Single npm package with internal module boundaries (see Architecture). |
@@ -52,7 +52,8 @@ Technical choices made without a question (revisit if they bite):
   LOD: off-screen nodes hidden, tiny slides show a title card.
 - **Default transition:** van Wijk–Nuij "smooth zoom" (zoom out, pan, zoom in), with duration scaled by
   distance. Per-edge, per-node and global overrides: `fly` (default), `cut`, `fade`, `zoom-through`.
-- **Layout:** elkjs at build time (layered by default, long chains wrapped into rows), hints
+- **Layout:** elkjs at build time (layered by default, long chains wrapped into rows; force = stress
+  layout fitted to 16:9, for web-like talks), hints
   (`direction`, `near: {left-of: x}`) and `pin: [x, y]`. ELK ignores layer constraints, so there is no
   `rank` hint.
 - **Tests:** vitest for unit tests, Playwright for end-to-end and visual regression (see Testing).
