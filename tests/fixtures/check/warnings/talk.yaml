@@ -2,3 +2,9 @@ title: Warnings
 nodes:
   a: {}
   island: {}
+  sec: { type: frame, title: Section, children: [inner] }
+  inner: {}
+  lost: { type: frame, title: Lost, children: [stray] }
+  stray: {}
+edges:
+  - a -> sec

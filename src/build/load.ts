@@ -119,9 +119,11 @@ export function loadTalk(dir: string): { talk?: LoadedTalk; diagnostics: Diagnos
   }
   const reachable = new Set([start]);
   if (!(start in talk.nodes)) for (const id of nodes.keys()) reachable.add(id); // already reported
+  // a frame has an edge to each node inside it (see NavGraph)
+  const childEdges = [...parents].map(([child, frame]) => ({ from: frame, to: child }));
   for (let grew = true; grew; ) {
     grew = false;
-    for (const e of edges) {
+    for (const e of [...edges, ...childEdges]) {
       if (reachable.has(e.from) && !reachable.has(e.to)) {
         reachable.add(e.to);
         grew = true;

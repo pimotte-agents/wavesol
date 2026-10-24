@@ -123,7 +123,8 @@ fit: contain                       # contain | cover
 ### `frame`
 
 Defined in `talk.yaml` only — **it has no file**. It renders its title and draws its children inside
-its box; visiting a frame shows it whole (0 steps).
+its box; visiting a frame shows it whole (0 steps). A frame automatically has an edge to each of its
+children (after its own edges), so only add `frame -> child` edges for a label or `default: true`.
 
 ## Slide Markdown
 

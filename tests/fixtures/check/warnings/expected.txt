@@ -1,2 +1,4 @@
 nodes/orphan.md: warning: not used by any node
 talk.yaml:4:3: warning: "island" cannot be reached from "a" along edges (only via the overview)
+talk.yaml:7:3: warning: "lost" cannot be reached from "a" along edges (only via the overview)
+talk.yaml:8:3: warning: "stray" cannot be reached from "a" along edges (only via the overview)

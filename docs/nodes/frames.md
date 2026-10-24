@@ -12,6 +12,7 @@ background:
 
 - Children are drawn **smaller**, inside the frame's box.
 - Visiting a frame shows it whole; `zoom-through` transitions fit well.
+- From a frame, every node inside it is an edge: press its number to go in.
 - A node has at most one parent frame; edges may cross frames.
 
 ::: notes

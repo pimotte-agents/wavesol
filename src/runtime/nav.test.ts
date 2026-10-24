@@ -65,3 +65,35 @@ describe("navigation", () => {
     expect(s.history).toEqual([{ node: "a", step: 0 }]);
   });
 });
+
+describe("frames", () => {
+  const frame = (id: string, children: string[]) => ({ ...node(id), type: "frame", children });
+  const ft: CompiledTalk = {
+    ...talk,
+    start: "s",
+    nodes: [node("s"), frame("f", ["x", "y", "z"]), { ...node("x"), parent: "f" }, { ...node("y"), parent: "f" }, { ...node("z", 0, "cut"), parent: "f" }, node("after")],
+    edges: [
+      { from: "s", to: "f", default: true },
+      { from: "f", to: "y", label: "start here", default: true },
+      { from: "f", to: "after" },
+    ],
+  };
+  const fg = new NavGraph(ft);
+
+  it("a frame has an edge to every node inside it, after its own edges", () => {
+    expect(fg.outgoing("f").map((e) => `${e.to}${e.label ? `:${e.label}` : ""}${e.default ? "*" : ""}`)).toEqual(["y:start here*", "after", "x", "z"]);
+  });
+
+  it("children are taken by index like any edge; zoom-through unless the child has its own transition", () => {
+    const at = initialState(fg, { node: "f", step: 0 }, "s");
+    const take = (index: number) => navigate(fg, at, { type: "edge", index });
+    expect(take(2)).toMatchObject({ state: { node: "x" }, transition: "zoom-through" });
+    expect(take(3)).toMatchObject({ state: { node: "z" }, transition: "cut" });
+  });
+
+  it("the default edge and other nodes are unchanged", () => {
+    expect(navigate(fg, initialState(fg, { node: "f", step: 0 }, "s"), { type: "step" }).state.node).toBe("y");
+    expect(fg.outgoing("x")).toEqual([]);
+    expect(fg.outgoing("s").map((e) => e.to)).toEqual(["f"]);
+  });
+});

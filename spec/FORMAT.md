@@ -212,6 +212,11 @@ Step count = number of distinct fragment steps.
 Defined in `talk.yaml` only (no file). It renders its title and draws its children inside its content
 box. Visiting a frame shows it whole. It has 0 steps.
 
+A frame has an edge to every node inside it, so from the frame you can go straight to any child (edge
+buttons, `1`–`9`, the phone). These come after the frame's own edges in `children` order, use
+`zoom-through` unless the child sets a transition, are not drawn, and are never the default edge.
+List an edge explicitly to give it a label, a position or `default: true`.
+
 ### `image`
 
 ```markdown

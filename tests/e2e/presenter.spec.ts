@@ -10,7 +10,7 @@ interface Nav {
 }
 interface TalkData {
   start: string;
-  nodes: { id: string; type: string; title: string; steps: number; notes?: string }[];
+  nodes: { id: string; type: string; title: string; steps: number; notes?: string; children: string[] }[];
   edges: { from: string; to: string; default?: boolean }[];
 }
 
@@ -98,6 +98,22 @@ test("edges, back and the mini-map in the presenter view drive the projector", a
   await presenter.locator(`.ws-minimap-node[data-id="${far.id}"]`).click();
   await expect.poll(async () => (await nav(projector)).node).toBe(far.id);
   await expect(presenter.locator(`.ws-minimap-node[data-id="${far.id}"]`)).toHaveClass(/ws-current/);
+});
+
+test("on a frame, the edges include every node inside it", async ({ context }) => {
+  const projector = await openProjector(context);
+  const t = await talk(projector);
+  const frame = t.nodes.find((n) => n.type === "frame" && n.children.length >= 3)!;
+  await projector.evaluate((id) => (location.hash = `#/${id}/0`), frame.id);
+  await expect.poll(async () => (await nav(projector)).node).toBe(frame.id);
+  const presenter = await popOut(projector);
+
+  const buttons = presenter.locator(".ws-presenter-edges ol button");
+  const titles = frame.children.map((c) => t.nodes.find((n) => n.id === c)!.title);
+  for (const title of titles) await expect(buttons.filter({ hasText: title })).toHaveCount(1);
+  // pick the last child: not the frame's default edge
+  await buttons.filter({ hasText: titles.at(-1)! }).click();
+  await expect.poll(async () => (await nav(projector)).node).toBe(frame.children.at(-1));
 });
 
 test("shows the speaker notes and what Space does next", async ({ context }) => {

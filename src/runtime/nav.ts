@@ -40,6 +40,16 @@ export class NavGraph {
       this.nodeTransition.set(n.id, n.transition);
     }
     for (const e of talk.edges) this.out.get(e.from)!.push(e);
+    // a frame also has an edge to every node inside it, after its own edges: from a frame you can
+    // go into any part of it (buttons, 1–9 keys), not only along the edges the talk lists
+    for (const n of talk.nodes) {
+      const out = this.out.get(n.id)!;
+      for (const child of n.children) {
+        if (out.some((e) => e.to === child)) continue;
+        const target = talk.nodes.find((c) => c.id === child);
+        out.push({ from: n.id, to: child, transition: target?.transition ?? "zoom-through" });
+      }
+    }
     this.defaultTransition = talk.transitions.default;
   }
 
