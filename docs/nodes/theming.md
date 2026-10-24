@@ -5,7 +5,7 @@ title: Theming
 
 # Theming
 
-- `theme.base`: the built-in theme, `academic-light` (a dark variant is planned).
+- `theme.base`: `academic-light` (default) or `academic-dark`; code, Lean and TikZ follow it.
 - `accent`: shorthand for the accent color variable.
 - `vars`: any CSS custom property, **without** the `--ws-` prefix:
 

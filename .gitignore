@@ -4,3 +4,4 @@ test-results/
 playwright-report/
 .lake/
 dist-docs/
+.wavesol/

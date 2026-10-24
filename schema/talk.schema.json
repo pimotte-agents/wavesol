@@ -36,10 +36,11 @@
       "type": "object",
       "properties": {
         "base": {
-          "description": "Built-in theme. A dark variant is planned.",
+          "description": "Built-in theme.",
           "type": "string",
           "enum": [
-            "academic-light"
+            "academic-light",
+            "academic-dark"
           ]
         },
         "accent": {
@@ -148,7 +149,7 @@
       "additionalProperties": false
     },
     "bibliography": {
-      "description": "Planned (citations): path to a .bib file.",
+      "description": "BibTeX file for [@key] citations; default refs.bib if it exists.",
       "type": "string"
     },
     "sync": {
@@ -198,6 +199,31 @@
             ],
             "additionalProperties": false
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "tikz": {
+      "description": "LaTeX setup for all TikZ pictures (tikz nodes and ```tikz fences).",
+      "type": "object",
+      "properties": {
+        "packages": {
+          "description": "Extra LaTeX packages (tikz-cd is added when a picture uses it).",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "libraries": {
+          "description": "TikZ libraries, as for \\usetikzlibrary.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preamble": {
+          "description": "Raw LaTeX preamble lines, e.g. \\definecolor.",
+          "type": "string"
         }
       },
       "additionalProperties": false

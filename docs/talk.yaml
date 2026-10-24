@@ -48,11 +48,14 @@ nodes:
   content:
     type: frame
     title: Content
-    children: [slides, fragments, math-code, figure]
+    children: [slides, fragments, math-code, figure, tikz, tikz-figure, citations]
   slides: {}
   fragments: {}
   math-code: {}
   figure: {}
+  tikz: {}
+  tikz-figure: {}
+  citations: {}
 
   structure:
     type: frame
@@ -79,6 +82,7 @@ nodes:
   lean-pal: {}
 
   roadmap: {}
+  refs: { type: references, title: References }
 
 edges:
   - welcome -> idea: { default: true }
@@ -108,7 +112,7 @@ edges:
   - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
   - nav-presenter -> nav-phone -> transitions: { default: true }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
-  - slides -> fragments -> math-code -> figure: { default: true }
+  - slides -> fragments -> math-code -> figure -> tikz -> tikz-figure -> citations: { default: true }
   - frames -> layout -> theming: { default: true }
   - cli -> check -> ai: { default: true }
   - lean-intro -> lean-rev -> lean-pal: { default: true }
@@ -117,14 +121,17 @@ edges:
   - nav-overview -> presenting: { default: true }
   - transitions -> writing: { default: true }
   - format-nodes -> content: { default: true }
-  - figure -> structure: { default: true }
+  - citations -> structure: { default: true }
   - theming -> tools: { default: true }
   - ai -> lean: { default: true }
   - lean-pal -> roadmap: { default: true }
   - nav-overview -> map: { label: "Back to the topics" }
   - transitions -> map: { label: "Back to the topics" }
   - format-nodes -> map: { label: "Back to the topics" }
-  - figure -> map: { label: "Back to the topics" }
+  - citations -> map: { label: "Back to the topics" }
+  - citations -> refs: { label: "References" }
+  - roadmap -> refs: { label: "References" }
+  - refs -> map: { label: "Back to the topics" }
   - theming -> map: { label: "Back to the topics" }
   - ai -> map: { label: "Back to the topics" }
   - lean-pal -> map: { label: "Back to the topics" }

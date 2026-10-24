@@ -22,6 +22,7 @@ export function Overlay({ presentation, phone }: { presentation: Presentation; p
       zoomOverview: (f) => presentation.zoomOverview(f),
       openPresenter: () => presentation.openPresenter(),
       pair: phone.enabled ? () => void phone.start() : undefined,
+      toggleDragMode: import.meta.env.DEV ? () => presentation.setDragMode(!presentation.dragMode) : undefined,
     };
     return bindKeys(controls, (p) => setPanel((cur) => (p === undefined || cur === p ? undefined : p)));
   }, [presentation, phone]);
@@ -43,6 +44,11 @@ export function Overlay({ presentation, phone }: { presentation: Presentation; p
             ))}
           </ol>
         </aside>
+      )}
+      {state.dragMode && (
+        <div className="ws-drag-banner" role="status">
+          Drag mode: drag a node to pin it in talk.yaml. <kbd>o</kbd> overview, <kbd>d</kbd> to leave.
+        </div>
       )}
       {panel === "pair" && (
         <aside className="ws-panel ws-pair-panel" aria-label="Connect a phone">

@@ -190,6 +190,48 @@ test("overview: dragging pans and does not navigate; a click still does", async 
   expect((await state(page)).nav.node).toBe(await target.getAttribute("data-id"));
 });
 
+test("TikZ figures render as inline SVG; citations show the full reference; references list them", async ({ page }) => {
+  await open(page);
+  const t = (await talk(page)) as unknown as { nodes: { id: string; type: string }[] };
+  const tikzNode = t.nodes.find((n) => n.type === "tikz")!;
+  await open(page, `#/${tikzNode.id}/0`);
+  const svg = page.locator(`.ws-node[data-id="${tikzNode.id}"] svg.ws-tikz`);
+  await expect(svg).toHaveCount(1);
+  expect(await svg.locator("path").count()).toBeGreaterThan(5);
+  // drawn in the theme's ink, not hard-coded black
+  expect(await svg.evaluate((e) => e.outerHTML.includes("rgb(0%,0%,0%)"))).toBe(false);
+
+  const cite = page.locator(".ws-cite").first();
+  await expect(cite).toHaveText(/^\(.+, \d{4}.*\)$/);
+  expect(await cite.getAttribute("title")).toMatch(/\(\d{4}\)\./);
+  const refs = t.nodes.find((n) => n.type === "references")!;
+  await expect(page.locator(`.ws-node[data-id="${refs.id}"] .csl-entry`)).not.toHaveCount(0);
+});
+
+test("the dark theme recolours the page, code highlighting and TikZ figures", async ({ page }) => {
+  await open(page);
+  const t = (await talk(page)) as unknown as { nodes: { id: string; type: string }[] };
+  await open(page, `#/${t.nodes.find((n) => n.type === "tikz")!.id}/0`);
+  const look = () =>
+    page.evaluate(() => {
+      const code = document.querySelector(".shiki span[style]")!;
+      return {
+        bg: getComputedStyle(document.body).backgroundColor,
+        code: getComputedStyle(code).color,
+        tikz: getComputedStyle(document.querySelector("svg.ws-tikz")!).color,
+      };
+    });
+  const light = await look();
+  await page.evaluate(() => (document.documentElement.dataset.theme = "academic-dark"));
+  const dark = await look();
+  expect(dark.bg).not.toBe(light.bg);
+  expect(dark.code).not.toBe(light.code); // Shiki's dark colours, from --shiki-dark
+  expect(dark.tikz).not.toBe(light.tikz); // TikZ is drawn in the theme's ink
+  // dark background, light ink
+  const lum = (c: string) => c.match(/\d+/g)!.slice(0, 3).reduce((s, v) => s + Number(v), 0);
+  expect(lum(dark.bg)).toBeLessThan(lum(dark.tikz));
+});
+
 test("the edges panel lists outgoing edges and navigates", async ({ page }) => {
   await open(page);
   await page.keyboard.press("e");

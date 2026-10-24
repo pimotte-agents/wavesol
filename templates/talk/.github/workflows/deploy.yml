@@ -41,6 +41,12 @@ jobs:
         working-directory: lean
         run: |
           if grep -q '"name": "mathlib"' lake-manifest.json; then lake exe cache get; fi
+      # TikZ figures: TeX and poppler, only when the talk has any
+      - name: Install TeX (if the talk uses TikZ)
+        run: |
+          if grep -rqE '^(```|~~~) *tikz(cd)?\b|^type: *tikz\b' nodes; then
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures poppler-utils
+          fi
       - run: npx wavesol build
       - uses: actions/upload-pages-artifact@v3
         with:

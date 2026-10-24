@@ -139,7 +139,9 @@ export function loadTalk(dir: string): { talk?: LoadedTalk; diagnostics: Diagnos
 
 function loadNode(dir: string, src: YamlSource, id: string, entry: Entry, diagnostics: Diagnostic[]): LoadedNode | undefined {
   const pluginFields = Object.fromEntries(Object.entries(entry).filter(([k]) => !GRAPH_FIELDS.has(k)));
-  const file = entry.file ?? (entry.type === "frame" ? undefined : `nodes/${id}.md`);
+  // types without a file (frame, references) are defined in talk.yaml only
+  const fileless = entry.type !== undefined && buildPlugins[entry.type]?.hasFile === false;
+  const file = entry.file ?? (fileless ? undefined : `nodes/${id}.md`);
 
   let fm: Record<string, unknown> = {};
   let fmSrc: YamlSource | undefined;

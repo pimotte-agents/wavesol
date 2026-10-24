@@ -39,7 +39,7 @@ venue: Lean Together
 start: intro                       # first node; defaults to the first key of `nodes`
 
 theme:
-  base: academic-light             # built-in theme (a dark variant is planned)
+  base: academic-light             # built-in theme: academic-light | academic-dark
   accent: "#2b6cb0"                # shorthand for the --ws-accent variable
   vars:                            # any CSS custom property, without the --ws- prefix
     font-body: "Source Serif 4"
@@ -56,7 +56,11 @@ layout:
 
 math:
   macros: macros.tex               # default: macros.tex if it exists
-bibliography: refs.bib             # (planned) for citations
+bibliography: refs.bib             # BibTeX for [@key] citations; default: refs.bib if it exists
+tikz:                              # LaTeX setup for all TikZ pictures; all optional
+  packages: [xcolor]
+  libraries: [arrows.meta, positioning]
+  preamble: \definecolor{accent}{HTML}{2B6CB0}
 
 sync:                              # phone controller; all optional
   phone: true                      # false: no phone control, no relay is ever contacted
@@ -97,7 +101,7 @@ The key is the node id. The value has these fields, all optional:
 | `title` | Display title (edge buttons, overview title cards, presenter view). Defaults to the frontmatter title, else the slide's first `#` heading, else the id. |
 | `children` | `frame` only: ids of the nodes inside it. A node has at most one parent frame. |
 | `layout` | `frame` only: layout settings for the frame's children, same shape as the top-level `layout`. |
-| `pin` | `[x, y]` position of the top-left corner in the layout space of the node's level. At the top level that is world units. Inside a frame it is the frame's own layout space, which is then scaled to fit the frame. |
+| `pin` | `[x, y]` position of the top-left corner in the layout space of the node's level. At the top level that is world units. Inside a frame it is the frame's own layout space, which is then scaled to fit the frame. **Drag mode** in `wavesol dev` (key `d`) writes pins: drag a node (a frame takes its children along) and its entry in `talk.yaml` gets `pin`, the rest of the file unchanged; a `near` hint on it is removed. Inside a frame the node keeps its place relative to its siblings, and the frame then re-fits its content. |
 | `size` | `[w, h]`: the size the node's content is laid out at, default 1600×900 (16:9). Frames default to 1600×900 × 0.75·√children, between 1× and 2× (4 children: 1.5×). |
 | `scale` | Uniform scale of the node on the canvas (default 1); the node takes `size × scale` space. |
 | `near` | `{ left-of \| right-of \| above \| below: <id> }`: place the node right next to another node of the same level, overriding the layout. |
@@ -204,7 +208,14 @@ The body is Markdown (CommonMark + GFM tables) with:
   :::
   ::::
   ```
-- **Citations** *(planned)*: `[@key]` or `[@key, p. 3]` from the bibliography.
+- **TikZ:** a ` ```tikzcd ` fence holds a tikz-cd diagram, a ` ```tikz ` fence TikZ commands (either may
+  also contain the whole `tikzpicture`/`tikzcd` environment). LaTeX draws them at build time
+  (`pdflatex`, then `pdftocairo` to SVG; cached in `.wavesol/cache/`), with `macros.tex` and the talk's
+  `tikz` setup. 10pt in TikZ is the size of the slide's text, and black is drawn in the theme's ink.
+  LaTeX errors are reported at their line.
+- **Citations:** `[@key]`, `[@key, p. 3]` (also `pp.`, `chap.`, `sec.`, `fig.`, `eq.`, `vol.`; other
+  text is appended as is) and `[@a; @b]`, from the bibliography, in author–year style:
+  (Knuth, 1984, p. 3). Hovering shows the full reference. List the works with a `references` node.
 - **Images:** standard Markdown images, paths relative to the node file.
 
 Step count = number of distinct fragment steps.
@@ -218,6 +229,27 @@ A frame has an edge to every node inside it, so from the frame you can go straig
 buttons, `1`–`9`, the phone). These come after the frame's own edges in `children` order, use
 `zoom-through` unless the child sets a transition, are not drawn, and are never the default edge.
 List an edge explicitly to give it a label, a position or `default: true`.
+
+### `tikz`
+
+A TikZ picture filling the node: the file's body is the picture (TikZ commands, or a whole
+`tikzpicture` / `tikzcd` environment).
+
+```markdown
+---
+type: tikz
+caption: "The square commutes."   # optional, Markdown
+libraries: [arrows.meta]          # optional: added to the talk's tikz setup, as are
+packages: [xcolor]                #   packages and preamble
+---
+\begin{tikzcd} A \arrow[r] & B \end{tikzcd}
+```
+
+### `references`
+
+Defined in `talk.yaml` only (no file): `refs: { type: references, title: References }`. Lists every
+work cited anywhere in the talk, in the bibliography's style. `check` warns when a talk cites works but
+has no references node.
 
 ### `image`
 

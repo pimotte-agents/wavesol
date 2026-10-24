@@ -13,6 +13,17 @@
   --ws-frame-border: #cfc6b2;
   --ws-frame-bg: #f8f6f0;
   --ws-code-bg: #f6f3ea;
+  --ws-danger: #b42318;
+  --ws-danger-soft: #fdecea;
+  --ws-tac-hover: rgb(43 108 176 / 0.07);
+  /* Lean token kinds (SubVerso) */
+  --ws-lean-keyword: #8250df;
+  --ws-lean-const: #0550ae;
+  --ws-lean-var: #953800;
+  --ws-lean-sort: #116329;
+  --ws-lean-doc: #116329;
+  --ws-lean-str: #0a3069;
+  --ws-lean-num: #0550ae;
   --ws-font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   --ws-font-heading: "Source Serif 4", Georgia, serif;
   --ws-font-mono: "JetBrains Mono", ui-monospace, monospace;

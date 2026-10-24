@@ -1,0 +1,2 @@
+nodes/a.md:3: error: unknown citation key "nope"
+talk.yaml: warning: the talk cites works but has no references node (add one: { type: references })

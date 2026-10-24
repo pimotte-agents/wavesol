@@ -41,7 +41,20 @@ interface Local {
   h: number;
 }
 
-export async function layout(nodes: LayoutNode[], edges: { from: string; to: string }[], defaults: LayoutOpts = {}): Promise<Map<string, Placement>> {
+/** How a frame places its children: world = frame + (d + local · s) · frame scale (see FrameSpace users). */
+export interface FrameSpace {
+  s: number;
+  dx: number;
+  dy: number;
+}
+
+/** `frames`, if given, receives each frame's child space (for turning world positions into pins). */
+export async function layout(
+  nodes: LayoutNode[],
+  edges: { from: string; to: string }[],
+  defaults: LayoutOpts = {},
+  frames?: Map<string, FrameSpace>,
+): Promise<Map<string, Placement>> {
   const byId = new Map(nodes.map((n) => [n.id, n]));
   const childrenOf = new Map<string | undefined, string[]>();
   for (const n of nodes) childrenOf.set(n.parent, [...(childrenOf.get(n.parent) ?? []), n.id]);
@@ -128,6 +141,7 @@ export async function layout(nodes: LayoutNode[], edges: { from: string; to: str
     return p;
   };
   for (const n of nodes) resolve(n.id);
+  if (frames) for (const [id, cs] of childScale) frames.set(id, cs);
   return world;
 }
 

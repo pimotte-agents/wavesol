@@ -1,0 +1,28 @@
+/* academic-dark: the same calm look on a dark background (theme.base: academic-dark). Active when
+   the page's data-theme is academic-dark; every value can still be overridden with theme.vars. */
+:root[data-theme="academic-dark"] {
+  --ws-bg: #14171c;
+  --ws-card: #1c2027;
+  --ws-card-border: #2d333c;
+  --ws-card-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 12px 40px rgb(0 0 0 / 0.35);
+  --ws-ink: #e4e1da;
+  --ws-heading: #f1ede4;
+  --ws-muted: #9aa0a8;
+  --ws-accent: #6fa8e6;
+  --ws-accent-soft: #233548;
+  --ws-edge: #4f5762;
+  --ws-frame-border: #3b424c;
+  --ws-frame-bg: #181b21;
+  --ws-code-bg: #232830;
+  --ws-danger: #ff8f85;
+  --ws-danger-soft: #3b2020;
+  --ws-tac-hover: rgb(111 168 230 / 0.12);
+  --ws-lean-keyword: #c5a8ff;
+  --ws-lean-const: #7ab8ff;
+  --ws-lean-var: #ffb07a;
+  --ws-lean-sort: #8ee6a1;
+  --ws-lean-doc: #8ee6a1;
+  --ws-lean-str: #a5d0ff;
+  --ws-lean-num: #7ab8ff;
+  color-scheme: dark;
+}

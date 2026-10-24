@@ -2,6 +2,8 @@
 // runtime half (browser), so build-only dependencies never end up in the bundle.
 import type { z } from "zod";
 import type { CompiledNode } from "../model/compiled.ts";
+import type { TikzOptions, TikzResult } from "../build/tex.ts";
+import type { CiteItem } from "../build/cite.ts";
 
 export interface BuildCtx {
   talkDir: string;
@@ -11,6 +13,12 @@ export interface BuildCtx {
   asset(absPath: string): string;
   /** Report a problem in the node's file; `line` is relative to the file. */
   report(severity: "error" | "warning", message: string, line?: number): void;
+  /** Formats a citation from the talk's bibliography (and records the works as cited). */
+  cite(items: CiteItem[]): { text: string; title: string } | { error: string };
+  /** The works cited anywhere in the talk, as HTML (undefined: no bibliography); complete for plugins that build last. */
+  references(): string | undefined;
+  /** Renders a TikZ picture to inline SVG (cached), with the talk's macros and TikZ setup. */
+  tikz(body: string, extra?: TikzOptions): Promise<TikzResult>;
   /** Report a problem in another file (path relative to the talk directory), e.g. a Lean source. */
   reportIn(file: string, severity: "error" | "warning", message: string, line?: number, col?: number): void;
 }
@@ -40,6 +48,8 @@ export interface BuildPlugin<D = unknown> {
   schema: z.ZodType<D>;
   /** Whether nodes of this type have a content file. */
   hasFile: boolean;
+  /** Build after all other nodes (e.g. references, which lists what the others cite). */
+  buildLast?: boolean;
   build(node: BuildNode<D>, ctx: BuildCtx): Promise<BuildResult>;
 }
 

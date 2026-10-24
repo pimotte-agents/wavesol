@@ -13,6 +13,8 @@ export interface Controls {
   openPresenter?(): void;
   /** Starts pairing a phone (contacts the relays). */
   pair?(): void;
+  /** Toggles drag mode (wavesol dev only). */
+  toggleDragMode?(): void;
 }
 
 export const KEY_HELP: [string, string][] = [
@@ -26,6 +28,7 @@ export const KEY_HELP: [string, string][] = [
   ["e", "show outgoing edges"],
   ["p", "open the presenter view (notes, next, timer)"],
   ["c", "connect a phone (QR code)"],
+  ["d", "drag mode: drag nodes to pin them in talk.yaml (wavesol dev)"],
   ["f", "fullscreen"],
   ["?", "this help"],
   ["Esc", "close panels and the overview"],
@@ -79,6 +82,10 @@ export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) =>
         }
         p.pair();
         togglePanel("pair");
+        break;
+      case "d":
+        if (p.toggleDragMode) p.toggleDragMode();
+        else handled = false;
         break;
       case "e":
         togglePanel("edges");

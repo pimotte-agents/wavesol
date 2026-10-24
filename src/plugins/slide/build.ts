@@ -9,6 +9,7 @@ import { createHighlighter, bundledLanguages, type Highlighter } from "shiki";
 import { dirname, resolve } from "node:path";
 import { SlideFrontmatter } from "../../model/schema.ts";
 import type { BuildCtx, BuildPlugin } from "../types.ts";
+import { parseCitation, type CiteItem } from "../../build/cite.ts";
 import type { z } from "zod";
 
 export interface SlideData {
@@ -16,10 +17,11 @@ export interface SlideData {
 }
 
 let highlighter: Promise<Highlighter> | undefined;
-const SHIKI_THEME = "github-light";
+// both themes' colours, as CSS variables (--shiki-light / --shiki-dark); the page's theme picks one
+const SHIKI_THEMES = { light: "github-light", dark: "github-dark" } as const;
 
 async function getHighlighter(langs: string[]): Promise<Highlighter> {
-  highlighter ??= createHighlighter({ themes: [SHIKI_THEME], langs: [] });
+  highlighter ??= createHighlighter({ themes: Object.values(SHIKI_THEMES), langs: [] });
   const h = await highlighter;
   const missing = langs.filter((l) => l in bundledLanguages && !h.getLoadedLanguages().includes(l));
   if (missing.length) await h.loadLanguage(...(missing as (keyof typeof bundledLanguages)[]));
@@ -28,6 +30,8 @@ async function getHighlighter(langs: string[]): Promise<Highlighter> {
 
 interface Env extends MdEnv {
   ctx: BuildCtx;
+  /** Rendered ```tikz / ```tikzcd fences, by token (rendered before the synchronous Markdown pass). */
+  tikz?: Map<Token, string>;
   file?: string;
   body: string;
   bodyLine: number;
@@ -53,7 +57,7 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     typographer: true,
     highlight: (code, lang) => {
       const l = lang && h.getLoadedLanguages().includes(lang) ? lang : "text";
-      return h.codeToHtml(code, { lang: l, theme: SHIKI_THEME });
+      return h.codeToHtml(code, { lang: l, themes: SHIKI_THEMES, defaultColor: false });
     },
   });
   md.use(tex, { render: (content: string, displayMode: boolean, env) => renderMath(content, displayMode, env as Env) });
@@ -64,6 +68,40 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     openRenderer: (tokens, idx, _options, _env, self) => `<div${self.renderAttrs(tokens[idx]!)}>\n`,
   });
 
+  // citations: [@key], [@key, p. 3], [@a; @b] (before links, which also start with "[")
+  md.inline.ruler.before("link", "cite", (state, silent) => {
+    if (state.src.charCodeAt(state.pos) !== 0x5b /* [ */ || state.src.charCodeAt(state.pos + 1) !== 0x40 /* @ */) return false;
+    const end = state.src.indexOf("]", state.pos);
+    if (end < 0) return false;
+    const inner = state.src.slice(state.pos + 1, end);
+    const items = parseCitation(inner);
+    if (!items) return false;
+    if (!silent) {
+      const token = state.push("cite", "", 0);
+      token.meta = { items, source: `[${inner}]` };
+    }
+    state.pos = end + 1;
+    return true;
+  });
+  md.renderer.rules.cite = (tokens, idx, _options, mdEnv) => {
+    const env = mdEnv as Env;
+    const { items, source } = tokens[idx]!.meta as { items: CiteItem[]; source: string };
+    const r = env.ctx.cite(items);
+    const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    if ("error" in r) {
+      const at = env.body.indexOf(source);
+      env.ctx.report("error", r.error, at < 0 ? undefined : env.bodyLine + env.body.slice(0, at).split("\n").length - 1);
+      return `<span class="ws-cite ws-cite-error">${esc(source)}</span>`;
+    }
+    return `<span class="ws-cite" title="${esc(r.title)}">${esc(r.text)}</span>`;
+  };
+
+  const defaultFence = md.renderer.rules.fence!;
+  md.renderer.rules.fence = (tokens, idx, options, mdEnv, self) => {
+    const figure = (mdEnv as Env).tikz?.get(tokens[idx]!);
+    return figure ?? defaultFence(tokens, idx, options, mdEnv, self);
+  };
+
   const defaultImage = md.renderer.rules.image!;
   md.renderer.rules.image = (tokens, idx, options, mdEnv, self) => {
     const env = mdEnv as Env;
@@ -73,6 +111,27 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     return defaultImage(tokens, idx, options, env, self);
   };
   return md;
+}
+
+const TIKZ_FENCES = { tikz: "tikzpicture", tikzcd: "tikzcd" } as const;
+
+/** Renders ```tikz (picture commands) and ```tikzcd (a diagram) fences to inline SVG figures. */
+async function renderTikzFences(tokens: Token[], env: Env) {
+  env.tikz = new Map();
+  for (const t of tokens) {
+    const lang = t.type === "fence" ? (t.info.trim().split(/\s/)[0] as keyof typeof TIKZ_FENCES) : undefined;
+    if (!lang || !(lang in TIKZ_FENCES)) continue;
+    const envName = TIKZ_FENCES[lang];
+    const body = t.content.includes(`\\begin{${envName}}`) ? t.content : `\\begin{${envName}}\n${t.content}\\end{${envName}}`;
+    const wrapped = body !== t.content;
+    const r = await env.ctx.tikz(body);
+    if ("error" in r) {
+      // fence content starts on the line after the opening fence; wrapping added one line before it
+      const line = t.map && r.line !== undefined ? env.bodyLine + t.map[0] + r.line - (wrapped ? 1 : 0) : undefined;
+      env.ctx.report("error", `tikz: ${r.error}`, line);
+      env.tikz.set(t, `<pre class="math-error">${t.content.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>`);
+    } else env.tikz.set(t, `<figure class="ws-tikz-figure">${r.svg}</figure>\n`);
+  }
 }
 
 /** Assigns data-step to fragment tokens and returns the number of distinct steps. */
@@ -141,7 +200,9 @@ export async function renderMarkdown(node: { body: string; file?: string; bodyLi
   const langs = [...node.body.matchAll(/^\s*(?:```|~~~)\s*([\w+-]+)/gm)].map((m) => m[1]!);
   const md = createMarkdown(await getHighlighter(langs));
   const env: Env = { ctx, file: node.file, body: node.body, bodyLine: node.bodyLine };
-  const { slide: tokens, notes } = extractNotes(md.parse(node.body, env));
+  const parsed = md.parse(node.body, env);
+  await renderTikzFences(parsed, env);
+  const { slide: tokens, notes } = extractNotes(parsed);
   const notesHtml = [node.notes ? md.render(node.notes, env) : "", md.renderer.render(notes, md.options, env)].join("").trim();
   return { html: md.renderer.render(tokens, md.options, env).trim(), notes: notesHtml || undefined, title: firstHeading(tokens), md };
 }
@@ -155,11 +216,13 @@ export const slide: BuildPlugin<Data> = {
     const md = createMarkdown(await getHighlighter(langs));
     const env: Env = { ctx, file: node.file, body: node.body, bodyLine: node.bodyLine };
     const tokens = md.parse(node.body, env);
+    await renderTikzFences(tokens, env);
     const { slide: slideTokens, notes: noteTokens } = extractNotes(tokens);
     const steps = assignFragments(slideTokens, node.data.fragments === "lists");
 
     for (const t of tokens) {
-      if (t.map && t.type === "fence" && t.info && !(t.info.split(/\s/)[0]! in bundledLanguages)) {
+      const lang = t.info.split(/\s/)[0]!;
+      if (t.map && t.type === "fence" && t.info && !(lang in bundledLanguages) && !(lang in TIKZ_FENCES)) {
         ctx.report("warning", `unknown code language "${t.info}", rendered as plain text`, node.bodyLine + t.map[0]);
       }
     }

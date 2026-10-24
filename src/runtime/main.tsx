@@ -6,6 +6,7 @@ import "@fontsource/source-serif-4/600.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "../theme/base.css";
 import "../theme/academic-light.css";
+import "../theme/academic-dark.css";
 import { createRoot } from "react-dom/client";
 import virtualTalk from "virtual:wavesol/talk";
 import { formatDiagnostic, type CompiledTalk, type Diagnostic } from "../model/compiled.ts";

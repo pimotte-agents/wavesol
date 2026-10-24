@@ -1,0 +1,2 @@
+nodes/a.md:3: error: citations need a bibliography: add refs.bib, or bibliography: in talk.yaml
+talk.yaml: error: a references node needs a bibliography: add refs.bib, or bibliography: in talk.yaml

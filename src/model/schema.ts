@@ -65,6 +65,12 @@ const IceServer = z.strictObject({
   credential: z.string().optional(),
 });
 
+export const TikzOptions = z.strictObject({
+  packages: z.array(z.string()).optional().describe("Extra LaTeX packages (tikz-cd is added when a picture uses it)."),
+  libraries: z.array(z.string()).optional().describe("TikZ libraries, as for \\usetikzlibrary."),
+  preamble: z.string().optional().describe("Raw LaTeX preamble lines, e.g. \\definecolor."),
+});
+
 export const Sync = z.strictObject({
   phone: z.boolean().optional().describe("Phone controller (default true). false: no relay is ever contacted."),
   relays: z
@@ -84,7 +90,7 @@ export const Talk = z.strictObject({
   start: NodeId.optional(),
   theme: z
     .strictObject({
-      base: z.enum(["academic-light"]).optional().describe("Built-in theme. A dark variant is planned."),
+      base: z.enum(["academic-light", "academic-dark"]).optional().describe("Built-in theme."),
       accent: z.string().optional(),
       vars: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
     })
@@ -92,8 +98,9 @@ export const Talk = z.strictObject({
   transitions: z.strictObject({ default: Transition.optional() }).optional(),
   layout: Layout.optional(),
   math: z.strictObject({ macros: z.string().optional() }).optional(),
-  bibliography: z.string().optional().describe("Planned (citations): path to a .bib file."),
+  bibliography: z.string().optional().describe("BibTeX file for [@key] citations; default refs.bib if it exists."),
   sync: Sync.optional(),
+  tikz: TikzOptions.optional().describe("LaTeX setup for all TikZ pictures (tikz nodes and ```tikz fences)."),
   nodes: z.record(NodeId, NodeEntry.nullable()).refine((r) => Object.keys(r).length > 0, "at least one node"),
   edges: z.array(EdgeItem).default([]),
 });
@@ -129,11 +136,21 @@ export const LeanFrontmatter = CommonFrontmatter.extend({
 
 export const FrameFrontmatter = CommonFrontmatter.extend({ type: z.literal("frame") });
 
+export const ReferencesFrontmatter = CommonFrontmatter.extend({ type: z.literal("references") });
+
+export const TikzFrontmatter = CommonFrontmatter.extend({
+  type: z.literal("tikz"),
+  caption: z.string().optional(),
+  ...TikzOptions.shape,
+});
+
 export const frontmatterSchemas = {
   slide: SlideFrontmatter,
   frame: FrameFrontmatter,
   image: ImageFrontmatter,
   lean: LeanFrontmatter,
+  tikz: TikzFrontmatter,
+  references: ReferencesFrontmatter,
 } as const;
 
 export interface Edge {

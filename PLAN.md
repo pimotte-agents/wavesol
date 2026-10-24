@@ -13,8 +13,8 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | 2 — Presenter view | Done |
 | 3 — Phone controller | Done; open: real-world runs (eduroam, hotspot) |
 | 4 — Lean nodes | Done |
-| 5 — Academic content and polish | Next |
-| 6 — Audience polls | Not started |
+| 5 — Academic content and polish | Done |
+| 6 — Audience polls | Next |
 
 Where things are documented:
 - [`spec/FORMAT.md`](spec/FORMAT.md): the source format (authoritative; schemas in `schema/`).
@@ -40,9 +40,9 @@ Where things are documented:
 | Manim | Not scheduled; under "Later / maybe" (video-with-sections vs JS-native still open). |
 | Sync | Fallback chain behind one transport interface. Presenter popout via `BroadcastChannel`. Phone via WebRTC (signaling over public MQTT and Nostr relays in parallel, own small clients, + STUN, optional TURN). Messages go through the relays (end-to-end encrypted) until the direct connection is up, and whenever it is down. Optional self-hosted Cloudflare Worker for signaling + relay. QR pairing with a room secret. |
 | Deploy | One talk per repo. GitHub Pages via an Action template. Must work from any base URL/subpath. |
-| Theme | Calm academic, light default (off-white, one accent, thin curved edges, projector-safe), with bundled fonts so talks look the same on any machine. Dark variant in Phase 5. CSS-variable based, overridable in `talk.yaml`. |
+| Theme | Calm academic, light default (off-white, one accent, thin curved edges, projector-safe), with bundled fonts so talks look the same on any machine. Dark variant (`academic-dark`). CSS-variable based, overridable in `talk.yaml`. |
 | AI authoring | JSON Schema for `talk.yaml` and frontmatter (generated from zod), `wavesol check` with precise errors, bundled `AGENTS.md`/`CLAUDE.md` in the talk template. |
-| Figures | Shared LaTeX macros, TikZ/tikz-cd → SVG at build time, BibTeX citations + references node, images (incl. PDF pages). |
+| Figures | Shared LaTeX macros, TikZ/tikz-cd → SVG at build time, BibTeX citations + references node, images. |
 | Polls (later) | Seminar scale (<50). The presenter's browser acts as the WebRTC hub (star topology) over the same transport layer, with relay fallback per attendee. |
 
 Technical choices made without a question (revisit if they bite):
@@ -290,12 +290,30 @@ QR code; what does not open with it is ignored, which is how only paired phones 
 ### Phase 5 — Academic content and polish
 - `tikz` plugin (and inline tikz-cd in slides): latex → dvisvgm → SVG, cached; TeX in CI.
 - Citations: `\cite{key}` from `refs.bib` (citation-js), auto `references` node.
-- PDF page figures (pdf.js or build-time pdftocairo → SVG).
 - Dark theme variant, theme docs. Transition fine-tuning.
 - Layout drag mode in `wavesol dev` that writes pins back to `talk.yaml`.
 - `AGENTS.md` v1 with idioms and complete examples for every node type.
 - Tests: unit tests for TikZ and citation rendering, skipped with a clear message when TeX is missing;
   CI installs TeX.
+- **Status: done** (2026-10-24), without PDF page figures (dropped: not needed). TikZ: ` ```tikz ` /
+  ` ```tikzcd ` fences in slides and `type: tikz` nodes, drawn by `pdflatex` + `pdftocairo` at build time
+  and cached in `<talk>/.wavesol/cache/`. Citations: `[@key]`, `[@key, p. 3]`, `[@a; @b]` from
+  `refs.bib` in author–year (APA) style via citation-js, with the full reference as a tooltip, and a
+  `references` node placed in `talk.yaml`. `academic-dark` theme (Shiki dual themes, Lean token colours
+  as variables, TikZ in the theme's ink). Drag mode in `wavesol dev` (`d`) writes `pin` into
+  `talk.yaml`. AGENTS.md v1 with idioms and complete, checked examples. Tests: TikZ document/SVG/error
+  parsing and real LaTeX runs (skipped without TeX unless `REQUIRE_TEX=1`, set in CI), citation syntax
+  and formatting, check fixtures (unknown keys, missing bibliography, no references node), pin writing
+  and the world → layout-space inverse; end-to-end: TikZ and citations in the docs, the dark theme,
+  drag mode against a real dev server. Transitions were left as they are: nothing concrete to tune.
+  Decisions made along the way:
+  - `pdftocairo` instead of `dvisvgm` (not installed here, so its route could not be tested). The SVG
+    is post-processed for inlining: black → `currentColor`, ids prefixed per figure (glyph ids clash
+    otherwise), size in em with 10pt = 1em so TikZ text matches the slide.
+  - Citation syntax `[@key]` (Pandoc's, already in the spec), not `\cite{}`; the references node is
+    placed by the author, not added automatically.
+  - Pins are written by editing only the node's entry text in talk.yaml (comments and alignment kept).
+    Inside a frame, a dragged node keeps its place relative to its siblings; the frame re-fits.
 
 ### Phase 6 — Audience polls
 - Audience join page via QR. The presenter's browser is the hub over the existing transport.

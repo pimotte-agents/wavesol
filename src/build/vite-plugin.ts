@@ -1,7 +1,8 @@
 // Vite plugin: compiles the talk into the `virtual:wavesol/talk` module, serves/emits its assets, and
 // recompiles + reloads the page when a file in the talk directory changes.
-import { readFileSync } from "node:fs";
-import { relative, sep } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
+import { join, relative, sep } from "node:path";
+import { pinFor, writePin } from "./pins.ts";
 import { lookup } from "mrmime";
 import type { Plugin, ViteDevServer } from "vite";
 import { compileTalk, type CompileResult } from "./compile.ts";
@@ -37,6 +38,32 @@ export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResu
       server.httpServer?.on("upgrade", (req, socket, head) => relay.handleUpgrade(req, socket, head));
       server.httpServer?.on("close", () => relay.close());
       server.middlewares.use((req, res, next) => relay.handleRequest(req, res) || next());
+      // drag mode: POST { node, at: [x, y] } (world position) → pin in talk.yaml; the watcher reloads
+      server.middlewares.use((req, res, next) => {
+        if (req.method !== "POST" || (req.url ?? "").split("?")[0] !== "/__wavesol/pin") return next();
+        let body = "";
+        req.on("data", (d) => (body += d));
+        req.on("end", () => {
+          const fail = (status: number, message: string) => {
+            res.statusCode = status;
+            res.end(message);
+          };
+          try {
+            const { node, at } = JSON.parse(body) as { node: string; at: [number, number] };
+            if (!result?.talk || !result.frames) return fail(409, "the talk has errors");
+            if (typeof node !== "string" || !Array.isArray(at) || !at.every(Number.isFinite)) return fail(400, "expected { node, at: [x, y] }");
+            const pin = pinFor(result.talk, result.frames, node, at);
+            const file = join(talkDir, "talk.yaml");
+            const updated = pin && writePin(readFileSync(file, "utf8"), node, pin);
+            if (!updated) return fail(404, `no node "${node}" in talk.yaml`);
+            writeFileSync(file, updated);
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ pin }));
+          } catch (e) {
+            fail(400, e instanceof Error ? e.message : String(e));
+          }
+        });
+      });
       server.watcher.add(talkDir);
       // compile right away (incl. Lean builds, which log their progress), not on the first page load
       void compile();

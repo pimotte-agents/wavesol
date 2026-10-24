@@ -33,6 +33,8 @@ jobs:
             ~/.elan/toolchains
             docs/lean/.lake
           key: lean-docs-${{ hashFiles('docs/lean/lean-toolchain', 'docs/lean/lake-manifest.json') }}
+      # TikZ: pdflatex (with pgf, tikz-cd, standalone) and pdftocairo
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures poppler-utils
       - run: node bin/wavesol.js build docs --out dist-docs
       - uses: actions/upload-pages-artifact@v3
         with:

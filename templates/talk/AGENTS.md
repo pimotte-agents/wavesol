@@ -3,10 +3,10 @@
 ## What this is
 
 A wavesol talk is a **graph of nodes** on one canvas: each node is a slide (a Markdown file in
-`nodes/`), an image, or a frame (a group drawn around its children); directed **edges** connect the
-nodes and are shown as buttons. The audience follows the *default* edges with Space; other edges are
-labeled detours. Lean nodes show proofs from the talk's `lean/` project with their goal states.
-Bibliography citations are planned but not available yet — do not use `[@key]`.
+`nodes/`), an image, a TikZ figure, a Lean proof, a references list, or a frame (a group drawn around
+its children); directed **edges** connect the nodes and are shown as buttons. The audience follows the
+*default* edges with Space; other edges are labeled detours. Slides can cite works from `refs.bib` with
+`[@key]` and draw diagrams in ` ```tikzcd ` fences.
 
 Commands (run from this talk directory):
 
@@ -31,7 +31,7 @@ Top-level keys:
 - `title` (required), `subtitle`, `authors`, `date`, `venue`
 - `start`: first node id; defaults to the first key of `nodes`.
 - `theme`: `{ base: academic-light, accent: "#hex", vars: { ... } }` — `vars` are CSS custom
-  properties without the `--ws-` prefix. (A dark theme is planned.)
+  properties without the `--ws-` prefix. `base` is `academic-light` (default) or `academic-dark`.
 - `transitions.default`: `fly` (default) | `cut` | `fade` | `zoom-through`, or
   `{ type, duration, easing }`.
 - `layout`: `{ algorithm: layered | force | grid | manual, direction: right | down | left | up,
@@ -39,6 +39,9 @@ Top-level keys:
   `force` for a web of topics without one main path. Layered layouts wrap long chains into rows unless
   `wrap: false`; `direction` applies to layered only.
 - `math.macros`: path to a LaTeX macros file (default `macros.tex` if it exists).
+- `bibliography`: BibTeX file for `[@key]` citations (default `refs.bib` if it exists).
+- `tikz`: `{ packages: [...], libraries: [...], preamble: "..." }` — LaTeX setup for all TikZ
+  pictures (optional).
 - `sync` (optional, phone controller): `{ phone: <bool>, relays: ["mqtt:wss://…" | "nostr:wss://…" |
   "room:wss://…"], ice: [{ urls, username, credential }] }`. Leave it out unless asked: the defaults
   (public relays, STUN) work.
@@ -137,6 +140,30 @@ Needs a `lean/` lake project requiring SubVerso (see the format spec); `npm run 
 reports Lean errors in the `.lean` file. Keep shown declarations short (about 15 lines): long lines
 shrink to fit. Put each proof you show in an ANCHOR region; Space then steps through its tactics.
 
+### `tikz`
+
+```markdown
+---
+type: tikz
+caption: "The square commutes."   # optional, Markdown; quote it
+libraries: [arrows.meta]          # optional; also packages, preamble
+---
+\begin{tikzcd}
+A \arrow[r, "f"] \arrow[d, "g"'] & B \arrow[d, "h"] \\
+C \arrow[r, "k"'] & D
+\end{tikzcd}
+```
+
+The body is the picture: TikZ commands, or a whole `tikzpicture` / `tikzcd` environment. LaTeX draws
+it at build time (needs TeX Live and poppler); `npm run check` reports LaTeX errors at their line.
+Black becomes the theme's ink colour, so don't hard-code `black`/`white` for strokes or text.
+
+### `references`
+
+Defined in `talk.yaml` only — **no file**: `refs: { type: references, title: References }`. Lists
+every work cited with `[@key]` anywhere in the talk. Add one whenever the talk cites anything (the
+checker warns otherwise) and link it from the end of the talk.
+
 ### `frame`
 
 Defined in `talk.yaml` only — **it has no file**. It renders its title and draws its children inside
@@ -175,8 +202,118 @@ CommonMark + GFM tables, plus:
   ```
 
 - **Images:** standard Markdown images, paths relative to the node file.
+- **Diagrams:** a ` ```tikzcd ` fence holds a tikz-cd diagram (rows `\\`, columns `&`), a ` ```tikz `
+  fence TikZ commands; drawn as figures at build time. 10pt in TikZ = the slide's text size.
+- **Citations:** `[@key]`, `[@key, p. 3]`, `[@a; @b]` → (Author, 2020, p. 3), from `refs.bib`. Every key
+  must exist in the bibliography.
 
 Step count of a slide = number of distinct fragment steps.
+
+## Idioms (complete examples)
+
+**A small complete talk:** a main line, a detour that comes back, a frame, a citation, references.
+
+```yaml
+# talk.yaml
+title: Fixed points
+authors: [A. Author]
+nodes:
+  intro: {}
+  theorem: {}
+  proof:
+    type: frame
+    title: The proof
+    children: [proof-idea, proof-details]
+  proof-idea: {}
+  proof-details: {}
+  history: {}
+  refs: { type: references, title: References }
+edges:
+  - intro -> theorem -> proof: { default: true }
+  - proof -> proof-idea: { default: true, transition: zoom-through }
+  - proof-idea -> proof-details: { default: true }
+  - proof-details -> refs: { default: true }
+  - theorem -> history: { label: "Where does this come from?" }
+  - history -> proof: { default: true }
+```
+
+```markdown
+<!-- nodes/theorem.md -->
+---
+fragments: lists
+---
+# The theorem
+
+- Every contraction $f \colon X \to X$ of a complete metric space has a unique fixed point [@banach1922].
+- The proof is constructive: iterate $f$.
+
+::: notes
+Pause here; the detour button is "Where does this come from?".
+:::
+```
+
+**A hub of topics** (for a lecture or a Q&A): one slide lists the topics, with an edge to each in the
+same order as its list, so the numbers on the slide match the keys 1–9. Space walks the topics in
+order; each topic's last node also links back.
+
+```yaml
+edges:
+  - overview -> topic-a: { default: true }
+  - overview -> topic-b
+  - overview -> topic-c
+  - topic-a -> topic-b: { default: true }
+  - topic-a -> overview: { label: "Back to the topics" }
+```
+
+**A proof, step by step:** the statement on a slide, then the Lean node; Space walks the tactics.
+
+```lean
+-- lean/Proofs/Basic.lean
+-- ANCHOR: addZero
+theorem add_zero' (n : Nat) : n + 0 = n := by
+  induction n with
+  | zero => rfl
+  | succ k ih => rfl
+-- ANCHOR_END: addZero
+```
+
+```markdown
+<!-- nodes/add-zero.md -->
+---
+type: lean
+title: Adding zero
+source: Proofs/Basic.lean
+anchor: addZero
+---
+By induction on $n$.
+```
+
+**A definition with a diagram:**
+
+````markdown
+# Pullbacks
+
+A square is a *pullback* if every other cone factors through it uniquely:
+
+```tikzcd
+W \arrow[dr, dashed, "\exists!"] \arrow[drr, bend left] \arrow[ddr, bend right] \\
+& P \arrow[r] \arrow[d] & B \arrow[d] \\
+& A \arrow[r] & C
+```
+````
+
+**Reveal side by side:** columns with a fragment in each.
+
+```markdown
+:::: columns
+::: column
+**Before** {.fragment}
+:::
+::: column
+**After** {.fragment}
+:::
+::::
+```
 
 ## Writing good slides
 
@@ -207,3 +344,8 @@ not fit, split the slide.
   an error.
 - **Frames have no file:** never create `nodes/<frame-id>.md` or give a frame a `file`.
 - **Image paths** are relative to the node file: use `../figures/x.svg`, not `/figures/x.svg`.
+- **Citations need a bibliography and a references node:** add the entry to `refs.bib` before citing
+  it, and a `type: references` node to `talk.yaml`.
+- **TikZ in YAML:** put pictures in the node file's body or a fence, never in frontmatter (backslashes
+  and `:` would need escaping).
+- **Pins** (`pin: [x, y]`) are best set by dragging in `npm run dev` (key `d`), not by hand.

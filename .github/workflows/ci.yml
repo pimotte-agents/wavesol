@@ -24,12 +24,15 @@ jobs:
             docs/lean/.lake
             tests/fixtures/lean/project/.lake
           key: lean-${{ hashFiles('docs/lean/lean-toolchain', 'docs/lean/lake-manifest.json', 'tests/fixtures/lean/project/lake-manifest.json') }}
+      # TikZ: pdflatex (with pgf, tikz-cd, standalone) and pdftocairo
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures poppler-utils
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run schema:check
       - run: npm test
         env:
-          REQUIRE_LEAN: "1" # the Lean tests must not be skipped here
+          REQUIRE_LEAN: "1" # the Lean and TeX tests must not be skipped here
+          REQUIRE_TEX: "1"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4

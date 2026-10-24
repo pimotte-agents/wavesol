@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "tikz"
+    },
+    "title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "caption": {
+      "type": "string"
+    },
+    "packages": {
+      "description": "Extra LaTeX packages (tikz-cd is added when a picture uses it).",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "libraries": {
+      "description": "TikZ libraries, as for \\usetikzlibrary.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "preamble": {
+      "description": "Raw LaTeX preamble lines, e.g. \\definecolor.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "type"
+  ],
+  "additionalProperties": false
+}

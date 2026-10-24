@@ -67,6 +67,32 @@ body {
   outline: 12px solid var(--ws-accent);
 }
 
+/* drag mode (wavesol dev) */
+.ws-drag-mode .ws-node {
+  cursor: move;
+}
+.ws-drag-mode .ws-node:hover {
+  outline: 8px dashed var(--ws-accent);
+}
+.ws-drag-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--ws-accent);
+  color: #fff;
+  font: 15px var(--ws-font-body);
+  z-index: 10;
+}
+.ws-drag-banner kbd {
+  font: 13px var(--ws-font-mono);
+  padding: 0 4px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  border-radius: 4px;
+}
+
 /* ---------- edges ---------- */
 .ws-edges {
   position: absolute;
@@ -94,12 +120,71 @@ body {
 
 /* ---------- cards: slides and images ---------- */
 .ws-type-slide,
-.ws-type-image {
+.ws-type-image,
+.ws-type-references {
   background: var(--ws-card);
   border: 2px solid var(--ws-card-border);
   border-radius: var(--ws-radius);
   box-shadow: var(--ws-card-shadow);
   overflow: hidden;
+}
+
+/* ---------- citations ---------- */
+.ws-cite {
+  cursor: help;
+}
+.ws-cite-error {
+  color: var(--ws-danger);
+}
+.ws-references .csl-entry {
+  margin-bottom: 0.5em;
+  padding-left: 1.5em;
+  text-indent: -1.5em;
+  font-size: 0.85em;
+}
+
+/* ---------- TikZ ---------- */
+/* inline (```tikz in slides): sized in em by the build, so 10pt TeX text = the slide's text */
+.ws-tikz {
+  color: var(--ws-ink);
+  overflow: visible;
+}
+.ws-tikz-figure {
+  margin: 0.4em 0 0.6em;
+  text-align: center;
+}
+/* tikz nodes: the picture fills the node */
+.ws-type-tikz {
+  background: var(--ws-card);
+  border: 2px solid var(--ws-card-border);
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-card-shadow);
+  overflow: hidden;
+}
+.ws-tikz-node figure {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 64px;
+  box-sizing: border-box;
+}
+.ws-tikz-picture {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ws-tikz-picture .ws-tikz {
+  width: 100%;
+  height: 100%;
+}
+.ws-tikz-node figcaption {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 30px;
+  color: var(--ws-muted);
 }
 
 /* ---------- Lean nodes ---------- */
@@ -154,7 +239,7 @@ body {
   border-radius: 6px;
 }
 .ws-tac:hover {
-  background: rgb(43 108 176 / 0.07);
+  background: var(--ws-tac-hover);
 }
 .ws-tac.ws-tac-current {
   background: var(--ws-accent-soft);
@@ -245,17 +330,17 @@ body {
 }
 /* token kinds from SubVerso */
 .lk-keyword {
-  color: #8250df;
+  color: var(--ws-lean-keyword);
   font-weight: 600;
 }
 .lk-const {
-  color: #0550ae;
+  color: var(--ws-lean-const);
 }
 .lk-var {
-  color: #953800;
+  color: var(--ws-lean-var);
 }
 .lk-sort {
-  color: #116329;
+  color: var(--ws-lean-sort);
 }
 .lk-lineComment,
 .lk-commentDelim,
@@ -264,13 +349,13 @@ body {
   font-style: italic;
 }
 .lk-docComment {
-  color: #116329;
+  color: var(--ws-lean-doc);
 }
 .lk-str {
-  color: #0a3069;
+  color: var(--ws-lean-str);
 }
 .lk-num {
-  color: #0550ae;
+  color: var(--ws-lean-num);
 }
 [data-h] {
   cursor: help;
@@ -355,6 +440,14 @@ body {
   line-height: 1.45;
   overflow: hidden;
 }
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+:root[data-theme="academic-dark"] .shiki,
+:root[data-theme="academic-dark"] .shiki span {
+  color: var(--shiki-dark);
+}
 .ws-slide pre code {
   background: none;
   padding: 0;
@@ -383,7 +476,7 @@ body {
   margin: 0.4em 0 0.6em;
 }
 .ws-slide .math-error {
-  color: #b42318;
+  color: var(--ws-danger);
   font-family: var(--ws-font-mono);
 }
 .ws-slide .columns {
@@ -516,7 +609,7 @@ body {
 .ws-errors pre {
   white-space: pre-wrap;
   font: 14px/1.5 var(--ws-font-mono);
-  color: #b42318;
+  color: var(--ws-danger);
 }
 
 /* ---------- presenter view ---------- */
@@ -569,8 +662,8 @@ body {
   color: var(--ws-accent);
 }
 .ws-status.ws-waiting {
-  background: #fdecea;
-  color: #b42318;
+  background: var(--ws-danger-soft);
+  color: var(--ws-danger);
 }
 .ws-timer,
 .ws-timer-reset {
@@ -751,7 +844,7 @@ body {
   color: var(--ws-accent);
 }
 .ws-pair-hint {
-  color: #b42318;
+  color: var(--ws-danger);
 }
 .ws-presenter-phone {
   display: flex;
@@ -819,8 +912,8 @@ body {
 }
 .ws-phone-status.ws-connecting,
 .ws-phone-status.ws-offline {
-  background: #fdecea;
-  color: #b42318;
+  background: var(--ws-danger-soft);
+  color: var(--ws-danger);
 }
 .ws-phone-title {
   font: 600 19px var(--ws-font-heading);

@@ -5,9 +5,11 @@ import { basename, extname, join, relative } from "node:path";
 import type { CompiledNode, CompiledTalk, Diagnostic } from "../model/compiled.ts";
 import { buildPlugins } from "../plugins/build-registry.ts";
 import type { BuildCtx } from "../plugins/types.ts";
-import { layout } from "../layout/layout.ts";
+import { layout, type FrameSpace } from "../layout/layout.ts";
 import { loadTalk } from "./load.ts";
 import { parseMacros } from "./macros.ts";
+import { renderTikz, type TikzOptions } from "./tex.ts";
+import { loadBibliography, type Bibliography } from "./cite.ts";
 
 export const NODE_SIZE: [number, number] = [1600, 900];
 
@@ -18,6 +20,8 @@ export interface CompileResult {
   assets: Map<string, string>;
   /** Files the result depends on, for watching. */
   inputs: string[];
+  /** Each frame's child space, to turn a dragged node's world position into a pin (wavesol dev). */
+  frames?: Map<string, FrameSpace>;
 }
 
 export async function compileTalk(dir: string): Promise<CompileResult> {
@@ -55,8 +59,24 @@ async function compile(dir: string): Promise<CompileResult> {
     return url;
   };
 
+  // the bibliography: talk.yaml's `bibliography`, else refs.bib if it exists
+  const bibFile = talk.bibliography ?? (existsSync(join(dir, "refs.bib")) ? "refs.bib" : undefined);
+  let bib: Bibliography | undefined;
+  if (bibFile) {
+    const path = join(dir, bibFile);
+    inputs.push(path);
+    if (!existsSync(path)) diagnostics.push({ severity: "error", file: "talk.yaml", message: `bibliography ${bibFile} not found` });
+    else {
+      const loadedBib = loadBibliography(readFileSync(path, "utf8"));
+      if ("error" in loadedBib) diagnostics.push({ severity: "error", file: bibFile, message: loadedBib.error });
+      else bib = loadedBib;
+    }
+  }
+
   const built = new Map<string, Awaited<ReturnType<(typeof buildPlugins)[string]["build"]>>>();
-  for (const node of loaded.nodes.values()) {
+  // nodes that list what others produce (references) come last
+  const order = [...loaded.nodes.values()].sort((a, b) => Number(!!buildPlugins[a.type]!.buildLast) - Number(!!buildPlugins[b.type]!.buildLast));
+  for (const node of order) {
     if (node.file) inputs.push(node.file);
     const file = node.file ? relative(dir, node.file) : "talk.yaml";
     const ctx: BuildCtx = {
@@ -65,12 +85,27 @@ async function compile(dir: string): Promise<CompileResult> {
       asset,
       report: (severity, message, line) => diagnostics.push({ severity, file, line, message }),
       reportIn: (f, severity, message, line, col) => diagnostics.push({ severity, file: f, line, col, message }),
+      cite: (items) => (bib ? bib.cite(items) : { error: "citations need a bibliography: add refs.bib, or bibliography: in talk.yaml" }),
+      references: () => bib?.references(bib.cited()),
+      tikz: (body, extra?: TikzOptions) => {
+        const base = talk.tikz ?? {};
+        const opts: TikzOptions = {
+          packages: [...(base.packages ?? []), ...(extra?.packages ?? [])],
+          libraries: [...(base.libraries ?? []), ...(extra?.libraries ?? [])],
+          preamble: [base.preamble, extra?.preamble].filter(Boolean).join("\n"),
+          macros,
+        };
+        return renderTikz(body, opts, join(dir, ".wavesol", "cache", "tikz"));
+      },
     };
     try {
       built.set(node.id, await buildPlugins[node.type]!.build({ id: node.id, data: node.data, body: node.body, file: node.file, bodyLine: node.bodyLine }, ctx));
     } catch (e) {
       diagnostics.push({ severity: "error", file, message: `${node.type} build failed: ${e instanceof Error ? e.message : String(e)}` });
     }
+  }
+  if (bib?.cited().length && ![...loaded.nodes.values()].some((n) => n.type === "references")) {
+    diagnostics.push({ severity: "warning", file: "talk.yaml", message: 'the talk cites works but has no references node (add one: { type: references })' });
   }
   if (diagnostics.some((d) => d.severity === "error")) return { diagnostics, assets, inputs };
 
@@ -84,6 +119,7 @@ async function compile(dir: string): Promise<CompileResult> {
     const k = Math.min(2, Math.max(1, 0.75 * Math.sqrt(childCount(id))));
     return [NODE_SIZE[0] * k, NODE_SIZE[1] * k];
   };
+  const frames = new Map<string, FrameSpace>();
   const placements = await layout(
     ids.map((id) => {
       const { entry, type } = loaded.nodes.get(id)!;
@@ -91,6 +127,7 @@ async function compile(dir: string): Promise<CompileResult> {
     }),
     loaded.edges,
     talk.layout,
+    frames,
   );
 
   const depth = (id: string): number => (loaded.parents.has(id) ? 1 + depth(loaded.parents.get(id)!) : 0);
@@ -139,5 +176,5 @@ async function compile(dir: string): Promise<CompileResult> {
     edges: loaded.edges,
     sync: { phone: talk.sync?.phone ?? true, relays: talk.sync?.relays, ice: talk.sync?.ice ?? [] },
   };
-  return { talk: compiled, diagnostics, assets, inputs };
+  return { talk: compiled, diagnostics, assets, inputs, frames };
 }

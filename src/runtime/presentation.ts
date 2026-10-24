@@ -11,6 +11,7 @@ const OVERVIEW_MARGIN = 0.05;
 const FAR_PX = 160;
 /** Pointer travel (px) after which a press in the overview is a drag, not a click. */
 const DRAG_PX = 5;
+const DRAG_KEY = "wavesol:drag-mode";
 /** Fraction of the remaining distance the laser dot covers per frame. */
 const LASER_EASE = 0.35;
 /** The laser dot hides after this long without an update. */
@@ -25,6 +26,8 @@ export interface PresentationState {
   outgoing: { edge: CompiledEdge; target: CompiledNode }[];
   /** A detail of the current step the laser selected (e.g. a Lean tactic), until the next navigation. */
   focus?: number;
+  /** Drag mode (wavesol dev): dragging nodes pins them. */
+  dragMode: boolean;
 }
 
 export class Presentation {
@@ -41,6 +44,7 @@ export class Presentation {
   private overview = false;
   /** Set once the current overview press has moved far enough to be a pan; suppresses the click. */
   private dragged = false;
+  private dragging = false;
   private listeners = new Set<(s: PresentationState) => void>();
   private laser: HTMLElement;
   /** Laser pointer: where it is drawn, where it is heading (screen px), and when it last moved. */
@@ -92,7 +96,7 @@ export class Presentation {
         this.instances.set(n.id, inst);
       }
       nodeEl.addEventListener("click", (e) => {
-        if (!this.overview || this.dragged) return;
+        if (!this.overview || this.dragged || this.dragMode) return;
         e.stopPropagation();
         this.dispatch({ type: "goto", node: n.id });
       });
@@ -104,11 +108,13 @@ export class Presentation {
       moving: (on) => (this.world.style.willChange = on ? "transform" : "auto"),
     });
 
+    this.bindNodeDrag(); // before pan/zoom, so a node drag isn't also a pan
     this.bindPanZoom();
 
     this.nav = initialState(this.graph, parseHash(location.hash) ?? { node: talk.start, step: 0 }, talk.start);
     this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: false });
     this.applyView(this.targetView());
+    this.restoreDragMode();
     this.writeHash();
 
     window.addEventListener("resize", () => this.applyView(this.targetView()));
@@ -126,6 +132,7 @@ export class Presentation {
       node,
       outgoing: this.graph.outgoing(node.id).map((edge) => ({ edge, target: this.nodes.get(edge.to)! })),
       ...(this.focus !== undefined ? { focus: this.focus } : {}),
+      dragMode: this.dragging,
     };
   }
 
@@ -179,6 +186,87 @@ export class Presentation {
     const halfH = (fit.w * vh) / vw / 2;
     const clamp = (x: number, c: number, r: number) => Math.min(Math.max(x, c - r), c + r);
     this.applyView({ cx: clamp(v.cx, fit.cx, halfW), cy: clamp(v.cy, fit.cy, halfH), w });
+  }
+
+  /** Drag mode (`wavesol dev` only): dragging a node pins it there, written to talk.yaml by the dev server. */
+  get dragMode(): boolean {
+    return this.dragging;
+  }
+
+  setDragMode(on: boolean): void {
+    if (!import.meta.env.DEV || on === this.dragging) return;
+    this.dragging = on;
+    this.stage.classList.toggle("ws-drag-mode", on);
+    this.emit();
+  }
+
+  /** After the reload that follows a pin, come back in drag mode with the same view. */
+  private restoreDragMode() {
+    if (!import.meta.env.DEV) return;
+    let saved: { overview: boolean; view: View } | undefined;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(DRAG_KEY) ?? "null") ?? undefined;
+      sessionStorage.removeItem(DRAG_KEY);
+    } catch {
+      return;
+    }
+    if (!saved) return;
+    this.overview = saved.overview;
+    this.setDragMode(true);
+    this.applyView(saved.view);
+  }
+
+  private bindNodeDrag() {
+    if (!import.meta.env.DEV) return;
+    const stage = this.stage;
+    let drag: { id: string; nodes: CompiledNode[]; start: { x: number; y: number }; d: { x: number; y: number } } | undefined;
+    const place = (n: CompiledNode, dx: number, dy: number) => {
+      this.els.get(n.id)!.style.transform = `translate(${n.x + dx}px, ${n.y + dy}px) scale(${n.scale})`;
+    };
+    stage.addEventListener("pointerdown", (e) => {
+      if (!this.dragging || (e.pointerType === "mouse" && e.button !== 0)) return;
+      const id = (e.target as Element).closest<HTMLElement>(".ws-node")?.dataset.id;
+      if (!id) return;
+      e.stopImmediatePropagation();
+      // a frame takes everything inside it along
+      const inside = (n: CompiledNode): boolean => n.id === id || (n.parent !== undefined && inside(this.nodes.get(n.parent)!));
+      drag = { id, nodes: this.talk.nodes.filter(inside), start: { x: e.clientX, y: e.clientY }, d: { x: 0, y: 0 } };
+      stage.setPointerCapture(e.pointerId);
+    });
+    stage.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      e.stopImmediatePropagation();
+      const k = this.viewport().vw / this.view.w; // screen px per world unit
+      drag.d = { x: (e.clientX - drag.start.x) / k, y: (e.clientY - drag.start.y) / k };
+      for (const n of drag.nodes) place(n, drag.d.x, drag.d.y);
+    });
+    const end = (e: PointerEvent) => {
+      if (!drag) return;
+      e.stopImmediatePropagation();
+      const { id, nodes, d } = drag;
+      drag = undefined;
+      const moved = Math.hypot(d.x, d.y) * (this.viewport().vw / this.view.w) >= DRAG_PX;
+      const node = this.nodes.get(id)!;
+      if (!moved) return;
+      try {
+        sessionStorage.setItem(DRAG_KEY, JSON.stringify({ overview: this.overview, view: this.view }));
+      } catch {
+        // the reload then just doesn't keep drag mode
+      }
+      // the dev server writes the pin into talk.yaml; its watcher then rebuilds and reloads the page
+      void fetch("__wavesol/pin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ node: id, at: [node.x + d.x, node.y + d.y] }),
+      }).then(
+        (r) => r.ok || Promise.reject(new Error(`${r.status}`)),
+      ).catch((err) => {
+        console.error(`could not pin ${id}:`, err);
+        for (const n of nodes) place(n, 0, 0);
+      });
+    };
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
   }
 
   /** Overview only: wheel or pinch zooms around the pointer, dragging pans. */

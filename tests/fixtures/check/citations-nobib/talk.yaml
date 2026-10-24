@@ -1,0 +1,6 @@
+title: No bibliography
+nodes:
+  a: {}
+  refs: { type: references }
+edges:
+  - a -> refs

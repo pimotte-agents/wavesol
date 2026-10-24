@@ -1,0 +1,13 @@
+# drag mode fixture (copied to a temporary folder by tests/e2e/drag.spec.ts)
+title: Drag
+nodes:
+  a: {}
+  b: {}
+  f:
+    type: frame
+    title: Frame
+    children: [x, y]
+  x: {}
+  y: {}
+edges:
+  - a -> b -> f
