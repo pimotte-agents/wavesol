@@ -16,5 +16,6 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "scripts", "spikes/camera", "tests", "*.config.ts"]
+  "include": ["src", "scripts", "spikes/camera", "tests", "*.config.ts"],
+  "exclude": ["tests/fixtures"]
 }

@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wavesol dev",
+    "check": "wavesol check",
+    "build": "wavesol build",
+    "serve": "wavesol serve"
+  },
+  "dependencies": {
+    "wavesol": "github:pimotte-agents/wavesol"
+  }
+}

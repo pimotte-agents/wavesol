@@ -1,0 +1,338 @@
+/* Structural styles shared by all themes. Themes only set --ws-* variables. */
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--ws-bg);
+  color: var(--ws-ink);
+  font-family: var(--ws-font-body);
+}
+
+/* ---------- canvas ---------- */
+.ws-stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+.ws-world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.ws-node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+}
+.ws-node.ws-off {
+  visibility: hidden;
+}
+.ws-content {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+.ws-far-title {
+  display: none;
+}
+.ws-node.ws-far .ws-content {
+  display: none;
+}
+.ws-node.ws-far .ws-far-title {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 80px;
+  text-align: center;
+  font: 600 110px/1.15 var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-overview .ws-node {
+  cursor: pointer;
+}
+.ws-overview .ws-node:hover {
+  outline: 12px solid var(--ws-accent);
+}
+
+/* ---------- edges ---------- */
+.ws-edges {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+}
+.ws-edge path {
+  fill: none;
+  stroke: var(--ws-edge);
+  stroke-linecap: round;
+}
+.ws-edge path.ws-edge-head {
+  fill: var(--ws-edge);
+  stroke: none;
+}
+.ws-edge.ws-edge-out path {
+  stroke: var(--ws-accent);
+}
+.ws-edge.ws-edge-out path.ws-edge-head {
+  fill: var(--ws-accent);
+}
+
+/* ---------- cards: slides and images ---------- */
+.ws-type-slide,
+.ws-type-image {
+  background: var(--ws-card);
+  border: 2px solid var(--ws-card-border);
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-card-shadow);
+  overflow: hidden;
+}
+
+/* ---------- frames ---------- */
+.ws-type-frame {
+  border: 4px dashed var(--ws-frame-border);
+  border-radius: calc(var(--ws-radius) * 1.5);
+  background: var(--ws-frame-bg);
+}
+.ws-frame-title {
+  margin: 0;
+  height: 150px;
+  padding: 0 60px;
+  display: flex;
+  align-items: center;
+  font: 600 72px/1 var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+
+/* ---------- slide content ---------- */
+.ws-slide {
+  padding: 64px 88px;
+  font-size: var(--ws-font-size);
+  line-height: var(--ws-line-height);
+}
+.ws-slide h1,
+.ws-slide h2,
+.ws-slide h3 {
+  font-family: var(--ws-font-heading);
+  font-weight: 600;
+  color: var(--ws-heading);
+  line-height: 1.15;
+  margin: 0 0 0.6em;
+}
+.ws-slide h1 {
+  font-size: 1.9em;
+  padding-bottom: 0.25em;
+  border-bottom: 3px solid var(--ws-accent-soft);
+}
+.ws-slide h2 {
+  font-size: 1.35em;
+}
+.ws-slide h3 {
+  font-size: 1.1em;
+}
+.ws-slide p,
+.ws-slide ul,
+.ws-slide ol {
+  margin: 0 0 0.6em;
+}
+.ws-slide ul,
+.ws-slide ol {
+  padding-left: 1.2em;
+}
+.ws-slide li {
+  margin: 0.2em 0;
+}
+.ws-slide li::marker {
+  color: var(--ws-accent);
+}
+.ws-slide a {
+  color: var(--ws-accent);
+}
+.ws-slide strong {
+  font-weight: 600;
+}
+.ws-slide code {
+  font-family: var(--ws-font-mono);
+  font-size: 0.85em;
+  background: var(--ws-code-bg);
+  padding: 0.05em 0.3em;
+  border-radius: 6px;
+}
+.ws-slide pre {
+  margin: 0 0 0.6em;
+  padding: 0.6em 0.8em;
+  border-radius: 12px;
+  background: var(--ws-code-bg) !important;
+  font-size: 0.72em;
+  line-height: 1.45;
+  overflow: hidden;
+}
+.ws-slide pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+.ws-slide img {
+  max-width: 100%;
+}
+.ws-slide blockquote {
+  margin: 0 0 0.6em;
+  padding-left: 0.8em;
+  border-left: 6px solid var(--ws-accent-soft);
+  color: var(--ws-muted);
+}
+.ws-slide table {
+  border-collapse: collapse;
+  margin-bottom: 0.6em;
+}
+.ws-slide th,
+.ws-slide td {
+  padding: 0.2em 0.6em;
+  border-bottom: 2px solid var(--ws-card-border);
+  text-align: left;
+}
+.ws-slide .math-display {
+  margin: 0.4em 0 0.6em;
+}
+.ws-slide .math-error {
+  color: #b42318;
+  font-family: var(--ws-font-mono);
+}
+.ws-slide .columns {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 1.5em;
+}
+
+/* ---------- fragments ---------- */
+.ws-slide .fragment {
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    background-color 0.35s ease;
+}
+.ws-slide .fragment:not(.visible):not(.fade-out):not(.highlight) {
+  opacity: 0;
+}
+.ws-slide .fragment.fade-up:not(.visible) {
+  transform: translateY(0.6em);
+}
+.ws-slide .fragment.fade-out.visible {
+  opacity: 0.15;
+}
+.ws-slide .fragment.highlight.visible {
+  background-color: var(--ws-accent-soft);
+  border-radius: 8px;
+}
+.ws-slide.ws-no-anim .fragment {
+  transition: none;
+}
+
+/* ---------- image nodes ---------- */
+.ws-image figure {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 48px;
+  box-sizing: border-box;
+}
+.ws-image img {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+.ws-image figcaption {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 30px;
+  color: var(--ws-muted);
+}
+
+/* ---------- screen-space chrome ---------- */
+.ws-panel {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  max-width: min(420px, calc(100vw - 32px));
+  padding: 14px 18px;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 12px;
+  box-shadow: var(--ws-card-shadow);
+  font-size: 15px;
+  z-index: 10;
+}
+.ws-panel h3 {
+  margin: 0 0 8px;
+  font: 600 16px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-panel ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ws-panel button {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-radius: 8px;
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.ws-panel button:hover,
+.ws-panel button:focus-visible {
+  background: var(--ws-accent-soft);
+}
+.ws-panel kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  text-align: center;
+  font: 13px var(--ws-font-mono);
+  border: 1px solid var(--ws-card-border);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  margin-right: 6px;
+}
+.ws-panel dl {
+  margin: 0;
+  display: grid;
+  gap: 4px;
+}
+.ws-panel dl div {
+  display: grid;
+  grid-template-columns: 11em 1fr;
+  gap: 8px;
+}
+.ws-panel dt {
+  font-family: var(--ws-font-mono);
+  font-size: 13px;
+}
+.ws-panel dd {
+  margin: 0;
+}
+.ws-muted {
+  color: var(--ws-muted);
+}
+.ws-errors {
+  padding: 24px;
+  overflow: auto;
+  height: 100%;
+  box-sizing: border-box;
+}
+.ws-errors pre {
+  white-space: pre-wrap;
+  font: 14px/1.5 var(--ws-font-mono);
+  color: #b42318;
+}

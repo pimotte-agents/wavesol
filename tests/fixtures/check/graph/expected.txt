@@ -1,0 +1,5 @@
+talk.yaml:2:1: error: unknown node "nowhere"
+talk.yaml:8:19: error: unknown node "ghost"
+talk.yaml:11:16: error: "a" is already a child of frame "f"
+talk.yaml:14:5: error: "a" already has a default edge (edges item 1)
+talk.yaml:15:5: error: edge b -> missing: unknown node "missing"

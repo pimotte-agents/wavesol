@@ -1,0 +1,6 @@
+title: Frontmatter
+nodes:
+  pic: {}
+  s: {}
+edges:
+  - pic -> s

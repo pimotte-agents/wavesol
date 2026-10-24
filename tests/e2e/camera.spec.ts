@@ -15,7 +15,7 @@ interface Spike {
 }
 
 async function open(page: Page, query: string) {
-  await page.goto(`/?${query}`);
+  await page.goto(`http://localhost:5179/?${query}`);
   await page.waitForFunction(() => (window as unknown as { spike?: { ready: boolean } }).spike?.ready);
   await page.addStyleTag({ content: "#hud { display: none !important }" });
   await page.evaluate(() => document.fonts.ready);

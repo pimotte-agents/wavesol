@@ -47,6 +47,7 @@ layout:
   algorithm: layered               # layered | force | grid | manual
   direction: right                 # right | down | left | up (layered only)
   spacing: 1                       # multiplier on the theme's default spacing
+  wrap: true                       # layered: wrap long chains into rows (default)
 
 math:
   macros: macros.tex               # default: macros.tex if it exists
@@ -84,10 +85,9 @@ The key is the node id. The value has these fields, all optional:
 | `title` | Display title (edge buttons, overview, presenter view). Defaults to the frontmatter title, else the first heading, else the id. |
 | `children` | `frame` only: ids of the nodes inside it. A node has at most one parent frame. |
 | `layout` | `frame` only: layout settings for the frame's children, same shape as the top-level `layout`. |
-| `pin` | `[x, y]` world position. Inside a frame, relative to the frame's content box. |
+| `pin` | `[x, y]` position of the top-left corner in the layout space of the node's level. At the top level that is world units. Inside a frame it is the frame's own layout space, which is then scaled to fit the frame. |
 | `size` | `[w, h]` in world units. Defaults to the theme's slide size (1600×900). |
 | `scale` | Uniform scale of the node on the canvas (default 1). |
-| `rank` | Layered layout: force the node into this layer (0-based). |
 | `near` | Layout hint: `{ left-of \| right-of \| above \| below: <id> }`. |
 | `transition` | Default transition for edges *into* this node. |
 
@@ -146,13 +146,26 @@ The body is Markdown (CommonMark + GFM tables) with:
   (`\newcommand` / `\renewcommand` / `\DeclareMathOperator`).
 - **Code:** fenced blocks highlighted at build time (` ```lean ` uses the Lean grammar; it is
   highlighting only, not elaborated).
-- **Fragments (gradual reveal):** an attribute block `{.fragment}` after a paragraph, list item, heading,
-  image or block. Optional order `{.fragment step=2}`: same step = revealed together, steps without a
-  number follow document order. Optional effect class: `.fade-in` (default), `.fade-up`, `.highlight`,
-  `.fade-out`.
+- **Fragments (gradual reveal):** an attribute block `{.fragment}` at the end of a paragraph, list item
+  or heading, or a `::: fragment` block around any content (use the block for display math, code and
+  images). A fragment comes one step after the previous fragment; `{.fragment step=2}` or
+  `::: fragment step=2` puts it in step 2 explicitly, and fragments with the same step appear together. Optional effect:
+  `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g. `{.fragment .fade-up}` or
+  `::: fragment fade-up`.
 - **Frontmatter `fragments: lists`:** every top-level list item becomes a fragment.
-- **Blocks:** `::: notes` (speaker notes, removed from the slide), `::: columns` with `::: column`
-  children.
+- **Blocks:** `::: notes` (speaker notes, removed from the slide) and columns. For columns the outer
+  fence needs more colons than the inner ones:
+
+  ```markdown
+  :::: columns
+  ::: column
+  Left
+  :::
+  ::: column
+  Right
+  :::
+  ::::
+  ```
 - **Citations:** `[@key]` or `[@key, p. 3]` from the bibliography (Phase 5).
 - **Images:** standard Markdown images, paths relative to the node file.
 

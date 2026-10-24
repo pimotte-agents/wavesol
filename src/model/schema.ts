@@ -12,13 +12,14 @@ export const Transition = z.union([
     duration: z.number().positive().optional().describe("Milliseconds. Default for fly: scaled by distance."),
     easing: z.string().optional().describe("CSS easing keyword or cubic-bezier(...)."),
   }),
-]);
+], { error: "expected fly, cut, fade, zoom-through, or { type, duration, easing }" });
 
 const Direction = z.enum(["right", "down", "left", "up"]);
 export const Layout = z.strictObject({
   algorithm: z.enum(["layered", "force", "grid", "manual"]).optional(),
   direction: Direction.optional(),
   spacing: z.number().positive().optional(),
+  wrap: z.boolean().optional().describe("Layered: wrap long chains into rows (default true)."),
 });
 
 const Vec2 = z.tuple([z.number(), z.number()]);
@@ -33,7 +34,6 @@ export const NodeEntry = z
     pin: Vec2.optional(),
     size: Vec2.optional(),
     scale: z.number().positive().optional(),
-    rank: z.int().nonnegative().optional(),
     near: z
       .union([
         z.strictObject({ "left-of": NodeId }),
@@ -111,8 +111,11 @@ export const LeanFrontmatter = CommonFrontmatter.extend({
   infoview: z.enum(["right", "below"]).optional(),
 }).refine((f) => (f.anchor === undefined) !== (f.decl === undefined), "give exactly one of anchor or decl");
 
+export const FrameFrontmatter = CommonFrontmatter.extend({ type: z.literal("frame") });
+
 export const frontmatterSchemas = {
   slide: SlideFrontmatter,
+  frame: FrameFrontmatter,
   image: ImageFrontmatter,
   lean: LeanFrontmatter,
 } as const;

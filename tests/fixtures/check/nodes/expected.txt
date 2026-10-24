@@ -1,0 +1,5 @@
+nodes/a.md:2:1: error: "title" is also set for "a" in talk.yaml; set it in one place
+talk.yaml:4:3: error: node file nodes/b.md not found
+talk.yaml:5:3: error: unknown node type "video"
+talk.yaml:6:8: error: only frames have children (d is a slide)
+talk.yaml:7:21: error: frame nodes have no file

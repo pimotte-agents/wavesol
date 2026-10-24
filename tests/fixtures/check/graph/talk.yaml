@@ -1,0 +1,15 @@
+title: Graph
+start: nowhere
+nodes:
+  a: {}
+  b: {}
+  f:
+    type: frame
+    children: [a, ghost]
+  g:
+    type: frame
+    children: [a]
+edges:
+  - a -> b: { default: true }
+  - a -> f: { default: true }
+  - b -> missing

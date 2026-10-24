@@ -34,7 +34,7 @@ Technical choices made without a question (revisit if they bite):
   LOD: off-screen nodes hidden, tiny slides show a title card.
 - **Default transition:** van Wijk–Nuij "smooth zoom" (zoom out, pan, zoom in), with duration scaled by
   distance. Per-edge, per-node and global overrides: `fly` (default), `cut`, `fade`, `zoom-through`.
-- **Layout:** elkjs (layered by default), hints (`direction`, `rank`, `near: {left-of: x}`) and `pin: [x, y]`.
+- **Layout:** elkjs (layered by default), hints (`direction`, `near: {left-of: x}`; ELK ignores layer constraints, so no `rank`) and `pin: [x, y]`.
 - **Tests:** vitest for unit tests, Playwright for end-to-end and visual regression (see Testing).
 
 ## Source format sketch
@@ -100,22 +100,29 @@ src/
 docs/          the documentation, written as a wavesol talk (deployed to GitHub Pages)
 ```
 
-**Node plugin contract** (framework-agnostic):
+**Node plugin contract** (framework-agnostic), split so build-only dependencies (Shiki, KaTeX, Lean
+tooling) never reach the browser bundle. See `src/plugins/types.ts`:
 
 ```ts
-interface NodePlugin<Data, Built> {
+interface BuildPlugin<Data> {           // src/plugins/<type>/build.ts, runs in Node
   type: string;
-  schema: ZodType<Data>;                          // frontmatter validation
-  build?(data: Data, ctx: BuildCtx): Promise<Built>;   // Lean extraction, TikZ, KaTeX…
-  steps(built: Built): number;                    // number of internal steps
-  mount(el: HTMLElement, built: Built, api: NodeApi): NodeInstance;
+  schema: ZodType<Data>;                // frontmatter validation
+  hasFile: boolean;
+  build(node, ctx): Promise<{ data; steps; notes?; title? }>;   // Markdown, KaTeX, Lean extraction…
+}
+interface RuntimePlugin {               // src/plugins/<type>/runtime.ts, runs in the browser
+  type: string;
+  mount(el: HTMLElement, node: CompiledNode, api: NodeApi): NodeInstance;
 }
 interface NodeInstance {
   setStep(step: number, opts: { animate: boolean }): void;
-  setDetail(level: "overview" | "near" | "active"): void;   // LOD when zoomed out
-  unmount(): void;
+  setDetail?(level: "overview" | "near" | "active"): void;   // LOD when zoomed out
+  unmount?(): void;
 }
 ```
+
+The build compiles a talk into one `CompiledTalk` JSON (layout positions, plugin data, steps), served
+to the runtime as the virtual module `virtual:wavesol/talk`.
 
 **State protocol:** the projector page is the single source of truth. State is `{ node, step,
 history, pointer }`. Peers (presenter view, phone, later audience) send intents (`step`, `edge:i`,
@@ -161,6 +168,19 @@ the QR code) before their intents are accepted.
   navigation, layout, theming and the CLI, and doubles as the end-to-end test fixture. Every later
   phase extends it with that phase's features.
 - Exit: the docs talk (~15+ nodes) is deployed and can be presented from the Pages site.
+- **Status: implemented, not yet deployed.** All items above are in place with unit tests (check
+  fixtures, layout, navigation, camera, slide build) and end-to-end tests on the docs talk (served
+  from a subpath, incl. visual baselines). Decisions made along the way:
+  - Plugins are split into a build half (Node) and a runtime half (browser); see the contract above.
+  - Layout: ELK ignores layer constraints, so there is no `rank` hint. Layered layouts wrap long
+    chains into rows (`wrap: true` by default) so the overview reads as a fabric, not a ribbon.
+  - Fragment steps: a fragment comes one step after the previous one unless `step=n` is given;
+    `::: fragment` blocks cover display math, code and images.
+  - Edges are drawn per nesting depth, so frames hide edges passing behind them but show edges between
+    their children.
+  - wavesol runs from TypeScript via tsx (no build step); talks depend on it as a git dependency until
+    it's published to npm.
+  - Remaining: push, enable GitHub Pages for the repo, confirm the deployed docs.
 - Tests:
   - Unit: a fixture talk per `check` error, with the expected messages and `file:line`. Layout
     snapshots. Navigation sequences: step, default edge, edge by index, back, leaving a node early.

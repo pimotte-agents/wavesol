@@ -1,0 +1,22 @@
+/* academic-light: calm, projector-safe. Every value can be overridden from talk.yaml (theme.vars). */
+:root {
+  --ws-bg: #f3f1ea;
+  --ws-card: #fffdf8;
+  --ws-card-border: #e3ddcf;
+  --ws-card-shadow: 0 2px 6px rgb(60 50 30 / 0.06), 0 12px 40px rgb(60 50 30 / 0.07);
+  --ws-ink: #1f2328;
+  --ws-heading: #1b2a3c;
+  --ws-muted: #6b6f76;
+  --ws-accent: #2b6cb0;
+  --ws-accent-soft: #e5eef8;
+  --ws-edge: #b9b2a3;
+  --ws-frame-border: #cfc6b2;
+  --ws-frame-bg: #f8f6f0;
+  --ws-code-bg: #f6f3ea;
+  --ws-font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --ws-font-heading: "Source Serif 4", Georgia, serif;
+  --ws-font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --ws-font-size: 36px;
+  --ws-line-height: 1.45;
+  --ws-radius: 22px;
+}

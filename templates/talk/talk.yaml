@@ -1,0 +1,16 @@
+# A wavesol talk. Format: see AGENTS.md. Preview with `npm run dev`, validate with `npm run check`.
+$schema: ./node_modules/wavesol/schema/talk.schema.json
+title: My talk
+authors: [Your Name]
+
+nodes:
+  title: {}
+  idea: {}
+  details: {}
+  end: {}
+
+edges:
+  - title -> idea: { default: true }
+  - idea -> end: { default: true }
+  - idea -> details: { label: "More details" }
+  - details -> end: { default: true }

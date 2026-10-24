@@ -1,0 +1,9 @@
+title: Nodes
+nodes:
+  a: { title: From talk.yaml }
+  b: {}
+  c: { type: video }
+  d: { children: [a] }
+  e: { type: frame, file: nodes/e.md }
+edges:
+  - a -> b -> c -> d

@@ -1,0 +1,6 @@
+title: OK
+nodes:
+  a: {}
+  b: {}
+edges:
+  - a -> b: { default: true }

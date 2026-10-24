@@ -1,0 +1,4 @@
+macros.tex:2: error: \bad: missing body
+nodes/pic.md: error: image ../figures/missing.png not found
+nodes/s.md:8: error: math: KaTeX parse error: Undefined control sequence: \nope at position 1: \̲n̲o̲p̲e̲{x}
+nodes/s.md:10: warning: unknown code language "klingon", rendered as plain text

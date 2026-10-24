@@ -1,0 +1,6 @@
+title: Content
+nodes:
+  s: {}
+  pic: {}
+edges:
+  - s -> pic

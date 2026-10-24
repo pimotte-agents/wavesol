@@ -1,0 +1,73 @@
+# wavesol's documentation is itself a wavesol talk. Present it with: npx wavesol dev docs
+$schema: ../schema/talk.schema.json
+title: wavesol
+subtitle: Presentations woven as a fabric
+authors: [The wavesol authors]
+
+theme:
+  base: academic-light
+
+transitions:
+  default: fly
+
+layout:
+  direction: right
+
+nodes:
+  welcome: {}
+  idea: {}
+
+  getting-around:
+    type: frame
+    title: Getting around
+    children: [nav-steps, nav-edges, nav-back, nav-overview]
+    layout: { direction: down }
+  nav-steps: {}
+  nav-edges: {}
+  nav-back: {}
+  nav-overview: {}
+
+  writing:
+    type: frame
+    title: Writing a talk
+    children: [format-dir, format-talk, format-edges, format-nodes]
+  format-dir: {}
+  format-talk: {}
+  format-edges: {}
+  format-nodes: {}
+
+  node-types:
+    type: frame
+    title: Node types
+    children: [slides, fragments, math-code, figure, frames]
+  slides: {}
+  fragments: {}
+  math-code: {}
+  figure: {}
+  frames: {}
+
+  layout: {}
+  transitions: {}
+  theming: {}
+  cli: {}
+  check: {}
+  ai: {}
+  roadmap: {}
+
+edges:
+  - welcome -> idea: { default: true }
+  - welcome -> roadmap: { label: "Skip to the roadmap" }
+  - idea -> getting-around: { default: true }
+  - getting-around -> nav-steps: { default: true, transition: zoom-through }
+  - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
+  - nav-overview -> writing: { default: true }
+  - writing -> format-dir: { default: true, transition: zoom-through }
+  - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
+  - format-nodes -> node-types: { default: true }
+  - node-types -> slides: { default: true, transition: zoom-through }
+  - slides -> fragments -> math-code -> figure -> frames: { default: true }
+  - frames -> layout: { default: true }
+  - layout -> transitions -> theming -> cli -> check -> ai -> roadmap: { default: true }
+  - roadmap -> welcome: { label: "Back to the start", transition: fade }
+  - nav-edges -> roadmap: { label: "Detour: what's next?" }
+  - math-code -> theming: { label: "How does it look? (theming)" }

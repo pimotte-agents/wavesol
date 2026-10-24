@@ -1,0 +1,4 @@
+talk.yaml:2:1: error: unknown field "nodez"
+talk.yaml:4:3: error: nodes.Intro: Invalid key in record
+talk.yaml:6:5: error: nodes.b.pin: Too big: expected array to have <=2 items
+talk.yaml:7:5: error: nodes.b.transition: expected fly, cut, fade, zoom-through, or { type, duration, easing }

@@ -1,0 +1,36 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`layout > is deterministic (snapshot) 1`] = `
+{
+  "app": {
+    "scale": 0.5,
+    "x": 2112,
+    "y": 1339,
+  },
+  "bg": {
+    "scale": 1,
+    "x": 2112,
+    "y": 162,
+  },
+  "d1": {
+    "scale": 0.4302,
+    "x": 2172,
+    "y": 463,
+  },
+  "d2": {
+    "scale": 0.4302,
+    "x": 2964,
+    "y": 463,
+  },
+  "intro": {
+    "scale": 1,
+    "x": 272,
+    "y": 12,
+  },
+  "thm": {
+    "scale": 1,
+    "x": 272,
+    "y": 1114,
+  },
+}
+`;

@@ -7,6 +7,7 @@ export default tseslint.config(
   { ignores: ["dist", "node_modules", "spikes/lean", "playwright-report", "test-results"] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  { languageOptions: { globals: { ...globals.browser, ...globals.node } } },
   {
     files: ["**/*.{ts,tsx}"],
     plugins: { "react-hooks": reactHooks },
