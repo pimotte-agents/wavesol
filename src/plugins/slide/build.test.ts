@@ -96,3 +96,22 @@ describe("citations", () => {
     expect(r.html).toContain('<span class="ws-cite ws-cite-error">[@nope]</span>');
   });
 });
+
+describe("morph blocks", () => {
+  const morph = "::: morph\n$$ \\mm{s}{(a+b)}^2 $$\n\n$$ \\mm{s}{(a+b)}\\mm{t}{(a+b)} $$\n\n$$ a^2 + 2ab + b^2 $$\n:::\n";
+
+  it("each equation after the first is a step; tagged parts carry their names", async () => {
+    const r = await build(`# M\n\n${morph}`);
+    expect(r.steps).toEqual([0, 1, 2]);
+    expect(r.html.match(/class="ws-morph-step" data-step="\d"/g)).toEqual(['class="ws-morph-step" data-step="0"', 'class="ws-morph-step" data-step="1"', 'class="ws-morph-step" data-step="2"']);
+    expect(r.html).toContain('<div class="ws-morph">');
+    expect(r.html.match(/data-morph="s"/g)).toHaveLength(2);
+    expect(r.html).toContain('data-morph="t"');
+    expect(r.reports).toEqual([]);
+  });
+
+  it("comes after the fragments before it: its first equation shows with the last of them", async () => {
+    const r = await build(`- one\n- two\n\n${morph}`, { fragments: "lists" });
+    expect(r.html.match(/class="ws-morph-step" data-step="(\d)"/g)!.map((m) => m.slice(-2, -1))).toEqual(["2", "3", "4"]);
+  });
+});

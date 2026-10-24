@@ -39,7 +39,14 @@ interface Env extends MdEnv {
 
 function renderMath(content: string, displayMode: boolean, env: Env): string {
   try {
-    const html = katex.renderToString(content, { displayMode, macros: { ...env.ctx.macros }, throwOnError: true, strict: "ignore" });
+    const html = katex.renderToString(content, {
+      displayMode,
+      // \mm{name}{…} tags a part for morph blocks; it wins over a talk macro of the same name
+      macros: { ...env.ctx.macros, "\\mm": "\\htmlData{morph=#1}{#2}" },
+      trust: (t) => t.command === "\\htmlData",
+      throwOnError: true,
+      strict: "ignore",
+    });
     return displayMode ? `<div class="math-display">${html}</div>` : html;
   } catch (e) {
     const at = env.body.indexOf(content);
@@ -63,6 +70,10 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
   md.use(tex, { render: (content: string, displayMode: boolean, env) => renderMath(content, displayMode, env as Env) });
   md.use(attrs);
   for (const name of ["notes", "columns", "column"]) md.use(container, { name });
+  md.use(container, {
+    name: "morph",
+    openRenderer: () => '<div class="ws-morph">\n',
+  });
   md.use(container, {
     name: "fragment",
     openRenderer: (tokens, idx, _options, _env, self) => `<div${self.renderAttrs(tokens[idx]!)}>\n`,
@@ -95,6 +106,14 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     }
     // data-keys: a click takes the projector to the references slide, with these works marked
     return `<span class="ws-cite" data-keys="${esc(items.map((i) => i.id).join(" "))}" title="${esc(r.title)}">${esc(r.text)}</span>`;
+  };
+
+  // morph blocks: each equation is a step (see assignFragments), stacked so only one shows at a time
+  const mathBlock = md.renderer.rules.math_block!;
+  md.renderer.rules.math_block = (tokens, idx, options, env, self) => {
+    const step = (tokens[idx]!.meta as { morphStep?: number } | null)?.morphStep;
+    const html = mathBlock(tokens, idx, options, env, self);
+    return step === undefined ? html : `<div class="ws-morph-step" data-step="${step}">${html}</div>\n`;
   };
 
   const defaultFence = md.renderer.rules.fence!;
@@ -157,9 +176,23 @@ export function assignFragments(tokens: Token[], lists: boolean): number {
   }
   // A fragment without `step` comes one step after the previous fragment; `step=n` sets it explicitly.
   const fragments: { token: Token; step: number }[] = [];
+  const morphSteps: { token: Token; step: number }[] = [];
   let previous = 0;
+  let morphDepth = 0;
+  let firstInMorph = false;
   const visit = (ts: Token[]) => {
     for (const t of ts) {
+      // ::: morph: the first equation shows with what came before it, each next one is a step
+      if (t.type === "container_morph_open") {
+        morphDepth++;
+        firstInMorph = true;
+      } else if (t.type === "container_morph_close") morphDepth--;
+      else if (morphDepth > 0 && t.type === "math_block") {
+        if (!firstInMorph) previous += 1;
+        firstInMorph = false;
+        morphSteps.push({ token: t, step: previous });
+        continue;
+      }
       if (t.nesting !== -1 && String(t.attrGet("class") ?? "").split(/\s+/).includes("fragment")) {
         const explicit = Number(t.attrGet("step"));
         previous = Number.isInteger(explicit) && explicit > 0 ? explicit : previous + 1;
@@ -169,11 +202,12 @@ export function assignFragments(tokens: Token[], lists: boolean): number {
     }
   };
   visit(tokens);
-  const ranks = [...new Set(fragments.map((f) => f.step))].sort((a, b) => a - b);
+  const ranks = [...new Set([...fragments, ...morphSteps].map((f) => f.step).filter((s) => s > 0))].sort((a, b) => a - b);
   for (const f of fragments) {
     f.token.attrs = (f.token.attrs ?? []).filter(([k]) => k !== "step");
     f.token.attrSet("data-step", String(ranks.indexOf(f.step) + 1));
   }
+  for (const m of morphSteps) m.token.meta = { ...(m.token.meta ?? {}), morphStep: m.step > 0 ? ranks.indexOf(m.step) + 1 : 0 };
   return ranks.length;
 }
 

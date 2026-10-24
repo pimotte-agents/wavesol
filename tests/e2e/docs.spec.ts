@@ -237,6 +237,42 @@ test("clicking a citation flies to the references, with the cited works highligh
   await expect(marked).toHaveCount(0);
 });
 
+test("morph: tagged parts glide to their new place between steps, and back", async ({ page }) => {
+  await open(page, "#/morph/0");
+  await settled(page);
+  const block = page.locator('.ws-node[data-id="morph"] .ws-morph');
+  const shownStep = () => block.locator(".ws-morph-step.ws-morph-shown").getAttribute("data-step");
+  const part = (step: number) => block.locator(`.ws-morph-step[data-step="${step}"] [data-morph="b"]`);
+  expect(await shownStep()).toBe("0");
+  const from = (await part(0).boundingBox())!;
+
+  await page.keyboard.press("Space");
+  // mid-move: a copy of the part is on its way, between its old and new place
+  const copy = block.locator(".ws-morph-copy", { hasText: "3" });
+  await expect(copy).toHaveCount(1);
+  await page.waitForTimeout(250);
+  const mid = (await copy.boundingBox())!;
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
+  expect(await shownStep()).toBe("1");
+  const to = (await part(1).boundingBox())!;
+  expect(to.x).toBeGreaterThan(from.x + 50); // the 3 moved right, across the =
+  expect(mid.x).toBeGreaterThan(from.x + 5);
+  expect(mid.x).toBeLessThan(to.x - 5);
+
+  // back: the same move in reverse
+  await page.keyboard.press("ArrowLeft");
+  await expect(block.locator(".ws-morph-copy")).not.toHaveCount(0);
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
+  expect(await shownStep()).toBe("0");
+  // and every equation can be shown again, fully opaque (no fade left behind)
+  for (let i = 0; i < 3; i++) await page.keyboard.press("Space");
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 3000 });
+  expect(await shownStep()).toBe("3");
+  for (let i = 0; i < 3; i++) await page.keyboard.press("ArrowLeft");
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 3000 });
+  expect(await block.locator(".ws-morph-step.ws-morph-shown").evaluate((e) => getComputedStyle(e).opacity)).toBe("1");
+});
+
 test("the dark theme recolours the page, code highlighting and TikZ figures", async ({ page }) => {
   await open(page);
   const t = (await talk(page)) as unknown as { nodes: { id: string; type: string }[] };

@@ -208,6 +208,20 @@ The body is Markdown (CommonMark + GFM tables) with:
   :::
   ::::
   ```
+- **Moving equations:** a `::: morph` block of display equations (`$$…$$`, separated by blank
+  lines) shows one at a time: the first with what comes before it, each next one as a step. Parts
+  tagged `\mm{name}{…}` glide from their place in one equation to their place in the next (scaling if
+  their size changes); untagged parts fade. Prev plays the move backwards. Tag the parts that move
+  (numbers, variables, subexpressions), not operators: a tagged `+` loses its spacing. A name used
+  twice in one equation pairs up in order (`s`, then `s` again).
+
+  ```markdown
+  ::: morph
+  $$ \mm{two}{2}\mm{x}{x} + \mm{b}{3} = \mm{c}{7} $$
+
+  $$ \mm{two}{2}\mm{x}{x} = \mm{c}{7} - \mm{b}{3} $$
+  :::
+  ```
 - **TikZ:** a ` ```tikzcd ` fence holds a tikz-cd diagram, a ` ```tikz ` fence TikZ commands (either may
   also contain the whole `tikzpicture`/`tikzcd` environment). LaTeX draws them at build time
   (`pdflatex`, then `pdftocairo` to SVG; cached in `.wavesol/cache/`), with `macros.tex` and the talk's

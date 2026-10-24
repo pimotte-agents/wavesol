@@ -608,6 +608,30 @@ body {
   gap: 1.5em;
 }
 
+/* ---------- morph blocks (equation magic move) ---------- */
+.ws-slide .ws-morph {
+  position: relative;
+  display: grid;
+}
+/* all equations in one cell: the block keeps the size of the largest, nothing jumps */
+.ws-slide .ws-morph-step {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.ws-slide .ws-morph-step.ws-morph-shown {
+  visibility: visible;
+}
+.ws-morph-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.ws-morph-copy {
+  position: absolute;
+  transform-origin: 0 0;
+  white-space: nowrap;
+}
+
 /* ---------- fragments ---------- */
 .ws-slide .fragment {
   transition:

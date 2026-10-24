@@ -49,10 +49,11 @@ nodes:
   content:
     type: frame
     title: Content
-    children: [slides, fragments, math-code, figure, tikz, tikz-figure, citations]
+    children: [slides, fragments, math-code, morph, figure, tikz, tikz-figure, citations]
   slides: {}
   fragments: {}
   math-code: {}
+  morph: {}
   figure: {}
   tikz: {}
   tikz-figure: {}
@@ -113,7 +114,7 @@ edges:
   - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
   - nav-presenter -> nav-phone -> poll -> transitions: { default: true }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
-  - slides -> fragments -> math-code -> figure -> tikz -> tikz-figure -> citations: { default: true }
+  - slides -> fragments -> math-code -> morph -> figure -> tikz -> tikz-figure -> citations: { default: true }
   - frames -> layout -> theming: { default: true }
   - cli -> check -> ai: { default: true }
   - lean-intro -> lean-rev -> lean-pal: { default: true }

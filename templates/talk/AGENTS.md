@@ -216,6 +216,17 @@ CommonMark + GFM tables, plus:
   ```
 
 - **Images:** standard Markdown images, paths relative to the node file.
+- **Moving equations:** `::: morph` around display equations (blank line between them): each next
+  equation is a step, and parts tagged `\mm{name}{…}` move from one equation to the next. Tag numbers,
+  variables and subexpressions that carry over, never bare operators; untagged parts fade.
+
+  ```markdown
+  ::: morph
+  $$ \mm{a}{(x+1)}^2 $$
+
+  $$ \mm{a}{(x+1)}\mm{b}{(x+1)} $$
+  :::
+  ```
 - **Diagrams:** a ` ```tikzcd ` fence holds a tikz-cd diagram (rows `\\`, columns `&`), a ` ```tikz `
   fence TikZ commands; drawn as figures at build time. 10pt in TikZ = the slide's text size.
 - **Citations:** `[@key]`, `[@key, p. 3]`, `[@a; @b]` → (Author, 2020, p. 3), from `refs.bib`. Every key
