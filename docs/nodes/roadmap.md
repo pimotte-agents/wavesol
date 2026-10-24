@@ -5,7 +5,7 @@ title: Roadmap
 
 # What's next
 
-- **Presenter view** and a **phone controller** (WebRTC) where every outgoing edge is a button.
+- A **phone controller** (WebRTC) where every outgoing edge is a button.
 - **Lean proof nodes** with an explorable infoview, via SubVerso.
 - **TikZ figures** and **citations**.
 - A **dark theme** and **audience polls**.

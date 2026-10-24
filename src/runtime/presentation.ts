@@ -218,6 +218,18 @@ export class Presentation {
     stage.addEventListener("pointercancel", end);
   }
 
+  /** Opens the presenter view in a pop-out window (or focuses it if it is already open). */
+  openPresenter(): void {
+    const url = new URL(location.href);
+    url.hash = "";
+    url.search = "?presenter";
+    // open by name first: an existing presenter window is reused as is instead of reloaded
+    const w = window.open("", "wavesol-presenter", "popup,width=1280,height=800");
+    if (!w) return;
+    if (w.location.href === "about:blank") w.location.href = url.href;
+    w.focus();
+  }
+
   private emit() {
     const s = this.state;
     for (const fn of this.listeners) fn(s);

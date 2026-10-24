@@ -139,7 +139,7 @@ CommonMark + GFM tables, plus:
   step appear together. Optional effect: `.fade-up`, `.highlight`, `.fade-out` (default: fade in),
   e.g. `{.fragment .fade-up}` or `::: fragment fade-up`.
 - **`fragments: lists`** in frontmatter: every top-level list item becomes a fragment.
-- **`::: notes ... :::`**: speaker notes, removed from the slide.
+- **`::: notes ... :::`**: speaker notes, removed from the slide and shown in the presenter view (`p`).
 - **Columns:** the outer fence needs *four* colons (one more than the inner ones):
 
   ```markdown

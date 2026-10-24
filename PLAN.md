@@ -10,8 +10,8 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 |---|---|
 | 0 — Foundations and spikes | Done. Open: camera check on real hardware. |
 | 1 — Core fabric MVP | Done. Docs live at https://pimotte-agents.github.io/wavesol/ |
-| 2 — Presenter view | Next |
-| 3 — Phone controller | Not started |
+| 2 — Presenter view | Done |
+| 3 — Phone controller | Next |
 | 4 — Lean nodes | Not started (spike done; `lean` frontmatter schema reserved) |
 | 5 — Academic content and polish | Not started |
 | 6 — Audience polls | Not started |
@@ -30,7 +30,7 @@ Where things are documented:
 | Hierarchy | **Frames** are nodes that contain a subgraph, drawn smaller inside them. Layout runs recursively per frame. |
 | Navigation | Directed edges with optional labels. Each node may mark one **default** edge. There is a separate history **back** stack. All outgoing edges are available at any time. |
 | Steps | Nodes have internal steps (fragments, Lean tactics, animation sections). `step` advances within the node, and when the node is done it follows the default edge. Taking an edge early skips the remaining steps. |
-| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview (wheel/pinch/+/− zoom, drag pans), `e` = edges panel, `?` = help, `f` = fullscreen. |
+| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview (wheel/pinch/+/− zoom, drag pans), `e` = edges panel, `p` = presenter view, `?` = help, `f` = fullscreen. |
 | Source format | Directory: `talk.yaml` (graph, layout hints, theme, transitions) + `nodes/*.md` with frontmatter + `lean/` lake project + `figures/`, `refs.bib`, `macros.tex`. |
 | Build | `wavesol build` → `dist/` static site, base-path aware. `wavesol dev` = live reload. `wavesol serve` = local presenting from the laptop (phone control still needs internet, e.g. via phone hotspot). |
 | Stack | TypeScript + Vite + React for core UI. Single npm package with internal module boundaries (see Architecture). |
@@ -74,7 +74,8 @@ src/
   layout/        elkjs integration, recursive frames, pins, near hints
   plugins/       node types, each with build.ts (Node) and runtime.ts (browser): slide, image, frame
   runtime/       presentation (canvas, edges, LOD), camera + transitions, navigation state machine,
-                 keyboard, ui/ (React overlay: edges panel, help)
+                 keyboard, ui/ (React overlay: edges panel, help), presenter/ (presenter view)
+  sync/          state protocol (host/peer, versioned intents) and transports (BroadcastChannel)
   theme/         base.css (structure) + academic-light.css (variables)
   cli/           new / dev / build / serve / check
 templates/talk/  the starter talk copied by `wavesol new` (incl. AGENTS.md, Pages workflow)
@@ -83,8 +84,8 @@ tests/           unit/ + fixtures/ (check diagnostics), e2e/ (Playwright, visual
 spikes/          Phase 0 spikes (camera, Lean)
 ```
 
-Planned additions: `src/sync/` (state protocol, transports, fallback chain; Phases 2–3), presenter view
-and phone controller UIs (Phases 2–3), plugins `lean`, `tikz`, `references`, `poll`.
+Planned additions: WebRTC/relay transports and the fallback chain in `src/sync/`, the phone controller
+UI (Phase 3), plugins `lean`, `tikz`, `references`, `poll`.
 
 **Node plugin contract** (framework-agnostic), split so build-only dependencies (Shiki, KaTeX, Lean
 tooling) never reach the browser bundle. See `src/plugins/types.ts`:
@@ -110,13 +111,16 @@ interface NodeInstance {
 The build compiles a talk into one `CompiledTalk` JSON (layout positions, plugin data, steps), served
 to the runtime as the virtual module `virtual:wavesol/talk`.
 
-**State protocol** (Phases 2–3; navigation intents already exist in `src/runtime/nav.ts`): the
-projector page is the single source of truth. State is `{ node, step,
-history, pointer }`. Peers (presenter view, phone, later audience) send intents (`step`, `edge:i`,
-`back`, `goto`, `pointer`; implemented so far: `step`, `prev`, `edge`, `back`, `goto`) and receive state snapshots plus the outgoing edges and labels for the
-current node. Transports only move JSON messages. Intents carry the state version they were issued
-against, so replays after a reconnect are dropped. Peers must prove knowledge of the room secret (from
-the QR code) before their intents are accepted.
+**State protocol** (`src/sync/protocol.ts`; BroadcastChannel since Phase 2, network transports in
+Phase 3): the projector page is the single source of truth. A snapshot is `{ node, step, history,
+overview, outgoing }` (outgoing edges with titles and labels, so peers without the talk can draw
+buttons); `pointer` comes with the phone. Peers send a `hello` and get the current snapshot; every state
+change is published with a new version. Peers send intents (`step`, `prev`, `edge`, `back`, `goto`,
+`overview`) tagged with a unique id and the (session, version) they were issued against. The host drops
+intents from an earlier projector session, replays (an id seen before), and `edge` intents issued
+against an older version (an edge index only means something on its node); other stale intents still
+apply, so quick repeated presses all count. Transports only move JSON messages. In Phase 3, peers must
+also prove knowledge of the room secret (from the QR code) before their intents are accepted.
 
 ## Testing
 
@@ -179,6 +183,17 @@ the QR code) before their intents are accepted.
   timer/clock, mini-map of the fabric.
 - Exit: present with the popped-out presenter view on a second screen.
 - Tests: end-to-end with the presenter view as a second window; state stays in sync both ways.
+- **Status: done** (2026-10-24). `p` pops out the presenter view (`?presenter` on the same page): current
+  node at its step, a preview of what Space does next, outgoing edges and back, speaker notes, timer
+  (starts on the first move, click to pause; survives a presenter reload) and clock, connection status,
+  and a clickable mini-map. Keys work in both windows. Unit tests cover the protocol (late join,
+  versions, stale and replayed intents, projector reload); end-to-end tests drive both windows (sync
+  both ways, edges/back/mini-map, notes and next, waiting for and following a reloaded projector).
+  Decisions made along the way:
+  - Only `edge` intents need the current version; requiring it for all intents dropped the second of
+    two quick Space presses.
+  - Previews mount the node's runtime plugin at its real size and scale it down; a frame is shown with
+    its descendants as on the canvas.
 
 ### Phase 3 — Phone controller
 - Transport adapters and fallback chain:

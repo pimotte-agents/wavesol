@@ -158,7 +158,7 @@ The body is Markdown (CommonMark + GFM tables) with:
   together. Optional effect: `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g.
   `{.fragment .fade-up}` or `::: fragment fade-up`.
 - **Frontmatter `fragments: lists`:** every top-level list item becomes a fragment.
-- **Blocks:** `::: notes` (speaker notes, removed from the slide) and columns. For columns the outer
+- **Blocks:** `::: notes` (speaker notes, removed from the slide and shown in the presenter view) and columns. For columns the outer
   fence needs more colons than the inner ones:
 
   ```markdown

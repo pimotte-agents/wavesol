@@ -1,7 +1,17 @@
 // Keyboard bindings for the projector window. Clickers send PageDown/PageUp (and sometimes arrows).
-import type { Presentation } from "./presentation.ts";
+import type { Intent } from "./nav.ts";
 
 export type Panel = "edges" | "help";
+
+/** What the keys drive: the presentation itself, or the projector from the presenter view. */
+export interface Controls {
+  readonly talk: { start: string };
+  dispatch(intent: Intent): void;
+  toggleOverview(on?: boolean): void;
+  zoomOverview(factor: number): void;
+  /** Opens the presenter view (projector only). */
+  openPresenter?(): void;
+}
 
 export const KEY_HELP: [string, string][] = [
   ["Space / → / PageDown", "next step, then the default edge"],
@@ -12,12 +22,13 @@ export const KEY_HELP: [string, string][] = [
   ["+ / −", "zoom the overview (also wheel, pinch; drag to pan)"],
   ["Home", "go to the start"],
   ["e", "show outgoing edges"],
+  ["p", "open the presenter view (notes, next, timer)"],
   ["f", "fullscreen"],
   ["?", "this help"],
   ["Esc", "close panels and the overview"],
 ];
 
-export function bindKeys(p: Presentation, togglePanel: (panel: Panel | undefined) => void): () => void {
+export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) => void): () => void {
   const onKey = (e: KeyboardEvent) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.target instanceof HTMLElement && e.target.closest("input, textarea, [contenteditable]")) return;
@@ -53,6 +64,10 @@ export function bindKeys(p: Presentation, togglePanel: (panel: Panel | undefined
         break;
       case "-":
         p.zoomOverview(1.4);
+        break;
+      case "p":
+        if (p.openPresenter) p.openPresenter();
+        else handled = false;
         break;
       case "e":
         togglePanel("edges");
