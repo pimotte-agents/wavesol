@@ -35,7 +35,7 @@ Technical choices made without a question (revisit if they bite):
 - **Default transition:** van Wijk–Nuij "smooth zoom" (zoom out, pan, zoom in), with duration scaled by
   distance. Per-edge, per-node and global overrides: `fly` (default), `cut`, `fade`, `zoom-through`.
 - **Layout:** elkjs (layered by default), hints (`direction`, `rank`, `near: {left-of: x}`) and `pin: [x, y]`.
-- **Tests:** vitest for parsing/layout/state, Playwright for end-to-end and visual smoke tests.
+- **Tests:** vitest for unit tests, Playwright for end-to-end and visual regression (see Testing).
 
 ## Source format sketch
 
@@ -124,6 +124,16 @@ current node. Transports only move JSON messages. Intents carry the state versio
 against, so replays after a reconnect are dropped. Peers must prove knowledge of the room secret (from
 the QR code) before their intents are accepted.
 
+## Testing
+
+- **Unit (vitest):** all pure logic: parsing and `check` errors, layout, the navigation state machine,
+  the camera path, the sync protocol, plugin build hooks.
+- **End-to-end (Playwright):** against the built docs talk, served from a subpath, in a real browser.
+- **Visual regression:** screenshots of key nodes and steps compared against committed baselines. The
+  camera spike's sharpness check (settled camera = native rendering) stays as a permanent test.
+- **Rule:** every phase's exit requires its tests to be green in CI. A bug fix comes with a test that
+  reproduces it.
+
 ## Phases
 
 ### Phase 0 — Foundations and spikes
@@ -151,12 +161,17 @@ the QR code) before their intents are accepted.
   navigation, layout, theming and the CLI, and doubles as the end-to-end test fixture. Every later
   phase extends it with that phase's features.
 - Exit: the docs talk (~15+ nodes) is deployed and can be presented from the Pages site.
+- Tests:
+  - Unit: a fixture talk per `check` error, with the expected messages and `file:line`. Layout
+    snapshots. Navigation sequences: step, default edge, edge by index, back, leaving a node early.
+  - End-to-end: present the docs talk with the keyboard; overview and fly to a node.
 
 ### Phase 2 — Presenter view
 - Sync state protocol + `BroadcastChannel` transport.
 - Pop-out presenter window: current node at current step, outgoing edges (clickable), speaker notes,
   timer/clock, mini-map of the fabric.
 - Exit: present with the popped-out presenter view on a second screen.
+- Tests: end-to-end with the presenter view as a second window; state stays in sync both ways.
 
 ### Phase 3 — Phone controller
 - Transport adapters and fallback chain:
@@ -174,6 +189,12 @@ the QR code) before their intents are accepted.
   area → normalised pointer drawn on the projector, throttled and smoothed).
 - Exit: run a talk from the phone on eduroam (P2P or relay), and from `wavesol serve` with the laptop
   on a phone hotspot.
+- Tests:
+  - Unit: the protocol, including version checks, rejected intents without the room secret, and
+    replays after reconnect.
+  - End-to-end: two browser contexts (projector and phone) connected through a local signaling/relay
+    stub, including a dropped connection and the switch to relaying. Real public relays only get a
+    manual or nightly smoke test, so CI doesn't depend on them.
 
 ### Phase 4 — Lean nodes
 - Use SubVerso as is: the talk's lake project requires SubVerso (version pinned per wavesol release),
@@ -189,6 +210,10 @@ the QR code) before their intents are accepted.
   highlighting each one and updating the goal.
 - CI: elan + Mathlib cache in the template workflow.
 - Exit: a talk with a Mathlib-based proof that can be explored and stepped through on the static site.
+- Tests:
+  - Unit: the SubVerso reader against committed fixtures from the pinned version.
+  - End-to-end: hover a token, click a tactic, step through a proof.
+  - CI: a job with elan that builds the docs talk's Lean project.
 
 ### Phase 5 — Academic content and polish
 - `tikz` plugin (and inline tikz-cd in slides): latex → dvisvgm → SVG, cached; TeX in CI.
@@ -197,11 +222,14 @@ the QR code) before their intents are accepted.
 - Dark theme variant, theme docs. Transition fine-tuning.
 - Layout drag mode in `wavesol dev` that writes pins back to `talk.yaml`.
 - `AGENTS.md` v1 with idioms and complete examples for every node type.
+- Tests: unit tests for TikZ and citation rendering, skipped with a clear message when TeX is missing;
+  CI installs TeX.
 
 ### Phase 6 — Audience polls
 - Audience join page via QR. The presenter's browser is the hub over the existing transport.
 - `poll` node plugin: multiple choice, live histogram on the projector, results in the presenter view.
 - Exit: run a poll with ~30 phones in a seminar room.
+- Tests: end-to-end with ~30 simulated audience connections answering a poll.
 
 ### Later / maybe
 - Animations: choose between manim pre-rendered video with `next_section()` steps (+ alpha video for
