@@ -2,6 +2,7 @@
 // recompiles + reloads the page when a file in the talk directory changes.
 import { readFileSync } from "node:fs";
 import { relative, sep } from "node:path";
+import { lookup } from "mrmime";
 import type { Plugin, ViteDevServer } from "vite";
 import { compileTalk, type CompileResult } from "./compile.ts";
 import { formatDiagnostic } from "../model/compiled.ts";
@@ -43,6 +44,8 @@ export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResu
         const abs = result?.assets.get(path);
         if (!abs) return next();
         res.setHeader("Cache-Control", "no-cache");
+        // browsers refuse to render an SVG image without its type
+        res.setHeader("Content-Type", lookup(abs) ?? "application/octet-stream");
         res.end(readFileSync(abs));
       });
     },
