@@ -215,7 +215,8 @@ The body is Markdown (CommonMark + GFM tables) with:
   LaTeX errors are reported at their line.
 - **Citations:** `[@key]`, `[@key, p. 3]` (also `pp.`, `chap.`, `sec.`, `fig.`, `eq.`, `vol.`; other
   text is appended as is) and `[@a; @b]`, from the bibliography, in author–year style:
-  (Knuth, 1984, p. 3). Hovering shows the full reference. List the works with a `references` node.
+  (Knuth, 1984, p. 3). Hovering shows the full reference; clicking flies to the talk's `references`
+  node (if it has one) with the cited works highlighted, and Back returns.
 - **Images:** standard Markdown images, paths relative to the node file.
 
 Step count = number of distinct fragment steps.

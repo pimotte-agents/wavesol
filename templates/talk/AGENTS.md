@@ -161,7 +161,7 @@ Black becomes the theme's ink colour, so don't hard-code `black`/`white` for str
 ### `references`
 
 Defined in `talk.yaml` only — **no file**: `refs: { type: references, title: References }`. Lists
-every work cited with `[@key]` anywhere in the talk. Add one whenever the talk cites anything (the
+every work cited with `[@key]` anywhere in the talk; clicking a citation flies there. Add one whenever the talk cites anything (the
 checker warns otherwise) and link it from the end of the talk.
 
 ### `frame`

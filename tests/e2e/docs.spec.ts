@@ -214,6 +214,29 @@ test("TikZ figures render as inline SVG; citations show the full reference; refe
   await expect(page.locator(`.ws-node[data-id="${refs.id}"] .csl-entry`)).not.toHaveCount(0);
 });
 
+test("clicking a citation flies to the references, with the cited works highlighted; Back returns", async ({ page }) => {
+  await open(page);
+  const t = (await talk(page)) as unknown as { nodes: { id: string; type: string; steps: number }[] };
+  const refs = t.nodes.find((n) => n.type === "references")!;
+  // the slide with the citation of two works, at its last step (everything shown)
+  const id = await page.evaluate(() => document.querySelector('.ws-cite[data-keys*=" "]')!.closest<HTMLElement>(".ws-node")!.dataset.id!);
+  const slide = t.nodes.find((n) => n.id === id)!;
+  await open(page, `#/${id}/${slide.steps}`);
+  await settled(page);
+  const cite = page.locator(`.ws-node[data-id="${id}"] .ws-cite[data-keys*=" "]`);
+  const keys = (await cite.getAttribute("data-keys"))!.split(" ");
+  await cite.click();
+  expect((await state(page)).nav.node).toBe(refs.id);
+  const entries = page.locator(`.ws-node[data-id="${refs.id}"] .csl-entry`);
+  const marked = page.locator(`.ws-node[data-id="${refs.id}"] .csl-entry.ws-cited`);
+  await expect(marked).toHaveCount(keys.length);
+  for (const k of keys) await expect(entries.and(page.locator(`[data-csl-entry-id="${k}"]`))).toHaveClass(/ws-cited/);
+  // Back: to the slide that cited them, and the marks go
+  await page.keyboard.press("Backspace");
+  expect((await state(page)).nav).toMatchObject({ node: id, step: slide.steps });
+  await expect(marked).toHaveCount(0);
+});
+
 test("the dark theme recolours the page, code highlighting and TikZ figures", async ({ page }) => {
   await open(page);
   const t = (await talk(page)) as unknown as { nodes: { id: string; type: string }[] };

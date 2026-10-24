@@ -133,6 +133,16 @@ body {
 .ws-cite {
   cursor: help;
 }
+.ws-has-references .ws-cite[data-keys] {
+  cursor: pointer;
+  text-decoration: underline dotted var(--ws-muted);
+  text-underline-offset: 0.15em;
+}
+.ws-references .csl-entry.ws-cited {
+  background: var(--ws-accent-soft);
+  box-shadow: 0 0 0 0.25em var(--ws-accent-soft);
+  border-radius: 0.2em;
+}
 .ws-cite-error {
   color: var(--ws-danger);
 }

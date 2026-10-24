@@ -69,6 +69,8 @@ export interface NodeInstance {
   pointAt?(target: Element): { step: number; focus?: number } | undefined;
   /** Shows a focus within the current step (from pointAt), or the step itself again (undefined). */
   setFocus?(focus: number | undefined): void;
+  /** Marks items by id (a references node: the works a clicked citation cites); [] clears. */
+  mark?(ids: string[]): void;
   setDetail?(level: Detail): void;
   unmount?(): void;
 }

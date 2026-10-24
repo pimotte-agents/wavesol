@@ -11,6 +11,11 @@ export const references: RuntimePlugin = {
     const list = document.createElement("div");
     list.innerHTML = (node.data as ReferencesData).html;
     el.append(h, list);
-    return { setStep() {} };
+    return {
+      setStep() {},
+      mark(ids) {
+        for (const entry of list.querySelectorAll<HTMLElement>(".csl-entry")) entry.classList.toggle("ws-cited", ids.includes(entry.dataset.cslEntryId ?? ""));
+      },
+    };
   },
 };

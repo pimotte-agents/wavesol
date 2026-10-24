@@ -77,7 +77,8 @@ describe("tikz fences", () => {
 describe("citations", () => {
   it("renders [@key] groups as author–year citations with the full reference as a tooltip", async () => {
     const r = await build("As shown [@knuth1984, p. 3], and [@knuth1984; @moura2021].");
-    expect(r.html).toContain('<span class="ws-cite" title="full &lt;ref&gt;">(Knuth, 1984, p. 3)</span>');
+    expect(r.html).toContain('<span class="ws-cite" data-keys="knuth1984" title="full &lt;ref&gt;">(Knuth, 1984, p. 3)</span>');
+    expect(r.html).toContain('data-keys="knuth1984 moura2021"');
     expect(r.html).toContain("(Knuth, 1984; de Moura &amp; Ullrich, 2021)");
     expect(r.reports).toEqual([]);
   });

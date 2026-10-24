@@ -53,6 +53,8 @@ export class Presentation {
   private laserMoved = 0;
   private laserFrame = 0;
   private focus?: number;
+  /** The references node with works marked by a citation click. */
+  private marked?: string;
   private dwellKey?: string;
   private dwellSince = 0;
   private dwellDone = false;
@@ -108,6 +110,7 @@ export class Presentation {
       moving: (on) => (this.world.style.willChange = on ? "transform" : "auto"),
     });
 
+    this.bindCitations();
     this.bindNodeDrag(); // before pan/zoom, so a node drag isn't also a pan
     this.bindPanZoom();
 
@@ -146,6 +149,11 @@ export class Presentation {
     const wasOverview = this.overview;
     this.overview = false; // any navigation leaves the overview
     const result = navigate(this.graph, this.nav, intent);
+    // leaving the references slide clears the works a citation click marked there
+    if (result.kind === "move" && this.marked !== undefined) {
+      this.instances.get(this.marked)?.mark?.([]);
+      this.marked = undefined;
+    }
     if (result.kind !== "none" && this.focus !== undefined) {
       this.focus = undefined;
       this.instances.get(this.nav.node)?.setFocus?.(undefined);
@@ -186,6 +194,22 @@ export class Presentation {
     const halfH = (fit.w * vh) / vw / 2;
     const clamp = (x: number, c: number, r: number) => Math.min(Math.max(x, c - r), c + r);
     this.applyView({ cx: clamp(v.cx, fit.cx, halfW), cy: clamp(v.cy, fit.cy, halfH), w });
+  }
+
+  /** Clicking a citation flies to the references slide (if the talk has one), with the cited works marked. */
+  private bindCitations() {
+    const refs = this.talk.nodes.find((n) => n.type === "references");
+    if (!refs) return;
+    this.stage.classList.add("ws-has-references");
+    this.world.addEventListener("click", (e) => {
+      if (this.overview || this.dragging) return;
+      const cite = (e.target as Element).closest<HTMLElement>(".ws-cite[data-keys]");
+      if (!cite) return;
+      e.stopPropagation();
+      this.dispatch({ type: "goto", node: refs.id });
+      this.marked = refs.id;
+      this.instances.get(refs.id)?.mark?.(cite.dataset.keys!.split(" "));
+    });
   }
 
   /** Drag mode (`wavesol dev` only): dragging a node pins it there, written to talk.yaml by the dev server. */

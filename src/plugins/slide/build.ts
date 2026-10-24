@@ -93,7 +93,8 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
       env.ctx.report("error", r.error, at < 0 ? undefined : env.bodyLine + env.body.slice(0, at).split("\n").length - 1);
       return `<span class="ws-cite ws-cite-error">${esc(source)}</span>`;
     }
-    return `<span class="ws-cite" title="${esc(r.title)}">${esc(r.text)}</span>`;
+    // data-keys: a click takes the projector to the references slide, with these works marked
+    return `<span class="ws-cite" data-keys="${esc(items.map((i) => i.id).join(" "))}" title="${esc(r.title)}">${esc(r.text)}</span>`;
   };
 
   const defaultFence = md.renderer.rules.fence!;
