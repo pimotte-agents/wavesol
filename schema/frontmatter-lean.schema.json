@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "lean"
+    },
+    "title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string",
+      "description": "Path relative to lean/."
+    },
+    "anchor": {
+      "type": "string"
+    },
+    "decl": {
+      "type": "string"
+    },
+    "steps": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "tactics",
+            "none"
+          ]
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ]
+    },
+    "infoview": {
+      "type": "string",
+      "enum": [
+        "right",
+        "below"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "source"
+  ],
+  "additionalProperties": false
+}

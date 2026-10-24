@@ -1,0 +1,107 @@
+:root {
+  --bg: #f7f5f0;
+  --fg: #1f2328;
+  --accent: #2b6cb0;
+  --card: #fffdf8;
+  --muted: #6b6f76;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  overflow: hidden;
+}
+#stage {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+#world {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+.node {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 2px solid #e4dfd3;
+  border-radius: 24px;
+  overflow: hidden;
+}
+.node.ref {
+  transform: none;
+}
+.node.frame {
+  background: transparent;
+  border: 3px dashed #c9c1ae;
+}
+.content {
+  padding: 56px 72px;
+  font-size: 34px;
+  line-height: 1.4;
+}
+.content h1 {
+  margin: 0 0 24px;
+  font-size: 64px;
+  color: var(--accent);
+}
+.frame .content h1 {
+  font-size: 80px;
+}
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+}
+.small {
+  font-size: 20px;
+  color: var(--muted);
+}
+.diagram {
+  width: 100%;
+}
+.diagram path {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+}
+.diagram circle {
+  fill: var(--fg);
+}
+.far-title {
+  display: none;
+}
+.node.far .content {
+  display: none;
+}
+.node.far .far-title {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 120px;
+  color: var(--accent);
+}
+.node.off {
+  visibility: hidden;
+}
+#hud {
+  position: fixed;
+  left: 12px;
+  bottom: 10px;
+  font: 13px system-ui, sans-serif;
+  color: var(--muted);
+  background: #fffdf8cc;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
