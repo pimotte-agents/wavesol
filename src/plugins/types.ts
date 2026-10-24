@@ -11,6 +11,8 @@ export interface BuildCtx {
   asset(absPath: string): string;
   /** Report a problem in the node's file; `line` is relative to the file. */
   report(severity: "error" | "warning", message: string, line?: number): void;
+  /** Report a problem in another file (path relative to the talk directory), e.g. a Lean source. */
+  reportIn(file: string, severity: "error" | "warning", message: string, line?: number, col?: number): void;
 }
 
 export interface BuildNode<D> {

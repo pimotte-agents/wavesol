@@ -70,6 +70,14 @@ nodes:
   check: {}
   ai: {}
 
+  lean:
+    type: frame
+    title: Lean proofs
+    children: [lean-intro, lean-rev, lean-pal]
+  lean-intro: {}
+  lean-rev: {}
+  lean-pal: {}
+
   roadmap: {}
 
 edges:
@@ -84,6 +92,7 @@ edges:
   - map -> content
   - map -> structure
   - map -> tools
+  - map -> lean
   - map -> roadmap
 
   # into each topic
@@ -93,6 +102,7 @@ edges:
   - content -> slides: { default: true, transition: zoom-through }
   - structure -> frames: { default: true, transition: zoom-through }
   - tools -> cli: { default: true, transition: zoom-through }
+  - lean -> lean-intro: { default: true, transition: zoom-through }
 
   # through each topic
   - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
@@ -101,6 +111,7 @@ edges:
   - slides -> fragments -> math-code -> figure: { default: true }
   - frames -> layout -> theming: { default: true }
   - cli -> check -> ai: { default: true }
+  - lean-intro -> lean-rev -> lean-pal: { default: true }
 
   # Space at the end of a topic goes on to the next one; or back to the hub
   - nav-overview -> presenting: { default: true }
@@ -108,13 +119,15 @@ edges:
   - format-nodes -> content: { default: true }
   - figure -> structure: { default: true }
   - theming -> tools: { default: true }
-  - ai -> roadmap: { default: true }
+  - ai -> lean: { default: true }
+  - lean-pal -> roadmap: { default: true }
   - nav-overview -> map: { label: "Back to the topics" }
   - transitions -> map: { label: "Back to the topics" }
   - format-nodes -> map: { label: "Back to the topics" }
   - figure -> map: { label: "Back to the topics" }
   - theming -> map: { label: "Back to the topics" }
   - ai -> map: { label: "Back to the topics" }
+  - lean-pal -> map: { label: "Back to the topics" }
   - roadmap -> map: { label: "Back to the topics" }
   - roadmap -> welcome: { label: "Back to the start", transition: fade }
 
@@ -127,3 +140,4 @@ edges:
   - nav-phone -> cli: { label: "wavesol serve --host" }
   - check -> format-talk: { label: "What check reads: talk.yaml" }
   - frames -> transitions: { label: "Transitions into frames" }
+  - math-code -> lean-intro: { label: "Proofs in Lean" }

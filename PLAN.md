@@ -12,8 +12,8 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | 1 — Core fabric MVP | Done. Docs live at https://pimotte-agents.github.io/wavesol/ |
 | 2 — Presenter view | Done |
 | 3 — Phone controller | Done; open: real-world runs (eduroam, hotspot) |
-| 4 — Lean nodes | Next (spike done; `lean` frontmatter schema reserved) |
-| 5 — Academic content and polish | Not started |
+| 4 — Lean nodes | Done |
+| 5 — Academic content and polish | Next |
 | 6 — Audience polls | Not started |
 
 Where things are documented:
@@ -72,7 +72,8 @@ src/
   model/         zod schemas (→ schema/*.json), compiled-talk and diagnostic types
   build/         loader + validation (`check`), YAML positions, macros, compile, Vite plugin
   layout/        elkjs integration, recursive frames, pins, near hints
-  plugins/       node types, each with build.ts (Node) and runtime.ts (browser): slide, image, frame
+  plugins/       node types, each with build.ts (Node) and runtime.ts (browser): slide, image, frame,
+                 lean (+ subverso.ts, the reader for SubVerso's JSON)
   runtime/       presentation (canvas, edges, LOD), camera + transitions, navigation state machine,
                  keyboard, ui/ (React overlay: edges panel, help), presenter/ (presenter view)
   sync/          state protocol (host/peer, versioned intents), transports (BroadcastChannel; network:
@@ -86,7 +87,7 @@ tests/           unit/ + fixtures/ (check diagnostics), e2e/ (Playwright, visual
 spikes/          Phase 0 spikes (camera, Lean)
 ```
 
-Planned additions: plugins `lean`, `tikz`, `references`, `poll`.
+Planned additions: plugins `tikz`, `references`, `poll`.
 
 **Node plugin contract** (framework-agnostic), split so build-only dependencies (Shiki, KaTeX, Lean
 tooling) never reach the browser bundle. See `src/plugins/types.ts`:
@@ -259,11 +260,32 @@ QR code; what does not open with it is ignored, which is how only paired phones 
 - Step-through mode: the node's steps follow the tactics (or an explicit list in frontmatter),
   highlighting each one and updating the goal.
 - CI: elan + Mathlib cache in the template workflow.
-- Exit: a talk with a Mathlib-based proof that can be explored and stepped through on the static site.
+- Exit: a talk with a Lean proof that can be explored and stepped through on the static site (changed
+  from "Mathlib-based": a core-Lean proof is enough to show the feature; Mathlib needs nothing extra).
 - Tests:
   - Unit: the SubVerso reader against committed fixtures from the pinned version.
   - End-to-end: hover a token, click a tactic, step through a proof.
   - CI: a job with elan that builds the docs talk's Lean project.
+- **Status: done** (2026-10-24). `type: lean` nodes show a declaration or ANCHOR region with Lean's
+  highlighting, hovers (signature, docstring) and an infoview (goals before/after the selected tactic,
+  right of or below the code). Space steps through the tactics (or named PROOF_STATEs); clicking a
+  tactic shows its goals. The docs talk has a "Lean proofs" topic with two proofs from `docs/lean`.
+  Tests: the reader against fixtures from the pinned SubVerso (`tests/fixtures/lean`, incl. anchors
+  inside proofs, nested `by`, bullets, namespaces); the build through real lake (steps, named states,
+  missing source/anchor/state, Lean errors at their file:line; skipped without elan unless
+  `REQUIRE_LEAN=1`, which CI sets); end-to-end: step through a proof, click a tactic, hover a constant.
+  CI installs elan and caches the toolchain and SubVerso builds; the talk template's workflow does so
+  only when the talk has `lean/` (and runs `lake exe cache get` with Mathlib).
+  Decisions made along the way:
+  - Lean runs at build time (not committed output): `lake build +Mod:highlighted` per module, memoised
+    in-process on a hash of the Lean sources, lake config and toolchain; across runs lake's own traces
+    make a no-op build take ~0.4 s. Pinned: Lean v4.35.0, SubVerso `verso-v4.35.0`.
+  - Before-states: SubVerso records only after-states, flat in source order (case arms and bullets as
+    their own entries, `rw` rules nested). Before = the previous entry's after-state at the same level,
+    or the parent's before for a first nested entry; case arms and bullets have no before (they open a
+    goal). Steps are the innermost entries except `by`, so `rw [a, b]` steps rule by rule.
+  - Hovers on brackets, `=>` and commas are dropped (their docstrings are noise).
+  - Code and infoview shrink their font to fit the node rather than scrolling or wrapping.
 
 ### Phase 5 — Academic content and polish
 - `tikz` plugin (and inline tikz-cd in slides): latex → dvisvgm → SVG, cached; TeX in CI.

@@ -29,5 +29,6 @@ npm run docs:dev      # the docs talk with live reload
 npm run schema        # regenerate schema/ from src/model/schema.ts
 ```
 
-Status and roadmap: [PLAN.md](PLAN.md). Spike findings: [camera](spikes/camera/FINDINGS.md),
-[Lean](spikes/lean/FINDINGS.md).
+Building the docs talk needs elan (it has Lean nodes; the first build fetches the toolchain and
+builds SubVerso, a few minutes). Status and roadmap: [PLAN.md](PLAN.md). Spike findings:
+[camera](spikes/camera/FINDINGS.md), [Lean](spikes/lean/FINDINGS.md).

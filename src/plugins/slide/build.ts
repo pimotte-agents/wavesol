@@ -136,6 +136,16 @@ function firstHeading(tokens: Token[]): string | undefined {
 
 type Data = z.infer<typeof SlideFrontmatter>;
 
+/** Renders a Markdown body (and frontmatter notes) as a slide does, for plugins with a caption. */
+export async function renderMarkdown(node: { body: string; file?: string; bodyLine: number; notes?: string }, ctx: BuildCtx) {
+  const langs = [...node.body.matchAll(/^\s*(?:```|~~~)\s*([\w+-]+)/gm)].map((m) => m[1]!);
+  const md = createMarkdown(await getHighlighter(langs));
+  const env: Env = { ctx, file: node.file, body: node.body, bodyLine: node.bodyLine };
+  const { slide: tokens, notes } = extractNotes(md.parse(node.body, env));
+  const notesHtml = [node.notes ? md.render(node.notes, env) : "", md.renderer.render(notes, md.options, env)].join("").trim();
+  return { html: md.renderer.render(tokens, md.options, env).trim(), notes: notesHtml || undefined, title: firstHeading(tokens), md };
+}
+
 export const slide: BuildPlugin<Data> = {
   type: "slide",
   schema: SlideFrontmatter,

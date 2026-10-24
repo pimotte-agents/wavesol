@@ -1,0 +1,1422 @@
+{"items":
+ [{"range": null,
+   "kind": "Lean.Parser.Module.header",
+   "defines": [],
+   "code": 0},
+  {"range":
+   {"start": {"line": 1, "column": 1}, "end": {"line": 2, "column": 55}},
+   "kind": "Lean.Parser.Command.declaration",
+   "defines": ["Palindrome"],
+   "code": 33},
+  {"range":
+   {"start": {"line": 5, "column": 1}, "end": {"line": 11, "column": 8}},
+   "kind": "Lean.Parser.Command.declaration",
+   "defines": ["reverse_reverse"],
+   "code": 164},
+  {"range":
+   {"start": {"line": 14, "column": 1}, "end": {"line": 16, "column": 12}},
+   "kind": "Lean.Parser.Command.declaration",
+   "defines": ["palindrome_reverse"],
+   "code": 235},
+  {"range":
+   {"start": {"line": 18, "column": 1}, "end": {"line": 21, "column": 21}},
+   "kind": "Lean.Parser.Command.declaration",
+   "defines": ["add_zero'"],
+   "code": 306},
+  {"range":
+   {"start": {"line": 22, "column": 1}, "end": {"line": 22, "column": 1}},
+   "kind": "Lean.Parser.Command.eoi",
+   "defines": [],
+   "code": 309}],
+ "data":
+ {"tokens":
+  {"99":
+   {"kind": {"var": {"typeFormat": null, "type": "α", "name": "_uniq.47.46"}},
+    "content": "x"},
+   "95":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.tacticRfl-241",
+      "name": ["Lean", "Parser", "Tactic", "tacticRfl"],
+      "docs":
+      "This tactic applies to a goal whose target has the form `x ~ x`,\nwhere `~` is equality, heterogeneous equality or any relation that\nhas a reflexivity lemma tagged with the attribute @[refl].\n"}},
+    "content": "rfl"},
+   "91":
+   {"kind": {"delim": {"occurrence": null, "name": null, "docs": null}},
+    "content": "=>"},
+   "9":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-79",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": "("},
+   "89":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "List.nil.{u} {α : Type u} : List α",
+      "name": ["List", "nil"],
+      "isDef": false,
+      "docs":
+      "The empty list, usually written `[]`. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `[]` in identifiers is `nil`."}},
+    "content": "nil"},
+   "87":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Tactic.inductionAltLHS-232",
+      "name": ["Lean", "Parser", "Tactic", "inductionAltLHS"],
+      "docs":
+      "The left hand side of an induction arm, `| foo a b c` or `| @foo a b c`\nwhere `foo` is a constructor of the inductive type and `a b c` are the arguments\nto the constructor.\n"}},
+    "content": "|"},
+   "83":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "List.nil.{u} {α : Type u} : List α",
+      "name": ["List", "nil"],
+      "isDef": false,
+      "docs":
+      "The empty list, usually written `[]`. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `[]` in identifiers is `nil`."}},
+    "content": "]"},
+   "81":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "List.nil.{u} {α : Type u} : List α",
+      "name": ["List", "nil"],
+      "isDef": false,
+      "docs":
+      "The empty list, usually written `[]`. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `[]` in identifiers is `nil`."}},
+    "content": "["},
+   "79":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.inductionAlts-225",
+      "name": ["Lean", "Parser", "Tactic", "inductionAlts"],
+      "docs":
+      "After `with`, there is an optional tactic that runs on all branches, and\nthen a list of alternatives.\n"}},
+    "content": "with"},
+   "77":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.induction-212",
+      "name": ["Lean", "Parser", "Tactic", "induction"],
+      "docs":
+      "Assuming `x` is a variable in the local context with an inductive type,\n`induction x` applies induction on `x` to the main goal,\nproducing one goal for each constructor of the inductive type,\nin which the target is replaced by a general instance of that constructor\nand an inductive hypothesis is added for each recursive argument to the constructor.\nIf the type of an element in the local context depends on `x`,\nthat element is reverted and reintroduced afterward,\nso that the inductive hypothesis incorporates that hypothesis as well.\n\nFor example, given `n : Nat` and a goal with a hypothesis `h : P n` and target `Q n`,\n`induction n` produces one goal with hypothesis `h : P 0` and target `Q 0`,\nand one goal with hypotheses `h : P (Nat.succ a)` and `ih₁ : P a → Q a` and target `Q (Nat.succ a)`.\nHere the names `a` and `ih₁` are chosen automatically and are not accessible.\nYou can use `with` to provide the variables names for each constructor.\n- `induction e`, where `e` is an expression instead of a variable,\n  generalizes `e` in the goal, and then performs induction on the resulting variable.\n- `induction e using r` allows the user to specify the principle of induction that should be used.\n  Here `r` should be a term whose result type must be of the form `C t`,\n  where `C` is a bound variable and `t` is a (possibly empty) sequence of bound variables\n- `induction e generalizing z₁ ... zₙ`, where `z₁ ... zₙ` are variables in the local context,\n  generalizes over `z₁ ... zₙ` before applying the induction but then introduces them in each goal.\n  In other words, the net effect is that each inductive hypothesis is generalized.\n- Given `x : Nat`, `induction x with | zero => tac₁ | succ x' ih => tac₂`\n  uses tactic `tac₁` for the `zero` case, and `tac₂` for the `succ` case.\n"}},
+    "content": "induction"},
+   "72":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Term.byTactic-207",
+      "name": ["Lean", "Parser", "Term", "byTactic"],
+      "docs":
+      "`by tac` constructs a term of the expected type by running the tactic(s) `tac`. "}},
+    "content": "by"},
+   "7":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Palindrome.{u_1} {α : Type u_1} (xs : List α) : Prop",
+      "name": ["Palindrome"],
+      "isDef": true,
+      "docs": "A list is a *palindrome* if it reads the same backwards. "}},
+    "content": "Palindrome"},
+   "68":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Eq.{u_1} {α : Sort u_1} : α → α → Prop",
+      "name": ["Eq"],
+      "isDef": false,
+      "docs":
+      "The equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `=` in identifiers is `eq`."}},
+    "content": "="},
+   "66": {"kind": "unknown", "content": "."},
+   "61":
+   {"kind":
+    {"sort":
+     {"doc?": "A type universe. `Type ≡ Type 0`, `Type u ≡ Sort (u + 1)`. "}},
+    "content": "Type u_1"},
+   "59":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Type u_1", "name": "_uniq.47.2"}},
+    "content": "α"},
+   "57":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Command.declValSimple-204",
+      "name": ["Lean", "Parser", "Command", "declValSimple"],
+      "docs": null}},
+    "content": ":="},
+   "55":
+   {"kind":
+    {"operator":
+     {"occurrence": "«term_=_»-180",
+      "name": ["term_=_"],
+      "docs":
+      "The equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `=` in identifiers is `eq`."}},
+    "content": "="},
+   "53":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.typeSpec-178",
+      "name": ["Lean", "Parser", "Term", "typeSpec"],
+      "docs": null}},
+    "content": ":"},
+   "51":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-163",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ")"},
+   "49":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Type u_1", "name": "_uniq.30"}},
+    "content": "α"},
+   "47":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-163",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ":"},
+   "45":
+   {"kind": {"var": {"typeFormat": null, "type": "List α", "name": "_uniq.33"}},
+    "content": "xs"},
+   "43":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-163",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": "("},
+   "41":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "reverse_reverse.{u_1} {α : Type u_1} (xs : List α) : xs.reverse.reverse = xs",
+      "name": ["reverse_reverse"],
+      "isDef": true,
+      "docs": null}},
+    "content": "reverse_reverse"},
+   "4":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Command.definition-64",
+      "name": ["Lean", "Parser", "Command", "definition"],
+      "docs": null}},
+    "content": "def"},
+   "39":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Command.theorem-139",
+      "name": ["Lean", "Parser", "Command", "theorem"],
+      "docs": null}},
+    "content": "theorem"},
+   "37": {"kind": "lineComment", "content": " ANCHOR: revRev"},
+   "35": {"kind": "commentDelim", "content": "--"},
+   "31":
+   {"kind":
+    {"operator":
+     {"occurrence": "«term_=_»-104",
+      "name": ["term_=_"],
+      "docs":
+      "The equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `=` in identifiers is `eq`."}},
+    "content": "="},
+   "307": {"kind": "unknown", "content": ""},
+   "302":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.tacticRfl-603",
+      "name": ["Lean", "Parser", "Tactic", "tacticRfl"],
+      "docs":
+      "This tactic applies to a goal whose target has the form `x ~ x`,\nwhere `~` is equality, heterogeneous equality or any relation that\nhas a reflexivity lemma tagged with the attribute @[refl].\n"}},
+    "content": "rfl"},
+   "297":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Nat.succ (n : Nat) : Nat",
+      "name": ["Nat", "succ"],
+      "isDef": false,
+      "docs":
+      "The successor of a natural number `n`.\n\nUsing `Nat.succ n` should usually be avoided in favor of `n + 1`, which is the [simp normal\nform](https://lean-lang.org/doc/reference/4.35.0/find/?domain=Verso.Genre.Manual.section&name=simp-normal-forms).\n"}},
+    "content": "succ"},
+   "295":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Tactic.inductionAltLHS-588",
+      "name": ["Lean", "Parser", "Tactic", "inductionAltLHS"],
+      "docs":
+      "The left hand side of an induction arm, `| foo a b c` or `| @foo a b c`\nwhere `foo` is a constructor of the inductive type and `a b c` are the arguments\nto the constructor.\n"}},
+    "content": "|"},
+   "291": {"kind": "unknown", "content": "1"},
+   "29":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "List.reverse.{u} {α : Type u} (as : List α) : List α",
+      "name": ["List", "reverse"],
+      "isDef": false,
+      "docs":
+      "Reverses a list.\n\n`O(|as|)`.\n\nBecause of the “functional but in place” optimization implemented by Lean's compiler, this function\ndoes not allocate a new list when its reference to the input list is unshared: it simply walks the\nlinked list and reverses all the node pointers.\n\nExamples:\n* `[1, 2, 3, 4].reverse = [4, 3, 2, 1]`\n* `[].reverse = []`\n"}},
+    "content": "reverse"},
+   "288":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "k + 0 = k", "name": "_uniq.154.28"}},
+    "content": "ih"},
+   "287":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Nat", "name": "_uniq.154.27"}},
+    "content": "k"},
+   "283":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.tacticRfl-582",
+      "name": ["Lean", "Parser", "Tactic", "tacticRfl"],
+      "docs":
+      "This tactic applies to a goal whose target has the form `x ~ x`,\nwhere `~` is equality, heterogeneous equality or any relation that\nhas a reflexivity lemma tagged with the attribute @[refl].\n"}},
+    "content": "rfl"},
+   "279":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Nat.zero : Nat",
+      "name": ["Nat", "zero"],
+      "isDef": false,
+      "docs":
+      "Zero, the smallest natural number.\n\nUsing `Nat.zero` explicitly should usually be avoided in favor of the literal `0`, which is the\n[simp normal form](https://lean-lang.org/doc/reference/4.35.0/find/?domain=Verso.Genre.Manual.section&name=simp-normal-forms).\n"}},
+    "content": "zero"},
+   "277":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Tactic.inductionAltLHS-572",
+      "name": ["Lean", "Parser", "Tactic", "inductionAltLHS"],
+      "docs":
+      "The left hand side of an induction arm, `| foo a b c` or `| @foo a b c`\nwhere `foo` is a constructor of the inductive type and `a b c` are the arguments\nto the constructor.\n"}},
+    "content": "|"},
+   "273":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.inductionAlts-565",
+      "name": ["Lean", "Parser", "Tactic", "inductionAlts"],
+      "docs":
+      "After `with`, there is an optional tactic that runs on all branches, and\nthen a list of alternatives.\n"}},
+    "content": "with"},
+   "271":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.induction-553",
+      "name": ["Lean", "Parser", "Tactic", "induction"],
+      "docs":
+      "Assuming `x` is a variable in the local context with an inductive type,\n`induction x` applies induction on `x` to the main goal,\nproducing one goal for each constructor of the inductive type,\nin which the target is replaced by a general instance of that constructor\nand an inductive hypothesis is added for each recursive argument to the constructor.\nIf the type of an element in the local context depends on `x`,\nthat element is reverted and reintroduced afterward,\nso that the inductive hypothesis incorporates that hypothesis as well.\n\nFor example, given `n : Nat` and a goal with a hypothesis `h : P n` and target `Q n`,\n`induction n` produces one goal with hypothesis `h : P 0` and target `Q 0`,\nand one goal with hypotheses `h : P (Nat.succ a)` and `ih₁ : P a → Q a` and target `Q (Nat.succ a)`.\nHere the names `a` and `ih₁` are chosen automatically and are not accessible.\nYou can use `with` to provide the variables names for each constructor.\n- `induction e`, where `e` is an expression instead of a variable,\n  generalizes `e` in the goal, and then performs induction on the resulting variable.\n- `induction e using r` allows the user to specify the principle of induction that should be used.\n  Here `r` should be a term whose result type must be of the form `C t`,\n  where `C` is a bound variable and `t` is a (possibly empty) sequence of bound variables\n- `induction e generalizing z₁ ... zₙ`, where `z₁ ... zₙ` are variables in the local context,\n  generalizes over `z₁ ... zₙ` before applying the induction but then introduces them in each goal.\n  In other words, the net effect is that each inductive hypothesis is generalized.\n- Given `x : Nat`, `induction x with | zero => tac₁ | succ x' ih => tac₂`\n  uses tactic `tac₁` for the `zero` case, and `tac₂` for the `succ` case.\n"}},
+    "content": "induction"},
+   "27":
+   {"kind": {"delim": {"occurrence": null, "name": null, "docs": null}},
+    "content": "."},
+   "267":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Term.byTactic-548",
+      "name": ["Lean", "Parser", "Term", "byTactic"],
+      "docs":
+      "`by tac` constructs a term of the expected type by running the tactic(s) `tac`. "}},
+    "content": "by"},
+   "263": {"kind": "unknown", "content": "0"},
+   "261":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "HAdd.hAdd.{u, v, w} {α : Type u} {β : Type v} {γ : outParam (Type w)} [self : HAdd α β γ] : α → β → γ",
+      "name": ["HAdd", "hAdd"],
+      "isDef": false,
+      "docs":
+      "`a + b` computes the sum of `a` and `b`.\nThe meaning of this notation is type-dependent. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `+` in identifiers is `add`."}},
+    "content": "+"},
+   "258":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Command.declValSimple-545",
+      "name": ["Lean", "Parser", "Command", "declValSimple"],
+      "docs": null}},
+    "content": ":="},
+   "256":
+   {"kind":
+    {"operator":
+     {"occurrence": "«term_=_»-535",
+      "name": ["term_=_"],
+      "docs":
+      "The equality relation. It has one introduction rule, `Eq.refl`.\nWe use `a = b` as notation for `Eq a b`.\nA fundamental property of equality is that it is an equivalence relation.\n```\nvariable (α : Type) (a b c d : α)\nvariable (hab : a = b) (hcb : c = b) (hcd : c = d)\n\nexample : a = d :=\n  Eq.trans (Eq.trans hab (Eq.symm hcb)) hcd\n```\nEquality is much more than an equivalence relation, however. It has the important property that every assertion\nrespects the equivalence, in the sense that we can substitute equal expressions without changing the truth value.\nThat is, given `h1 : a = b` and `h2 : p a`, we can construct a proof for `p b` using substitution: `Eq.subst h1 h2`.\nExample:\n```\nexample (α : Type) (a b : α) (p : α → Prop)\n        (h1 : a = b) (h2 : p a) : p b :=\n  Eq.subst h1 h2\n\nexample (α : Type) (a b : α) (p : α → Prop)\n    (h1 : a = b) (h2 : p a) : p b :=\n  h1 ▸ h2\n```\nThe triangle in the second presentation is a macro built on top of `Eq.subst` and `Eq.symm`, and you can enter it by typing `\\t`.\nFor more information: [Equality](https://lean-lang.org/theorem_proving_in_lean4/quantifiers_and_equality.html#equality)\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `=` in identifiers is `eq`."}},
+    "content": "="},
+   "254":
+   {"kind": {"num": {"typeFormat": null, "type": "Nat"}}, "content": "0"},
+   "252":
+   {"kind":
+    {"operator":
+     {"occurrence": "«term_+_»-535",
+      "name": ["term_+_"],
+      "docs":
+      "`a + b` computes the sum of `a` and `b`.\nThe meaning of this notation is type-dependent. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `+` in identifiers is `add`."}},
+    "content": "+"},
+   "250":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.typeSpec-533",
+      "name": ["Lean", "Parser", "Term", "typeSpec"],
+      "docs": null}},
+    "content": ":"},
+   "25":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Command.declValSimple-101",
+      "name": ["Lean", "Parser", "Command", "declValSimple"],
+      "docs": null}},
+    "content": ":="},
+   "248":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-523",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ")"},
+   "246":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Nat : Type",
+      "name": ["Nat"],
+      "isDef": false,
+      "docs":
+      "The natural numbers, starting at zero.\n\nThis type is special-cased by both the kernel and the compiler, and overridden with an efficient\nimplementation. Both use a fast arbitrary-precision arithmetic library (usually\n[GMP](https://gmplib.org/)); at runtime, `Nat` values that are sufficiently small are unboxed.\n"}},
+    "content": "Nat"},
+   "244":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-523",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ":"},
+   "242":
+   {"kind": {"var": {"typeFormat": null, "type": "Nat", "name": "_uniq.77"}},
+    "content": "n"},
+   "240":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-523",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": "("},
+   "238":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "add_zero' (n : Nat) : n + 0 = n",
+      "name": ["add_zero'"],
+      "isDef": true,
+      "docs": null}},
+    "content": "add_zero'"},
+   "236":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Command.theorem-505",
+      "name": ["Lean", "Parser", "Command", "theorem"],
+      "docs": null}},
+    "content": "theorem"},
+   "231":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-497",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": "]"},
+   "23":
+   {"kind":
+    {"sort":
+     {"doc?":
+      "The universe of propositions. `Prop ≡ Sort 0`.\n\nEvery proposition is propositionally equal to either `True` or `False`. "}},
+    "content": "Prop"},
+   "223":
+   {"kind":
+    {"separator":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-497",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": ","},
+   "219":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-497",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": "["},
+   "217":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.rwSeq-494",
+      "name": ["Lean", "Parser", "Tactic", "rwSeq"],
+      "docs":
+      "`rw` is like `rewrite`, but also tries to close the goal by \"cheap\" (reducible) `rfl` afterwards.\n"}},
+    "content": "rw"},
+   "213":
+   {"kind":
+    {"operator":
+     {"occurrence": "Lean.Parser.Tactic.locationWildcard-490",
+      "name": ["Lean", "Parser", "Tactic", "locationWildcard"],
+      "docs": "The `*` location refers to all hypotheses and the goal. "}},
+    "content": "*"},
+   "211":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.location-487",
+      "name": ["Lean", "Parser", "Tactic", "location"],
+      "docs":
+      "Location specifications are used by many tactics that can operate on either the\nhypotheses or the goal. It can have one of the forms:\n* 'empty' is not actually present in this syntax, but most tactics use\n  `(location)?` matchers. It means to target the goal only.\n* `at h₁ ... hₙ`: target the hypotheses `h₁`, ..., `hₙ`\n* `at h₁ h₂ ⊢`: target the hypotheses `h₁` and `h₂`, and the goal\n* `at *`: target all hypotheses and the goal\n"}},
+    "content": "at"},
+   "21":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.typeSpec-94",
+      "name": ["Lean", "Parser", "Term", "typeSpec"],
+      "docs": null}},
+    "content": ":"},
+   "209":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.unfold-469",
+      "name": ["Lean", "Parser", "Tactic", "unfold"],
+      "docs":
+      "* `unfold id` unfolds all occurrences of definition `id` in the target.\n* `unfold id1 id2 ...` is equivalent to `unfold id1; unfold id2; ...`.\n* `unfold id at h` unfolds at the hypothesis `h`.\n\nDefinitions can be either global or local definitions.\n\nFor non-recursive global definitions, this tactic is identical to `delta`.\nFor recursive global definitions, it uses the \"unfolding lemma\" `id.eq_def`,\nwhich is generated for each recursive definition, to unfold according to the recursive definition given by the user.\nOnly one level of unfolding is performed, in contrast to `simp only [id]`, which unfolds definition `id` recursively.\n"}},
+    "content": "unfold"},
+   "205":
+   {"kind":
+    {"var":
+     {"typeFormat": null, "type": "xs.reverse = xs", "name": "_uniq.63"}},
+    "content": "h"},
+   "201":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Term.byTactic-464",
+      "name": ["Lean", "Parser", "Term", "byTactic"],
+      "docs":
+      "`by tac` constructs a term of the expected type by running the tactic(s) `tac`. "}},
+    "content": "by"},
+   "195":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Type u_1", "name": "_uniq.73.5"}},
+    "content": "α"},
+   "193":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Command.declValSimple-461",
+      "name": ["Lean", "Parser", "Command", "declValSimple"],
+      "docs": null}},
+    "content": ":="},
+   "191":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.typeSpec-437",
+      "name": ["Lean", "Parser", "Term", "typeSpec"],
+      "docs": null}},
+    "content": ":"},
+   "19":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-79",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ")"},
+   "189":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-417",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ")"},
+   "187":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "Palindrome.{u_1} {α : Type u_1} (xs : List α) : Prop",
+      "name": ["Palindrome"],
+      "isDef": false,
+      "docs": "A list is a *palindrome* if it reads the same backwards. "}},
+    "content": "Palindrome"},
+   "185":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-417",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ":"},
+   "183":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Palindrome xs", "name": "_uniq.63"}},
+    "content": "h"},
+   "181":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-417",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": "("},
+   "179":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-402",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ")"},
+   "177":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Type u_1", "name": "_uniq.54"}},
+    "content": "α"},
+   "175":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-402",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ":"},
+   "173":
+   {"kind": {"var": {"typeFormat": null, "type": "List α", "name": "_uniq.57"}},
+    "content": "xs"},
+   "171":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-402",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": "("},
+   "17":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "Type u_1", "name": "_uniq.5"}},
+    "content": "α"},
+   "169":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "palindrome_reverse.{u_1} {α : Type u_1} (xs : List α) (h : Palindrome xs) : Palindrome xs.reverse",
+      "name": ["palindrome_reverse"],
+      "isDef": true,
+      "docs": null}},
+    "content": "palindrome_reverse"},
+   "167":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Command.theorem-375",
+      "name": ["Lean", "Parser", "Command", "theorem"],
+      "docs": null}},
+    "content": "theorem"},
+   "165": {"kind": "lineComment", "content": " ANCHOR_END: revRev"},
+   "160":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.tacticRfl-348",
+      "name": ["Lean", "Parser", "Tactic", "tacticRfl"],
+      "docs":
+      "This tactic applies to a goal whose target has the form `x ~ x`,\nwhere `~` is equality, heterogeneous equality or any relation that\nhas a reflexivity lemma tagged with the attribute @[refl].\n"}},
+    "content": "rfl"},
+   "156":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-299",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": "]"},
+   "150":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.reverse_append.{u_1} {α : Type u_1} {as bs : List α} : (as ++ bs).reverse = bs.reverse ++ as.reverse",
+      "name": ["List", "reverse_append"],
+      "isDef": false,
+      "docs": null}},
+    "content": "List.reverse_append"},
+   "15":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature": "List.{u} (α : Type u) : Type u",
+      "name": ["List"],
+      "isDef": false,
+      "docs":
+      "Linked lists: ordered lists, in which each element has a reference to the next element.\n\nMost operations on linked lists take time proportional to the length of the list, because each\nelement must be traversed to find the next element.\n\n`List α` is isomorphic to `Array α`, but they are useful for different things:\n* `List α` is easier for reasoning, and `Array α` is modeled as a wrapper around `List α`.\n* `List α` works well as a persistent data structure, when many copies of the tail are shared. When\n  the value is not shared, `Array α` will have better performance because it can do destructive\n  updates.\n"}},
+    "content": "List"},
+   "144":
+   {"kind":
+    {"separator":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-299",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": ","},
+   "142":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.reverse_cons.{u} {α : Type u} {a : α} {as : List α} : (a :: as).reverse = as.reverse ++ [a]",
+      "name": ["List", "reverse_cons"],
+      "isDef": false,
+      "docs": null}},
+    "content": "List.reverse_cons"},
+   "138":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "HAppend.hAppend.{u, v, w} {α : Type u} {β : Type v} {γ : outParam (Type w)} [self : HAppend α β γ] : α → β → γ",
+      "name": ["HAppend", "hAppend"],
+      "isDef": false,
+      "docs":
+      "`a ++ b` is the result of concatenation of `a` and `b`, usually read \"append\".\nThe meaning of this notation is type-dependent. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `++` in identifiers is `append`."}},
+    "content": ")"},
+   "136":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "HAppend.hAppend.{u, v, w} {α : Type u} {β : Type v} {γ : outParam (Type w)} [self : HAppend α β γ] : α → β → γ",
+      "name": ["HAppend", "hAppend"],
+      "isDef": false,
+      "docs":
+      "`a ++ b` is the result of concatenation of `a` and `b`, usually read \"append\".\nThe meaning of this notation is type-dependent. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `++` in identifiers is `append`."}},
+    "content": "("},
+   "134":
+   {"kind":
+    {"bracket":
+     {"occurrence": "Lean.Parser.Tactic.rwRuleSeq-299",
+      "name": ["Lean", "Parser", "Tactic", "rwRuleSeq"],
+      "docs": "A `rwRuleSeq` is a list of `rwRule` in brackets. "}},
+    "content": "["},
+   "132":
+   {"kind":
+    {"keyword":
+     {"occurrence": "Lean.Parser.Tactic.rwSeq-296",
+      "name": ["Lean", "Parser", "Tactic", "rwSeq"],
+      "docs":
+      "`rw` is like `rewrite`, but also tries to close the goal by \"cheap\" (reducible) `rfl` afterwards.\n"}},
+    "content": "rw"},
+   "13":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Term.explicitBinder-79",
+      "name": ["Lean", "Parser", "Term", "explicitBinder"],
+      "docs":
+      "Explicit binder, like `(x y : A)` or `(x y)`.\nDefault values can be specified using `(x : A := v)` syntax, and tactics using `(x : A := by tac)`.\n"}},
+    "content": ":"},
+   "128":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "HAppend.hAppend.{u, v, w} {α : Type u} {β : Type v} {γ : outParam (Type w)} [self : HAppend α β γ] : α → β → γ",
+      "name": ["HAppend", "hAppend"],
+      "isDef": false,
+      "docs":
+      "`a ++ b` is the result of concatenation of `a` and `b`, usually read \"append\".\nThe meaning of this notation is type-dependent. \n\nConventions for notations in identifiers:\n\n * The recommended spelling of `++` in identifiers is `append`."}},
+    "content": "++"},
+   "126":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": "]"},
+   "124":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": "["},
+   "122": {"kind": "lineComment", "content": " ^ PROOF_STATE: cons"},
+   "116":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": "cons"},
+   "114":
+   {"kind":
+    {"delim":
+     {"occurrence": "Lean.Parser.Tactic.inductionAltLHS-247",
+      "name": ["Lean", "Parser", "Tactic", "inductionAltLHS"],
+      "docs":
+      "The left hand side of an induction arm, `| foo a b c` or `| @foo a b c`\nwhere `foo` is a constructor of the inductive type and `a b c` are the arguments\nto the constructor.\n"}},
+    "content": "|"},
+   "110":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": ")"},
+   "11":
+   {"kind": {"var": {"typeFormat": null, "type": "List α", "name": "_uniq.8"}},
+    "content": "xs"},
+   "108":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": "::"},
+   "105":
+   {"kind":
+    {"const":
+     {"signatureFormat": null,
+      "signature":
+      "List.cons.{u} {α : Type u} (head : α) (tail : List α) : List α",
+      "name": ["List", "cons"],
+      "isDef": false,
+      "docs":
+      "The list whose first element is `head`, where `tail` is the rest of the list.\nUsually written `head :: tail`.\n\n\nConventions for notations in identifiers:\n\n * The recommended spelling of `::` in identifiers is `cons`.\n\n * The recommended spelling of `[a]` in identifiers is `singleton`."}},
+    "content": "("},
+   "102":
+   {"kind":
+    {"var":
+     {"typeFormat": null,
+      "type": "xs.reverse.reverse = xs",
+      "name": "_uniq.47.48"}},
+    "content": "ih"},
+   "101":
+   {"kind":
+    {"var": {"typeFormat": null, "type": "List α", "name": "_uniq.47.47"}},
+    "content": "xs"},
+   "1":
+   {"kind": "docComment",
+    "content":
+    "/-- A list is a *palindrome* if it reads the same backwards. -/"}},
+  "nextKey": 310,
+  "messageContents": {},
+  "goals":
+  {"86":
+   {"ppConclusion": null,
+    "name": "nil",
+    "hypotheses": [{"typeAndVal": 63, "ppType": null, "names": [59]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 85},
+   "71":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [59]},
+     {"typeAndVal": 65, "ppType": null, "names": [45]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 70},
+   "294":
+   {"ppConclusion": null,
+    "name": "succ",
+    "hypotheses":
+    [{"typeAndVal": 260, "ppType": null, "names": [287]},
+     {"typeAndVal": 290, "ppType": null, "names": [288]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 293},
+   "276":
+   {"ppConclusion": null,
+    "name": "zero",
+    "hypotheses": [],
+    "goalPrefix": "⊢ ",
+    "conclusion": 275},
+   "266":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses": [{"typeAndVal": 260, "ppType": null, "names": [242]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 265},
+   "228":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [195]},
+     {"typeAndVal": 197, "ppType": null, "names": [173]},
+     {"typeAndVal": 206, "ppType": null, "names": [205]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 227},
+   "221":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [195]},
+     {"typeAndVal": 197, "ppType": null, "names": [173]},
+     {"typeAndVal": 206, "ppType": null, "names": [205]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 206},
+   "208":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [195]},
+     {"typeAndVal": 197, "ppType": null, "names": [173]},
+     {"typeAndVal": 206, "ppType": null, "names": [205]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 207},
+   "200":
+   {"ppConclusion": null,
+    "name": null,
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [195]},
+     {"typeAndVal": 197, "ppType": null, "names": [173]},
+     {"typeAndVal": 198, "ppType": null, "names": [183]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 199},
+   "149":
+   {"ppConclusion": null,
+    "name": "cons",
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [59]},
+     {"typeAndVal": 100, "ppType": null, "names": [99]},
+     {"typeAndVal": 65, "ppType": null, "names": [101]},
+     {"typeAndVal": 104, "ppType": null, "names": [102]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 148},
+   "141":
+   {"ppConclusion": null,
+    "name": "cons",
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [59]},
+     {"typeAndVal": 100, "ppType": null, "names": [99]},
+     {"typeAndVal": 65, "ppType": null, "names": [101]},
+     {"typeAndVal": 104, "ppType": null, "names": [102]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 140},
+   "131":
+   {"ppConclusion": null,
+    "name": "cons",
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [59]},
+     {"typeAndVal": 100, "ppType": null, "names": [99]},
+     {"typeAndVal": 65, "ppType": null, "names": [101]},
+     {"typeAndVal": 104, "ppType": null, "names": [102]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 130},
+   "113":
+   {"ppConclusion": null,
+    "name": "cons",
+    "hypotheses":
+    [{"typeAndVal": 63, "ppType": null, "names": [59]},
+     {"typeAndVal": 100, "ppType": null, "names": [99]},
+     {"typeAndVal": 65, "ppType": null, "names": [101]},
+     {"typeAndVal": 104, "ppType": null, "names": [102]}],
+    "goalPrefix": "⊢ ",
+    "conclusion": 112}},
+  "code":
+  {"98":
+   {"tactics": {"startPos": 241, "info": [], "endPos": 244, "content": 97}},
+   "97": {"seq": {"highlights": [96, 0]}},
+   "96": {"token": {"tok": 95}},
+   "94":
+   {"tactics": {"startPos": 232, "info": [86], "endPos": 240, "content": 93}},
+   "93": {"seq": {"highlights": [88, 6, 90, 6, 92, 0]}},
+   "92": {"token": {"tok": 91}},
+   "90": {"token": {"tok": 89}},
+   "88": {"token": {"tok": 87}},
+   "85":
+   {"seq": {"highlights": [60, 82, 60, 84, 67, 30, 67, 30, 6, 69, 6, 82, 84]}},
+   "84": {"token": {"tok": 83}},
+   "82": {"token": {"tok": 81}},
+   "80": {"token": {"tok": 79}},
+   "8": {"token": {"tok": 7}},
+   "78": {"token": {"tok": 77}},
+   "76": {"text": {"str": "\n  "}},
+   "75":
+   {"tactics": {"startPos": 207, "info": [71], "endPos": 209, "content": 74}},
+   "74": {"seq": {"highlights": [73, 0]}},
+   "73": {"token": {"tok": 72}},
+   "70": {"seq": {"highlights": [60, 46, 60, 67, 30, 67, 30, 6, 69, 6, 46]}},
+   "69": {"token": {"tok": 68}},
+   "67": {"token": {"tok": 66}},
+   "65": {"seq": {"highlights": [60, 16, 6, 64]}},
+   "64": {"token": {"tok": 59}},
+   "63": {"seq": {"highlights": [60, 62, 60]}},
+   "62": {"token": {"tok": 61}},
+   "60": {"text": {"str": ""}},
+   "6": {"text": {"str": " "}},
+   "58": {"token": {"tok": 57}},
+   "56": {"token": {"tok": 55}},
+   "54": {"token": {"tok": 53}},
+   "52": {"token": {"tok": 51}},
+   "50": {"token": {"tok": 49}},
+   "5": {"token": {"tok": 4}},
+   "48": {"token": {"tok": 47}},
+   "46": {"token": {"tok": 45}},
+   "44": {"token": {"tok": 43}},
+   "42": {"token": {"tok": 41}},
+   "40": {"token": {"tok": 39}},
+   "38": {"token": {"tok": 37}},
+   "36": {"token": {"tok": 35}},
+   "34": {"text": {"str": "\n\n"}},
+   "33":
+   {"seq":
+    {"highlights":
+     [2,
+      3,
+      5,
+      6,
+      8,
+      6,
+      10,
+      12,
+      6,
+      14,
+      6,
+      16,
+      6,
+      18,
+      20,
+      6,
+      22,
+      6,
+      24,
+      6,
+      26,
+      6,
+      12,
+      28,
+      30,
+      6,
+      32,
+      6,
+      12,
+      0]}},
+   "32": {"token": {"tok": 31}},
+   "309": {"seq": {"highlights": [3, 308, 0]}},
+   "308": {"token": {"tok": 307}},
+   "306":
+   {"seq":
+    {"highlights":
+     [34,
+      237,
+      6,
+      239,
+      6,
+      241,
+      243,
+      6,
+      245,
+      6,
+      247,
+      249,
+      6,
+      251,
+      6,
+      243,
+      6,
+      253,
+      6,
+      255,
+      6,
+      257,
+      6,
+      243,
+      6,
+      259,
+      6,
+      270,
+      76,
+      272,
+      6,
+      243,
+      6,
+      274,
+      76,
+      282,
+      6,
+      286,
+      76,
+      301,
+      6,
+      305,
+      0]}},
+   "305":
+   {"tactics": {"startPos": 603, "info": [], "endPos": 606, "content": 304}},
+   "304": {"seq": {"highlights": [303, 0]}},
+   "303": {"token": {"tok": 302}},
+   "301":
+   {"tactics": {"startPos": 588, "info": [294], "endPos": 602, "content": 300}},
+   "300": {"seq": {"highlights": [296, 6, 298, 6, 289, 6, 299, 6, 92, 0]}},
+   "30": {"token": {"tok": 29}},
+   "3": {"text": {"str": "\n"}},
+   "299": {"token": {"tok": 288}},
+   "298": {"token": {"tok": 297}},
+   "296": {"token": {"tok": 295}},
+   "293":
+   {"seq":
+    {"highlights":
+     [60, 289, 6, 262, 6, 292, 6, 262, 6, 264, 6, 69, 6, 289, 6, 262, 6, 292]}},
+   "292": {"token": {"tok": 291}},
+   "290": {"seq": {"highlights": [60, 289, 6, 262, 6, 264, 6, 69, 6, 289]}},
+   "289": {"token": {"tok": 287}},
+   "286":
+   {"tactics": {"startPos": 582, "info": [], "endPos": 585, "content": 285}},
+   "285": {"seq": {"highlights": [284, 0]}},
+   "284": {"token": {"tok": 283}},
+   "282":
+   {"tactics": {"startPos": 572, "info": [276], "endPos": 581, "content": 281}},
+   "281": {"seq": {"highlights": [278, 6, 280, 6, 92, 0]}},
+   "280": {"token": {"tok": 279}},
+   "28": {"token": {"tok": 27}},
+   "278": {"token": {"tok": 277}},
+   "275": {"seq": {"highlights": [60, 264, 6, 262, 6, 264, 6, 69, 6, 264]}},
+   "274": {"token": {"tok": 273}},
+   "272": {"token": {"tok": 271}},
+   "270":
+   {"tactics": {"startPos": 548, "info": [266], "endPos": 550, "content": 269}},
+   "269": {"seq": {"highlights": [268, 0]}},
+   "268": {"token": {"tok": 267}},
+   "265": {"seq": {"highlights": [60, 243, 6, 262, 6, 264, 6, 69, 6, 243]}},
+   "264": {"token": {"tok": 263}},
+   "262": {"token": {"tok": 261}},
+   "260": {"seq": {"highlights": [60, 247, 60]}},
+   "26": {"token": {"tok": 25}},
+   "259": {"token": {"tok": 258}},
+   "257": {"token": {"tok": 256}},
+   "255": {"token": {"tok": 254}},
+   "253": {"token": {"tok": 252}},
+   "251": {"token": {"tok": 250}},
+   "249": {"token": {"tok": 248}},
+   "247": {"token": {"tok": 246}},
+   "245": {"token": {"tok": 244}},
+   "243": {"token": {"tok": 242}},
+   "241": {"token": {"tok": 240}},
+   "24": {"token": {"tok": 23}},
+   "239": {"token": {"tok": 238}},
+   "237": {"token": {"tok": 236}},
+   "235":
+   {"seq":
+    {"highlights":
+     [3,
+      36,
+      166,
+      34,
+      168,
+      6,
+      170,
+      6,
+      172,
+      174,
+      6,
+      176,
+      6,
+      16,
+      6,
+      178,
+      180,
+      6,
+      182,
+      184,
+      6,
+      186,
+      6,
+      188,
+      6,
+      174,
+      190,
+      6,
+      192,
+      6,
+      188,
+      6,
+      174,
+      28,
+      30,
+      6,
+      194,
+      6,
+      204,
+      76,
+      216,
+      76,
+      234,
+      0]}},
+   "234":
+   {"tactics": {"startPos": 494, "info": [], "endPos": 503, "content": 233}},
+   "233": {"seq": {"highlights": [218, 6, 220, 226, 6, 230, 232, 0]}},
+   "232": {"token": {"tok": 231}},
+   "230":
+   {"tactics": {"startPos": 501, "info": [228], "endPos": 502, "content": 229}},
+   "229": {"seq": {"highlights": [222, 0]}},
+   "227": {"seq": {"highlights": [60, 174, 6, 69, 6, 174]}},
+   "226":
+   {"tactics": {"startPos": 498, "info": [221], "endPos": 500, "content": 225}},
+   "225": {"seq": {"highlights": [222, 224, 0]}},
+   "224": {"token": {"tok": 223}},
+   "222": {"token": {"tok": 205}},
+   "220": {"token": {"tok": 219}},
+   "22": {"token": {"tok": 21}},
+   "218": {"token": {"tok": 217}},
+   "216":
+   {"tactics": {"startPos": 469, "info": [208], "endPos": 491, "content": 215}},
+   "215": {"seq": {"highlights": [210, 6, 188, 6, 212, 6, 214, 0]}},
+   "214": {"token": {"tok": 213}},
+   "212": {"token": {"tok": 211}},
+   "210": {"token": {"tok": 209}},
+   "207":
+   {"seq":
+    {"highlights": [60, 174, 60, 67, 30, 67, 30, 6, 69, 6, 174, 67, 30]}},
+   "206": {"seq": {"highlights": [60, 174, 60, 67, 30, 6, 69, 6, 174]}},
+   "204":
+   {"tactics": {"startPos": 464, "info": [200], "endPos": 466, "content": 203}},
+   "203": {"seq": {"highlights": [202, 0]}},
+   "202": {"token": {"tok": 201}},
+   "20": {"token": {"tok": 19}},
+   "2": {"token": {"tok": 1}},
+   "199": {"seq": {"highlights": [60, 188, 6, 174, 67, 30]}},
+   "198": {"seq": {"highlights": [60, 188, 6, 174]}},
+   "197": {"seq": {"highlights": [60, 16, 6, 196]}},
+   "196": {"token": {"tok": 195}},
+   "194": {"token": {"tok": 193}},
+   "192": {"token": {"tok": 191}},
+   "190": {"token": {"tok": 189}},
+   "188": {"token": {"tok": 187}},
+   "186": {"token": {"tok": 185}},
+   "184": {"token": {"tok": 183}},
+   "182": {"token": {"tok": 181}},
+   "180": {"token": {"tok": 179}},
+   "18": {"token": {"tok": 17}},
+   "178": {"token": {"tok": 177}},
+   "176": {"token": {"tok": 175}},
+   "174": {"token": {"tok": 173}},
+   "172": {"token": {"tok": 171}},
+   "170": {"token": {"tok": 169}},
+   "168": {"token": {"tok": 167}},
+   "166": {"token": {"tok": 165}},
+   "164":
+   {"seq":
+    {"highlights":
+     [34,
+      36,
+      38,
+      3,
+      40,
+      6,
+      42,
+      6,
+      44,
+      46,
+      6,
+      48,
+      6,
+      16,
+      6,
+      50,
+      52,
+      6,
+      54,
+      6,
+      46,
+      28,
+      30,
+      28,
+      30,
+      6,
+      56,
+      6,
+      46,
+      6,
+      58,
+      6,
+      75,
+      76,
+      78,
+      6,
+      46,
+      6,
+      80,
+      76,
+      94,
+      6,
+      98,
+      76,
+      120,
+      121,
+      36,
+      123,
+      121,
+      159,
+      121,
+      163,
+      0]}},
+   "163":
+   {"tactics": {"startPos": 348, "info": [], "endPos": 351, "content": 162}},
+   "162": {"seq": {"highlights": [161, 0]}},
+   "161": {"token": {"tok": 160}},
+   "16": {"token": {"tok": 15}},
+   "159":
+   {"tactics": {"startPos": 296, "info": [131], "endPos": 343, "content": 158}},
+   "158": {"seq": {"highlights": [133, 6, 135, 147, 6, 153, 6, 155, 157, 0]}},
+   "157": {"token": {"tok": 156}},
+   "155":
+   {"tactics": {"startPos": 340, "info": [131], "endPos": 342, "content": 154}},
+   "154": {"seq": {"highlights": [118, 0]}},
+   "153":
+   {"tactics": {"startPos": 319, "info": [149], "endPos": 339, "content": 152}},
+   "152": {"seq": {"highlights": [151, 145, 0]}},
+   "151": {"token": {"tok": 150}},
+   "148":
+   {"seq":
+    {"highlights":
+     [60,
+      125,
+      60,
+      107,
+      127,
+      67,
+      30,
+      6,
+      129,
+      6,
+      103,
+      67,
+      30,
+      67,
+      30,
+      6,
+      69,
+      6,
+      107,
+      6,
+      109,
+      6,
+      103]}},
+   "147":
+   {"tactics": {"startPos": 300, "info": [141], "endPos": 318, "content": 146}},
+   "146": {"seq": {"highlights": [143, 145, 0]}},
+   "145": {"token": {"tok": 144}},
+   "143": {"token": {"tok": 142}},
+   "140":
+   {"seq":
+    {"highlights":
+     [137,
+      103,
+      67,
+      30,
+      6,
+      129,
+      6,
+      125,
+      107,
+      127,
+      139,
+      67,
+      30,
+      6,
+      69,
+      6,
+      107,
+      6,
+      109,
+      6,
+      103]}},
+   "14": {"token": {"tok": 13}},
+   "139": {"token": {"tok": 138}},
+   "137": {"token": {"tok": 136}},
+   "135": {"token": {"tok": 134}},
+   "133": {"token": {"tok": 132}},
+   "130":
+   {"seq":
+    {"highlights":
+     [60,
+      125,
+      60,
+      107,
+      127,
+      67,
+      30,
+      6,
+      129,
+      6,
+      103,
+      6,
+      69,
+      6,
+      107,
+      6,
+      109,
+      6,
+      103]}},
+   "129": {"token": {"tok": 128}},
+   "127": {"token": {"tok": 126}},
+   "125": {"token": {"tok": 124}},
+   "123": {"token": {"tok": 122}},
+   "121": {"text": {"str": "\n    "}},
+   "120":
+   {"tactics": {"startPos": 247, "info": [113], "endPos": 264, "content": 119}},
+   "12": {"token": {"tok": 11}},
+   "119":
+   {"seq": {"highlights": [115, 6, 117, 6, 107, 6, 103, 6, 118, 6, 92, 0]}},
+   "118": {"token": {"tok": 102}},
+   "117": {"token": {"tok": 116}},
+   "115": {"token": {"tok": 114}},
+   "112":
+   {"seq":
+    {"highlights":
+     [106,
+      107,
+      6,
+      109,
+      6,
+      103,
+      111,
+      67,
+      30,
+      67,
+      30,
+      6,
+      69,
+      6,
+      107,
+      6,
+      109,
+      6,
+      103]}},
+   "111": {"token": {"tok": 110}},
+   "109": {"token": {"tok": 108}},
+   "107": {"token": {"tok": 99}},
+   "106": {"token": {"tok": 105}},
+   "104": {"seq": {"highlights": [60, 103, 60, 67, 30, 67, 30, 6, 69, 6, 103]}},
+   "103": {"token": {"tok": 101}},
+   "100": {"seq": {"highlights": [60, 64, 60]}},
+   "10": {"token": {"tok": 9}},
+   "0": {"seq": {"highlights": []}}}}}

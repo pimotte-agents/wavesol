@@ -64,6 +64,7 @@ async function compile(dir: string): Promise<CompileResult> {
       macros,
       asset,
       report: (severity, message, line) => diagnostics.push({ severity, file, line, message }),
+      reportIn: (f, severity, message, line, col) => diagnostics.push({ severity, file: f, line, col, message }),
     };
     try {
       built.set(node.id, await buildPlugins[node.type]!.build({ id: node.id, data: node.data, body: node.body, file: node.file, bodyLine: node.bodyLine }, ctx));

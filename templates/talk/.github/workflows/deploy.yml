@@ -25,6 +25,22 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      # Lean nodes: only when the talk has a lean/ project. The toolchain and the project's build
+      # (SubVerso, Mathlib if you use it) are cached between runs.
+      - if: hashFiles('lean/lean-toolchain') != ''
+        run: curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none && echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - if: hashFiles('lean/lean-toolchain') != ''
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            lean/.lake
+          key: lean-${{ hashFiles('lean/lean-toolchain', 'lean/lake-manifest.json') }}
+      # with Mathlib, fetch its prebuilt files instead of compiling it
+      - if: hashFiles('lean/lake-manifest.json') != ''
+        working-directory: lean
+        run: |
+          if grep -q '"name": "mathlib"' lake-manifest.json; then lake exe cache get; fi
       - run: npx wavesol build
       - uses: actions/upload-pages-artifact@v3
         with:

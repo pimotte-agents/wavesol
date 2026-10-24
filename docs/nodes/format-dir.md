@@ -7,11 +7,12 @@ my-talk/
     intro.md
   figures/       # assets referenced by nodes
   macros.tex     # LaTeX macros shared by all math
+  lean/          # a lake project for Lean nodes
 ```
 
 - `talk.yaml` is the only required file; everything else is optional.
 - All paths are relative to the talk directory.
 
 ::: notes
-Planned extras: a lean/ lake project for Lean nodes and refs.bib for citations.
+Planned extra: refs.bib for citations.
 :::

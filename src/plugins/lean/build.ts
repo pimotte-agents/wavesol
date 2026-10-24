@@ -1,0 +1,145 @@
+// Lean nodes: a declaration or ANCHOR region of a module in the talk's lean/ lake project, with
+// highlighting, hovers and goal states from SubVerso. The build runs `lake build +Mod:highlighted`
+// (SubVerso's facet, so the project requires SubVerso) and reads the JSON with ./subverso.ts.
+import { spawn } from "node:child_process";
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { homedir } from "node:os";
+import { join, relative } from "node:path";
+import type { z } from "zod";
+import { LeanFrontmatter } from "../../model/schema.ts";
+import { renderMarkdown } from "../slide/build.ts";
+import type { BuildCtx, BuildPlugin } from "../types.ts";
+import { select, type CodeNode, type ModuleJson, type Tactic } from "./subverso.ts";
+
+type Data = z.infer<typeof LeanFrontmatter>;
+
+export interface LeanData {
+  /** Markdown body above the code, as HTML. */
+  caption?: string;
+  code: CodeNode[];
+  /** Hover texts: signature (plain) and docstring (HTML). */
+  hovers: { sig?: string; doc?: string }[];
+  tactics: Tactic[];
+  /** The tactic each step shows (step k → steps[k - 1]); step 0 shows the start. */
+  steps: number[];
+  /** With `steps: [names]`: the PROOF_STATE name of each step. */
+  stepNames?: string[];
+  infoview: "right" | "below";
+}
+
+/** Results per lean/ project and module, valid while the project's sources are unchanged. */
+const cache = new Map<string, { key: string; modules: Map<string, Promise<ModuleJson | { error: string }>> }>();
+
+/** Hash of everything lake's result depends on: Lean sources, lake config, toolchain. */
+function projectKey(leanDir: string): string {
+  const h = createHash("sha256");
+  const walk = (dir: string) => {
+    for (const name of readdirSync(dir).sort()) {
+      if (name === ".lake" || name.startsWith(".")) continue;
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) walk(path);
+      else if (/\.lean$|^lakefile\.(lean|toml)$|^lake-manifest\.json$|^lean-toolchain$/.test(name)) h.update(path).update(readFileSync(path));
+    }
+  };
+  walk(leanDir);
+  return h.digest("hex");
+}
+
+function lakeCommand(): string {
+  const elanLake = join(homedir(), ".elan", "bin", "lake");
+  return existsSync(elanLake) ? elanLake : "lake";
+}
+
+function run(cmd: string, args: string[], cwd: string): Promise<{ code: number | null; output: string; missing?: boolean }> {
+  return new Promise((resolve) => {
+    let output = "";
+    const child = spawn(cmd, args, { cwd, env: process.env });
+    child.stdout.on("data", (d) => (output += d));
+    child.stderr.on("data", (d) => (output += d));
+    child.on("error", (e: NodeJS.ErrnoException) => resolve({ code: null, output: e.message, missing: e.code === "ENOENT" }));
+    child.on("close", (code) => resolve({ code, output }));
+  });
+}
+
+async function extract(leanDir: string, module: string, ctx: BuildCtx): Promise<ModuleJson | { error: string }> {
+  const key = projectKey(leanDir);
+  let entry = cache.get(leanDir);
+  if (entry?.key !== key) cache.set(leanDir, (entry = { key, modules: new Map() }));
+  let job = entry.modules.get(module);
+  if (!job) {
+    job = (async () => {
+      const out = join(leanDir, ".lake", "build", "highlighted", ...module.split(".")) + ".json";
+      if (!existsSync(out)) console.error(`lean: building ${module} with SubVerso (the first build of a project can take a few minutes)`);
+      const r = await run(lakeCommand(), ["build", `+${module}:highlighted`], leanDir);
+      if (r.missing) return { error: "Lean nodes need Lean: install elan (https://lean-lang.org/install), which provides lake" };
+      if (r.code !== 0) {
+        // Lean's own errors point into the project: report them there
+        let found = false;
+        for (const m of r.output.matchAll(/^error: (?:\.\/)*(.+?\.lean):(\d+):(\d+): (.*)$/gm)) {
+          ctx.reportIn(relative(ctx.talkDir, join(leanDir, m[1]!)), "error", m[4]!, Number(m[2]), Number(m[3]) + 1);
+          found = true;
+        }
+        const tail = r.output.trim().split("\n").slice(-8).join("\n");
+        return { error: found ? `lake build of ${module} failed (errors above)` : `lake build of ${module} failed:\n${tail}` };
+      }
+      if (!existsSync(out)) return { error: `SubVerso wrote no ${relative(ctx.talkDir, out)}: does lean/lakefile require subverso?` };
+      return JSON.parse(readFileSync(out, "utf8")) as ModuleJson;
+    })();
+    entry.modules.set(module, job);
+  }
+  return job;
+}
+
+/** Steps: each innermost tactic (a `rw` steps through its rules), case arms and bullets included. */
+function tacticSteps(tactics: Tactic[]): number[] {
+  const parents = new Set(tactics.map((t) => t.parent).filter((p) => p !== undefined));
+  return tactics.flatMap((t, i) => (t.kind !== "by" && !parents.has(i) ? [i] : []));
+}
+
+export const lean: BuildPlugin<Data> = {
+  type: "lean",
+  schema: LeanFrontmatter,
+  hasFile: true,
+  async build(node, ctx) {
+    const { source, anchor, decl } = node.data;
+    const leanDir = join(ctx.talkDir, "lean");
+    const empty = { data: { code: [], hovers: [], tactics: [], steps: [], infoview: "right" } satisfies LeanData, steps: 0 };
+    if (!existsSync(join(leanDir, source))) {
+      ctx.report("error", `Lean source lean/${source} not found`);
+      return empty;
+    }
+    const mod = await extract(leanDir, source.replace(/\.lean$/, "").split("/").join("."), ctx);
+    if ("error" in mod) {
+      ctx.report("error", mod.error);
+      return empty;
+    }
+    const sel = select(mod, anchor !== undefined ? { anchor } : { decl: decl! });
+    if ("error" in sel) {
+      ctx.report("error", `${sel.error} in lean/${source}`);
+      return empty;
+    }
+
+    let steps: number[] = [];
+    let stepNames: string[] | undefined;
+    if (Array.isArray(node.data.steps)) {
+      stepNames = node.data.steps;
+      for (const name of stepNames) {
+        if (!(name in sel.states)) ctx.report("error", `no "-- ^ PROOF_STATE: ${name}" comment in the selected Lean code`);
+      }
+      steps = stepNames.map((name) => sel.states[name] ?? 0);
+    } else if (node.data.steps !== "none") steps = tacticSteps(sel.tactics);
+
+    const { html, notes, title, md } = await renderMarkdown({ ...node, notes: node.data.notes }, ctx);
+    const data: LeanData = {
+      ...(html ? { caption: html } : {}),
+      code: sel.code,
+      hovers: sel.hovers.map((h) => ({ ...(h.sig ? { sig: h.sig } : {}), ...(h.doc ? { doc: md.render(h.doc) } : {}) })),
+      tactics: sel.tactics,
+      steps,
+      ...(stepNames ? { stepNames } : {}),
+      infoview: node.data.infoview ?? "right",
+    };
+    return { data, steps: steps.length, notes, title: title ?? anchor ?? decl };
+  },
+};

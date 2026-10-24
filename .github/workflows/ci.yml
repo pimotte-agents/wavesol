@@ -14,10 +14,22 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Lean: the docs talk's lean/ project and the Lean test fixtures need elan; SubVerso and the
+      # toolchain are cached, keyed on the projects' lake config
+      - run: curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none && echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            docs/lean/.lake
+            tests/fixtures/lean/project/.lake
+          key: lean-${{ hashFiles('docs/lean/lean-toolchain', 'docs/lean/lake-manifest.json', 'tests/fixtures/lean/project/lake-manifest.json') }}
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run schema:check
       - run: npm test
+        env:
+          REQUIRE_LEAN: "1" # the Lean tests must not be skipped here
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4

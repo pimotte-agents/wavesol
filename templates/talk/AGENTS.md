@@ -5,8 +5,8 @@
 A wavesol talk is a **graph of nodes** on one canvas: each node is a slide (a Markdown file in
 `nodes/`), an image, or a frame (a group drawn around its children); directed **edges** connect the
 nodes and are shown as buttons. The audience follows the *default* edges with Space; other edges are
-labeled detours. Lean nodes (interactive proofs) and bibliography citations are planned but not
-available yet — do not use `type: lean` or `[@key]`.
+labeled detours. Lean nodes show proofs from the talk's `lean/` project with their goal states.
+Bibliography citations are planned but not available yet — do not use `[@key]`.
 
 Commands (run from this talk directory):
 
@@ -119,6 +119,23 @@ caption: "The fabric of the proof."  # optional, Markdown; quote it
 fit: contain                       # contain | cover
 ---
 ```
+
+### `lean`
+
+```markdown
+---
+type: lean
+source: Proofs/Lists.lean   # relative to lean/
+anchor: revRev              # "-- ANCHOR: revRev" … "-- ANCHOR_END: revRev"; or decl: <name>
+steps: tactics              # tactics | none | [names of "-- ^ PROOF_STATE: name" comments]
+infoview: right             # right | below
+---
+Optional caption (Markdown).
+```
+
+Needs a `lean/` lake project requiring SubVerso (see the format spec); `npm run check` runs Lean and
+reports Lean errors in the `.lean` file. Keep shown declarations short (about 15 lines): long lines
+shrink to fit. Put each proof you show in an ANCHOR region; Space then steps through its tactics.
 
 ### `frame`
 

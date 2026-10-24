@@ -230,21 +230,51 @@ fit: contain                        # contain | cover
 
 Set `title` too: without it, the overview and edge buttons show the node id.
 
-### `lean` *(planned)*
+### `lean`
+
+A declaration or region of a module in the talk's `lean/` project, highlighted by Lean itself, with
+hovers (signatures, docstrings) and the proof's goal states:
 
 ```markdown
 ---
 type: lean
-source: Demo/Basic.lean        # relative to lean/
-anchor: revRev                 # an ANCHOR region; or `decl: rev_rev`
-steps: tactics                 # tactics | none | [state names from PROOF_STATE comments]
-infoview: right                # right | below
+source: Proofs/Lists.lean      # relative to lean/
+anchor: revRev                 # a region between "-- ANCHOR: revRev" and "-- ANCHOR_END: revRev"
+                               # or: decl: reverse_reverse (a declaration; a short name is enough)
+steps: tactics                 # tactics (default) | none | [names of "-- ^ PROOF_STATE: name" comments]
+infoview: right                # right (default) | below
 ---
 Optional Markdown caption shown above the code.
 ```
 
-Exploration (click a tactic to see its goals, hover a token to see its signature) is always available.
-`steps` sets what `step` walks through.
+- **Exploring** is always possible: click a tactic to see its goals before and after it, hover a name
+  for its type and docstring.
+- **Steps:** with `tactics`, each step highlights the next tactic and shows its goals, in source order;
+  a tactic with parts (e.g. `rw [a, b]`) steps through the parts, and case arms and bullets show the
+  goal they focus on. Step 0 shows the starting goal. With a list of names, step *k* shows the state at
+  the *k*-th named `-- ^ PROOF_STATE:` comment (the state after the tactic before it).
+- Marker comments (`ANCHOR`, `ANCHOR_END`, `PROOF_STATE`) are not shown, and the code is dedented.
+
+**The `lean/` project** is an ordinary lake project that requires SubVerso, which extracts the
+highlighting and goals:
+
+```lean
+-- lean/lakefile.lean
+import Lake
+open Lake DSL
+
+require subverso from git "https://github.com/leanprover/subverso.git" @ "verso-v4.35.0"
+
+package proofs
+
+@[default_target]
+lean_lib Proofs
+```
+
+`wavesol build`, `dev` and `check` run `lake build +<Module>:highlighted` in `lean/` (so they need
+elan), and only when the Lean sources changed. Lean's errors are reported at their place in the `.lean`
+file. Mathlib works as in any project: require it, and run `lake exe cache get` once (the talk
+template's Pages workflow does this). wavesol is tested with SubVerso `verso-v4.35.0` and Lean v4.35.0.
 
 ## Validation
 
