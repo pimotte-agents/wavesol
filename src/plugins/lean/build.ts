@@ -10,6 +10,7 @@ import type { z } from "zod";
 import { LeanFrontmatter } from "../../model/schema.ts";
 import { renderMarkdown } from "../slide/build.ts";
 import type { BuildPlugin } from "../types.ts";
+import { tacticSteps } from "./steps.ts";
 import { select, type CodeNode, type ModuleJson, type Tactic } from "./subverso.ts";
 
 type Data = z.infer<typeof LeanFrontmatter>;
@@ -25,6 +26,8 @@ export interface LeanData {
   steps: number[];
   /** With `steps: [names]`: the PROOF_STATE name of each step. */
   stepNames?: string[];
+  /** What steps walk through; only `tactics` lets the laser select a tactic (and move the step). */
+  stepMode: "tactics" | "none" | "named";
   infoview: "right" | "below";
 }
 
@@ -137,12 +140,6 @@ function extract(leanDir: string, module: string, talkDir: string): Promise<Extr
   return job;
 }
 
-/** Steps: each innermost tactic (a `rw` steps through its rules), case arms and bullets included. */
-function tacticSteps(tactics: Tactic[]): number[] {
-  const parents = new Set(tactics.map((t) => t.parent).filter((p) => p !== undefined));
-  return tactics.flatMap((t, i) => (t.kind !== "by" && !parents.has(i) ? [i] : []));
-}
-
 export const lean: BuildPlugin<Data> = {
   type: "lean",
   schema: LeanFrontmatter,
@@ -150,7 +147,7 @@ export const lean: BuildPlugin<Data> = {
   async build(node, ctx) {
     const { source, anchor, decl } = node.data;
     const leanDir = join(ctx.talkDir, "lean");
-    const empty = { data: { code: [], hovers: [], tactics: [], steps: [], infoview: "right" } satisfies LeanData, steps: 0 };
+    const empty = { data: { code: [], hovers: [], tactics: [], steps: [], stepMode: "none", infoview: "right" } satisfies LeanData, steps: 0 };
     if (!existsSync(join(leanDir, source))) {
       ctx.report("error", `Lean source lean/${source} not found`);
       return empty;
@@ -185,6 +182,7 @@ export const lean: BuildPlugin<Data> = {
       tactics: sel.tactics,
       steps,
       ...(stepNames ? { stepNames } : {}),
+      stepMode: stepNames ? "named" : node.data.steps === "none" ? "none" : "tactics",
       infoview: node.data.infoview ?? "right",
     };
     return { data, steps: steps.length, notes, title: title ?? anchor ?? decl };

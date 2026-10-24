@@ -1,7 +1,7 @@
 # Phone controller
 
 - **c** shows a QR code; scan it with your phone. No app, no account.
-- The phone gets **Next**, Prev and Back, a button for every outgoing edge, and a **laser pointer** pad: tap it to click, e.g. on a Lean tactic.
+- The phone gets **Next**, Prev and Back, a button for every outgoing edge, and a **laser pointer** pad. Rest the dot on a Lean tactic to select it.
 - Phone and projector connect directly where the network allows, and through encrypted relays otherwise.
 - `wavesol serve --host` needs no internet: put the laptop on your phone's hotspot.
 

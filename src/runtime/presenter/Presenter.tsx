@@ -69,7 +69,7 @@ export function Presenter({ talk, peer, plugins }: Props) {
           )}
           {s?.overview && <span className="ws-muted"> · overview</span>}
         </h2>
-        {s && <NodePreview talk={talk} node={s.node} step={s.step} plugins={plugins} />}
+        {s && <NodePreview talk={talk} node={s.node} step={s.step} focus={s.focus} plugins={plugins} />}
       </section>
 
       <section className="ws-presenter-next" aria-label="Next">

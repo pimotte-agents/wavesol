@@ -52,6 +52,13 @@ export interface NodeApi {
 
 export interface NodeInstance {
   setStep(step: number, opts: { animate: boolean }): void;
+  /**
+   * The phone's laser rests on `target` (an element inside this node): the step to go to, and an
+   * optional focus (a plugin-specific detail of that step, e.g. a Lean tactic). Undefined: ignore.
+   */
+  pointAt?(target: Element): { step: number; focus?: number } | undefined;
+  /** Shows a focus within the current step (from pointAt), or the step itself again (undefined). */
+  setFocus?(focus: number | undefined): void;
   setDetail?(level: Detail): void;
   unmount?(): void;
 }

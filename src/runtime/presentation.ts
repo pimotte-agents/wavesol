@@ -15,12 +15,16 @@ const DRAG_PX = 5;
 const LASER_EASE = 0.35;
 /** The laser dot hides after this long without an update. */
 const LASER_IDLE_MS = 4000;
+/** The laser selects what it rests on this long (e.g. a Lean tactic). */
+const LASER_DWELL_MS = 100;
 
 export interface PresentationState {
   nav: NavState;
   overview: boolean;
   node: CompiledNode;
   outgoing: { edge: CompiledEdge; target: CompiledNode }[];
+  /** A detail of the current step the laser selected (e.g. a Lean tactic), until the next navigation. */
+  focus?: number;
 }
 
 export class Presentation {
@@ -44,6 +48,10 @@ export class Presentation {
   private laserTarget?: { x: number; y: number };
   private laserMoved = 0;
   private laserFrame = 0;
+  private focus?: number;
+  private dwellKey?: string;
+  private dwellSince = 0;
+  private dwellDone = false;
 
   constructor(
     root: HTMLElement,
@@ -117,6 +125,7 @@ export class Presentation {
       overview: this.overview,
       node,
       outgoing: this.graph.outgoing(node.id).map((edge) => ({ edge, target: this.nodes.get(edge.to)! })),
+      ...(this.focus !== undefined ? { focus: this.focus } : {}),
     };
   }
 
@@ -130,6 +139,10 @@ export class Presentation {
     const wasOverview = this.overview;
     this.overview = false; // any navigation leaves the overview
     const result = navigate(this.graph, this.nav, intent);
+    if (result.kind !== "none" && this.focus !== undefined) {
+      this.focus = undefined;
+      this.instances.get(this.nav.node)?.setFocus?.(undefined);
+    }
     this.nav = result.state;
     if (result.kind === "move") this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: false });
     if (result.kind === "step") this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: true });
@@ -246,19 +259,32 @@ export class Presentation {
     if (!this.laserFrame) this.laserFrame = requestAnimationFrame(() => this.drawLaser());
   }
 
-  /** A laser "click" at a normalised screen position: clicks whatever is there, with a ripple. */
-  clickAt(at: [number, number]): void {
-    const { vw, vh } = this.viewport();
-    const clamp = (v: number) => Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0));
-    const x = clamp(at[0]) * vw;
-    const y = clamp(at[1]) * vh;
-    const ripple = el("div", "ws-laser-click");
-    ripple.style.transform = `translate(${x}px, ${y}px)`;
-    this.stage.append(ripple);
-    setTimeout(() => ripple.remove(), 600);
+  /**
+   * The laser rests on the current node: after LASER_DWELL_MS on the same target, the node's plugin
+   * says what to select (a Lean tactic: its step, maybe a focus), once per target. Sweeping across
+   * selects nothing.
+   */
+  private dwell(at: { x: number; y: number }) {
+    const now = performance.now();
     const r = this.stage.getBoundingClientRect();
-    const target = document.elementFromPoint(r.left + x, r.top + y);
-    target?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, clientX: r.left + x, clientY: r.top + y }));
+    const hit = this.overview ? null : document.elementFromPoint(r.left + at.x, r.top + at.y);
+    const inst = hit?.closest<HTMLElement>(".ws-node")?.dataset.id === this.nav.node ? this.instances.get(this.nav.node) : undefined;
+    const target = hit ? inst?.pointAt?.(hit) : undefined;
+    const key = target && JSON.stringify(target);
+    if (key !== this.dwellKey) {
+      this.dwellKey = key;
+      this.dwellSince = now;
+      this.dwellDone = false;
+      return;
+    }
+    if (!target || this.dwellDone || now - this.dwellSince < LASER_DWELL_MS) return;
+    this.dwellDone = true;
+    if (target.step !== this.nav.step) this.dispatch({ type: "goto", node: this.nav.node, step: target.step });
+    if (target.focus !== this.focus) {
+      this.focus = target.focus;
+      inst!.setFocus?.(target.focus);
+      this.emit();
+    }
   }
 
   private drawLaser() {
@@ -275,6 +301,7 @@ export class Presentation {
     a.y += (t.y - a.y) * LASER_EASE;
     this.laser.style.transform = `translate(${a.x}px, ${a.y}px)`;
     this.laser.classList.add("ws-on");
+    this.dwell(a);
     this.laserFrame = requestAnimationFrame(() => this.drawLaser());
   }
 

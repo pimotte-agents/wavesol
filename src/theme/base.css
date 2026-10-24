@@ -726,29 +726,6 @@ body {
 .ws-laser.ws-on {
   opacity: 1;
 }
-/* a laser click: a ring that expands and fades where the click landed */
-.ws-laser-click {
-  position: absolute;
-  left: -20px;
-  top: -20px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 4px solid #e5332a;
-  pointer-events: none;
-  z-index: 5;
-  animation: ws-laser-click 0.5s ease-out forwards;
-}
-@keyframes ws-laser-click {
-  from {
-    opacity: 1;
-    scale: 0.4;
-  }
-  to {
-    opacity: 0;
-    scale: 1.6;
-  }
-}
 
 /* ---------- phone pairing ---------- */
 .ws-pair h3 {

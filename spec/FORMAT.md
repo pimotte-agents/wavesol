@@ -140,8 +140,9 @@ Precedence: edge `transition` > target node `transition` > `transitions.default`
 ### Phone controller
 
 Press `c` on the projector (or "Connect a phone" in the presenter view) and scan the QR code. The
-phone gets a Next button, Prev and Back, one button per outgoing edge and a laser pointer pad: drag to
-point, tap to click whatever is under the dot on the projector (e.g. a tactic in a Lean node).
+phone gets a Next button, Prev and Back, one button per outgoing edge and a laser pointer pad. In a Lean
+node with `steps: tactics`, resting the dot on a tactic (100 ms) selects it, and the step moves there
+(see `lean`).
 
 - **Pairing:** the QR code holds the talk's URL with `?phone#k=<room secret>`. The secret is random
   per projector tab (kept across a reload of that tab) and sits in the URL fragment, which browsers
@@ -254,6 +255,11 @@ Optional Markdown caption shown above the code.
   a tactic with parts (e.g. `rw [a, b]`) steps through the parts, and case arms and bullets show the
   goal they focus on. Step 0 shows the starting goal. With a list of names, step *k* shows the state at
   the *k*-th named `-- ^ PROOF_STATE:` comment (the state after the tactic before it).
+- **Laser** (phone controller): with `steps: tactics`, the dot resting on a tactic for 100 ms selects
+  the innermost tactic under it and makes it the current step, so Space continues after it. A tactic
+  that is not a step itself (the `rw` around its rules) is shown with its own goals, and Space goes on
+  to its first part; `by` is the start. Sweeping across selects nothing; the selection stays until the
+  next step. The presenter view shows the same. With `none` or named steps the laser selects nothing.
 - Marker comments (`ANCHOR`, `ANCHOR_END`, `PROOF_STATE`) are not shown, and the code is dedented.
 
 **The `lean/` project** is an ordinary lake project that requires SubVerso, which extracts the

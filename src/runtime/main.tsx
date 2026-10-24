@@ -66,7 +66,6 @@ if (!compiled.talk) {
     const host = new SyncHost(fanout(broadcastTransport(channel), phone), (intent) => {
       if (intent.type === "overview") presentation.toggleOverview(intent.on);
       else if (intent.type === "pointer") presentation.setPointer(intent.at);
-      else if (intent.type === "click") presentation.clickAt(intent.at);
       else if (intent.type === "pair") void phone.start();
       else presentation.dispatch(intent);
     });
@@ -84,6 +83,7 @@ function snapshot(s: PresentationState): Snapshot {
     step: s.nav.step,
     history: s.nav.history,
     overview: s.overview,
+    ...(s.focus !== undefined ? { focus: s.focus } : {}),
     outgoing: s.outgoing.map(({ edge, target }) => ({ to: target.id, title: target.title, label: edge.label, default: edge.default })),
   };
 }

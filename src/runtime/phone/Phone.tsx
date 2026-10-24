@@ -11,9 +11,6 @@ const STATUS_TEXT: Record<PeerStatus, string> = {
   connecting: "Looking for the projector…",
   offline: "Offline: reconnecting…",
 };
-/** A press shorter and smaller than this is a tap (a click on the projector). */
-const TAP_MS = 300;
-const TAP_PX = 10;
 /** Pointer updates per second: smooth when direct, gentler on public relays (they rate-limit). */
 const POINTER_MS: Record<PeerStatus, number> = { p2p: 33, relay: 100, connecting: 100, offline: 100 };
 
@@ -94,8 +91,6 @@ export function Phone({ talk, peer, net }: { talk: CompiledTalk; peer: SyncPeer;
 function LaserPad({ send, interval }: { send: (i: SyncIntent) => void; interval: number }) {
   const pad = useRef<HTMLDivElement>(null);
   const [throttle] = useState(() => new Throttle());
-  // a quick tap that barely moves is a click on the projector
-  const press = useRef<{ x: number; y: number; t: number; at: [number, number] } | undefined>(undefined);
   const [active, setActive] = useState(false);
 
   const at = (e: React.PointerEvent): [number, number] => {
@@ -103,15 +98,10 @@ function LaserPad({ send, interval }: { send: (i: SyncIntent) => void; interval:
     return [Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height))];
   };
   const move = (p: [number, number]) => throttle.push(() => send({ type: "pointer", at: p }), interval);
-  const end = (e: React.PointerEvent) => {
+  const end = () => {
     throttle.cancel();
     setActive(false);
     send({ type: "pointer", at: null });
-    const p = press.current;
-    press.current = undefined;
-    if (e.type === "pointerup" && p && performance.now() - p.t < TAP_MS && Math.hypot(e.clientX - p.x, e.clientY - p.y) < TAP_PX) {
-      send({ type: "click", at: p.at });
-    }
   };
 
   return (
@@ -122,14 +112,13 @@ function LaserPad({ send, interval }: { send: (i: SyncIntent) => void; interval:
         e.currentTarget.setPointerCapture(e.pointerId);
         setActive(true);
         throttle.reset();
-        press.current = { x: e.clientX, y: e.clientY, t: performance.now(), at: at(e) };
         move(at(e));
       }}
       onPointerMove={(e) => active && move(at(e))}
       onPointerUp={end}
       onPointerCancel={end}
     >
-      <span>Laser pointer: drag to point, tap to click</span>
+      <span>Laser pointer: touch and drag</span>
     </div>
   );
 }

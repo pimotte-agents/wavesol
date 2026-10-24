@@ -8,10 +8,12 @@ interface Props {
   talk: CompiledTalk;
   node: string;
   step: number;
+  /** A detail of the step the laser selected on the projector (e.g. a Lean tactic). */
+  focus?: number;
   plugins: Record<string, RuntimePlugin>;
 }
 
-export function NodePreview({ talk, node: id, step, plugins }: Props) {
+export function NodePreview({ talk, node: id, step, focus, plugins }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const root = useRef<NodeInstance | undefined>(undefined);
@@ -48,7 +50,10 @@ export function NodePreview({ talk, node: id, step, plugins }: Props) {
     };
   }, [talk, node, plugins]);
 
-  useLayoutEffect(() => root.current?.setStep(step, { animate: true }), [step, node]);
+  useLayoutEffect(() => {
+    root.current?.setStep(step, { animate: true });
+    if (focus !== undefined) root.current?.setFocus?.(focus);
+  }, [step, focus, node]);
 
   // scale to fit, set directly from the observer (which runs before paint) so a resize never shows a
   // frame at the old scale

@@ -191,13 +191,28 @@ test("the phone follows a reloaded projector (same pairing)", async ({ context, 
   await expect.poll(() => nav(projector)).not.toEqual(before);
 });
 
-test("tapping the laser pad clicks on the projector: a Lean tactic shows its goals", async ({ context, browser }) => {
+/** Projector position (normalised) of an element's centre. */
+async function spot(projector: Page, target: ReturnType<Page["locator"]>): Promise<[number, number]> {
+  const box = (await target.boundingBox())!;
+  const vp = projector.viewportSize()!;
+  return [(box.x + box.width / 2) / vp.width, (box.y + box.height / 2) / vp.height];
+}
+
+/** Holds the phone's laser still on a projector position, then lets go. */
+async function holdLaser(phone: Page, at: [number, number], ms = 400) {
+  const pad = (await phone.locator(".ws-phone-laser").boundingBox())!;
+  await phone.mouse.move(pad.x + at[0] * pad.width, pad.y + at[1] * pad.height);
+  await phone.mouse.down();
+  await phone.waitForTimeout(ms);
+  await phone.mouse.up();
+}
+
+/** Projector and phone (laser), on the docs' stepped Lean proof. */
+async function onLeanProof(context: BrowserContext, browser: Browser) {
   const projector = await openProjector(context);
   const phone = await openPhone(browser, await pairUrl(projector));
   await expect.poll(() => phoneStatus(phone), { timeout: 15_000 }).toBe("p2p");
   await projector.keyboard.press("Escape"); // close the pairing panel
-
-  // go to the stepped Lean proof, and find a tactic on the projector screen
   const id = await projector.evaluate(() =>
     (window as unknown as { wavesol: { talk: { nodes: { id: string; type: string; steps: number }[] } } }).wavesol.talk.nodes
       .filter((n) => n.type === "lean")
@@ -208,16 +223,100 @@ test("tapping the laser pad clicks on the projector: a Lean tactic shows its goa
   await expect(root).toHaveAttribute("data-detail", "active");
   // wait for the camera to arrive
   await expect.poll(() => projector.evaluate(() => document.querySelector<HTMLElement>(".ws-world")!.style.willChange)).not.toBe("transform");
-  const target = root.locator(".ws-tac", { hasText: /^rfl$/ }).last();
-  const box = (await target.boundingBox())!;
-  const vp = projector.viewportSize()!;
-  const at = [(box.x + box.width / 2) / vp.width, (box.y + box.height / 2) / vp.height];
+  const tac = (text: string | RegExp) => root.locator(".ws-lean-code .ws-tac", { hasText: text });
+  return { projector, phone, id, root, tac, head: root.locator(".ws-lean-info .ws-info-head") };
+}
 
-  // a quick tap at the same place on the phone's pad
+test("the laser resting on a tactic selects it; the step follows, and the selection stays", async ({ context, browser }) => {
+  const { projector, phone, id, tac, head } = await onLeanProof(context, browser);
+  const rule = tac(/^List\.reverse_append,$/);
+  await holdLaser(phone, await spot(projector, rule));
+  await expect(rule).toHaveClass(/ws-tac-current/);
+  await expect(head.locator("code")).toHaveText("List.reverse_append");
+  const step = (await nav(projector)).step;
+  expect(step).toBeGreaterThan(0);
+  expect(await nav(projector)).toEqual({ node: id, step });
+  // released: the selection stays
+  await projector.waitForTimeout(300);
+  await expect(rule).toHaveClass(/ws-tac-current/);
+  // and Space continues from it
+  await projector.keyboard.press("Space");
+  await expect(tac(/^ih$/)).toHaveClass(/ws-tac-current/);
+  expect((await nav(projector)).step).toBe(step + 1);
+});
+
+test("the laser on `rw` shows the whole rewrite; Space then goes to its first rule; the presenter mirrors it", async ({ context, browser }) => {
+  const { projector, phone, tac, head } = await onLeanProof(context, browser);
+  const [presenter] = await Promise.all([context.waitForEvent("page"), projector.keyboard.press("p")]);
+  watch(presenter, "presenter");
+  await presenter.waitForLoadState();
+  await projector.bringToFront();
+
+  const rw = tac(/^rw \[/);
+  const rwBox = (await rw.boundingBox())!;
+  const vp = projector.viewportSize()!;
+  // the `rw` keyword itself: the start of the span, not one of its rules
+  await holdLaser(phone, [(rwBox.x + 12) / vp.width, (rwBox.y + rwBox.height / 2) / vp.height]);
+  await expect(rw).toHaveClass(/ws-tac-current/);
+  await expect(head.locator("code")).toHaveText("rw [List.reverse_cons, List.reverse_append, ih]");
+  // the presenter's preview shows the same
+  const preview = presenter.locator(".ws-presenter-current .ws-preview");
+  await expect(preview.locator(".ws-tac-current")).toHaveText(/^rw \[/);
+  await expect(preview.locator(".ws-info-head code")).toHaveText("rw [List.reverse_cons, List.reverse_append, ih]");
+
+  await projector.keyboard.press("Space");
+  await expect(tac(/^List\.reverse_cons,$/)).toHaveClass(/ws-tac-current/);
+  await expect(preview.locator(".ws-tac-current")).toHaveText("List.reverse_cons,");
+});
+
+test("the laser on `by` goes back to the start", async ({ context, browser }) => {
+  const { projector, phone, id, root, tac, head } = await onLeanProof(context, browser);
+  await projector.keyboard.press("Space");
+  await projector.keyboard.press("Space");
+  await holdLaser(phone, await spot(projector, tac(/^by$/)));
+  await expect.poll(() => nav(projector)).toEqual({ node: id, step: 0 });
+  await expect(head).toHaveText("Start");
+  await expect(root.locator(".ws-tac-current")).toHaveCount(0);
+});
+
+test("sweeping the laser across the code selects nothing", async ({ context, browser }) => {
+  const { projector, phone, id, root, tac } = await onLeanProof(context, browser);
+  const code = (await root.locator(".ws-lean-code").boundingBox())!;
+  const rw = (await tac(/^rw \[/).boundingBox())!;
+  const vp = projector.viewportSize()!;
   const pad = (await phone.locator(".ws-phone-laser").boundingBox())!;
-  await phone.mouse.click(pad.x + at[0]! * pad.width, pad.y + at[1]! * pad.height);
-  await expect(target).toHaveClass(/ws-tac-current/);
-  await expect(root.locator(".ws-lean-info .ws-info-head code")).toHaveText("rfl");
-  // a click does not navigate
+  const toPad = (x: number, y: number) => [pad.x + (x / vp.width) * pad.width, pad.y + (y / vp.height) * pad.height] as const;
+  // along the rw line: from its indentation, across `rw` and all its rules, to the far right (the
+  // infoview, where there are no tactics)
+  const y = rw.y + rw.height / 2;
+  const [x0, y0] = toPad(code.x + 2, y);
+  const [x1, y1] = toPad(vp.width - 10, y);
+  await phone.mouse.move(x0, y0);
+  await phone.mouse.down();
+  // a steady sweep (~400 ms), as a hand would: the dot spends well under 100 ms on each tactic
+  for (let i = 1; i <= 20; i++) {
+    await phone.mouse.move(x0 + ((x1 - x0) * i) / 20, y0 + ((y1 - y0) * i) / 20);
+    await phone.waitForTimeout(20);
+  }
+  await phone.waitForTimeout(400);
+  await phone.mouse.up();
   expect(await nav(projector)).toEqual({ node: id, step: 0 });
+  await expect(root.locator(".ws-tac-current")).toHaveCount(0);
+});
+
+test("a Lean node without tactic steps ignores the laser", async ({ context, browser }) => {
+  const projector = await openProjector(context);
+  const phone = await openPhone(browser, await pairUrl(projector));
+  await expect.poll(() => phoneStatus(phone), { timeout: 15_000 }).toBe("p2p");
+  await projector.keyboard.press("Escape");
+  const id = await projector.evaluate(() =>
+    (window as unknown as { wavesol: { talk: { nodes: { id: string; type: string; steps: number }[] } } }).wavesol.talk.nodes.find((n) => n.type === "lean" && n.steps === 0)!.id,
+  );
+  await projector.evaluate((node) => (location.hash = `#/${node}/0`), id);
+  const root = projector.locator(`.ws-node[data-id="${id}"]`);
+  await expect(root).toHaveAttribute("data-detail", "active");
+  await expect.poll(() => projector.evaluate(() => document.querySelector<HTMLElement>(".ws-world")!.style.willChange)).not.toBe("transform");
+  await holdLaser(phone, await spot(projector, root.locator(".ws-lean-code .ws-tac").last()));
+  await expect(root.locator(".ws-tac-current")).toHaveCount(0);
+  await expect(root.locator(".ws-lean-info .ws-info-head")).toHaveText("Start");
 });

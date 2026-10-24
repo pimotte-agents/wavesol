@@ -3,6 +3,7 @@
 // goals until the next step.
 import type { RuntimePlugin } from "../types.ts";
 import type { LeanData } from "./build.ts";
+import { pointTarget } from "./steps.ts";
 import type { CodeNode, Goal } from "./subverso.ts";
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] {
@@ -91,11 +92,9 @@ export const lean: RuntimePlugin = {
 
     const spans = new Map([...pre.querySelectorAll<HTMLElement>(".ws-tac")].map((s) => [Number(s.dataset.tac), s]));
     const start = data.tactics.find((t) => t.kind === "by");
-    let current: number | undefined;
 
     /** Shows tactic `i` in the infoview (undefined: the starting state). */
     const show = (i: number | undefined, label?: string) => {
-      current = i;
       for (const [n, s] of spans) s.classList.toggle("ws-tac-current", n === i);
       info.replaceChildren();
       const t = i === undefined ? undefined : data.tactics[i];
@@ -150,12 +149,28 @@ export const lean: RuntimePlugin = {
 
     show(undefined);
     fitCode();
+    let step = 0;
+    const showStep = () => {
+      if (step === 0) return show(undefined);
+      const i = data.steps[step - 1];
+      if (i !== undefined) show(i, data.stepNames?.[step - 1]);
+    };
     return {
-      setStep(step) {
+      setStep(s) {
         hover.hidden = true;
-        if (step === 0) return show(undefined);
-        const i = data.steps[step - 1];
-        if (i !== undefined && i !== current) show(i, data.stepNames?.[step - 1]);
+        step = s;
+        showStep();
+      },
+      pointAt(target) {
+        // the laser moves through the proof only where steps are its tactics
+        if (data.stepMode !== "tactics") return undefined;
+        const tac = target.closest<HTMLElement>(".ws-tac");
+        if (!tac || !pre.contains(tac)) return undefined;
+        return pointTarget(data.steps, Number(tac.dataset.tac));
+      },
+      setFocus(focus) {
+        if (focus === undefined) showStep();
+        else show(focus);
       },
     };
   },
