@@ -49,6 +49,15 @@ describe("TikZ document and SVG", () => {
     expect(svg).not.toContain("rgb(0%,0%,0%)");
   });
 
+  it("takes the size from the viewBox, whatever width/height say (pdftocairo versions differ)", () => {
+    for (const attrs of ['width="62.4" height="20"', 'height="20pt" width="62.4pt"', ""]) {
+      const { svg, width, height } = inlineSvg(`<svg xmlns="http://www.w3.org/2000/svg" ${attrs} viewBox="0 0 62.4 20"><g/></svg>`, "p-");
+      expect([width, height]).toEqual([62.4, 20]);
+      expect(svg).toMatch(/^<svg class="ws-tikz" role="img" width="6\.240em" height="2\.000em" xmlns/);
+      expect(svg.match(/width=/g)).toHaveLength(1);
+    }
+  });
+
   it("finds the first LaTeX error and its line", () => {
     const log = "This is pdfTeX\n(./fig.tex\n! Undefined control sequence.\nl.7 \\foo\n         \n? \n";
     expect(latexError(log)).toEqual({ message: "Undefined control sequence", line: 7 });

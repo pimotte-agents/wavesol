@@ -23,7 +23,7 @@ export interface TikzOptions {
 export type TikzResult = { svg: string; width: number; height: number } | { error: string; line?: number };
 
 /** Bump when the post-processing changes, so cached SVGs are regenerated. */
-const PIPELINE = "pdflatex+pdftocairo/v1";
+const PIPELINE = "pdflatex+pdftocairo/v2";
 
 function run(cmd: string, args: string[], cwd: string, timeoutMs = 60_000): Promise<{ code: number | null; output: string; missing?: boolean }> {
   return new Promise((resolve) => {
@@ -70,16 +70,19 @@ export function tikzDocument(body: string, opts: TikzOptions = {}): { tex: strin
 
 /** Prepares pdftocairo's SVG for inlining (see the file comment). */
 export function inlineSvg(svg: string, prefix: string): { svg: string; width: number; height: number } {
-  const m = /<svg[^>]*\swidth="([\d.]+)pt"[^>]*\sheight="([\d.]+)pt"/.exec(svg);
-  const width = m ? Number(m[1]) : 0;
-  const height = m ? Number(m[2]) : 0;
+  // the size from the viewBox (in pt): pdftocairo versions differ in how they write width/height
+  const tag = /<svg\b[^>]*>/.exec(svg)?.[0] ?? "";
+  const box = /\sviewBox="\s*[-\d.]+[\s,]+[-\d.]+[\s,]+([\d.]+)[\s,]+([\d.]+)\s*"/.exec(tag);
+  const width = box ? Number(box[1]) : 0;
+  const height = box ? Number(box[2]) : 0;
+  const sized = tag.replace(/\s(width|height)="[^"]*"/g, "").replace("<svg", `<svg width="${(width / 10).toFixed(3)}em" height="${(height / 10).toFixed(3)}em"`);
   const out = svg
+    .replace(tag, sized)
     .replace(/<\?xml[^>]*\?>\s*/, "")
     .replace(/rgb\(0%,\s*0%,\s*0%\)/g, "currentColor")
     .replace(/\bid="([^"]+)"/g, `id="${prefix}$1"`)
     .replace(/href="#([^"]+)"/g, `href="#${prefix}$1"`)
     .replace(/url\(#([^)]+)\)/g, `url(#${prefix}$1)`)
-    .replace(/(<svg[^>]*?)\swidth="[\d.]+pt"\s+height="[\d.]+pt"/, `$1 width="${(width / 10).toFixed(3)}em" height="${(height / 10).toFixed(3)}em"`)
     .replace("<svg ", '<svg class="ws-tikz" role="img" ')
     .trim();
   return { svg: out, width, height };

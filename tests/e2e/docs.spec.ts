@@ -198,6 +198,12 @@ test("TikZ figures render as inline SVG; citations show the full reference; refe
   const svg = page.locator(`.ws-node[data-id="${tikzNode.id}"] svg.ws-tikz`);
   await expect(svg).toHaveCount(1);
   expect(await svg.locator("path").count()).toBeGreaterThan(5);
+  // and has a real size on screen
+  const box = (await svg.boundingBox())!;
+  expect(box.width).toBeGreaterThan(50);
+  expect(box.height).toBeGreaterThan(20);
+  const inline = page.locator(".ws-tikz-figure svg").first();
+  expect(await inline.evaluate((e) => e.getAttribute("width"))).toMatch(/^\d+\.\d+em$/);
   // drawn in the theme's ink, not hard-coded black
   expect(await svg.evaluate((e) => e.outerHTML.includes("rgb(0%,0%,0%)"))).toBe(false);
 
