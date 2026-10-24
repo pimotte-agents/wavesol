@@ -168,7 +168,7 @@ the QR code) before their intents are accepted.
   navigation, layout, theming and the CLI, and doubles as the end-to-end test fixture. Every later
   phase extends it with that phase's features.
 - Exit: the docs talk (~15+ nodes) is deployed and can be presented from the Pages site.
-- **Status: implemented, not yet deployed.** All items above are in place with unit tests (check
+- **Status: done.** Docs deployed at https://pimotte-agents.github.io/wavesol/. All items above are in place with unit tests (check
   fixtures, layout, navigation, camera, slide build) and end-to-end tests on the docs talk (served
   from a subpath, incl. visual baselines). Decisions made along the way:
   - Plugins are split into a build half (Node) and a runtime half (browser); see the contract above.
@@ -180,7 +180,6 @@ the QR code) before their intents are accepted.
     their children.
   - wavesol runs from TypeScript via tsx (no build step); talks depend on it as a git dependency until
     it's published to npm.
-  - Remaining: push, enable GitHub Pages for the repo, confirm the deployed docs.
 - Tests:
   - Unit: a fixture talk per `check` error, with the expected messages and `file:line`. Layout
     snapshots. Navigation sequences: step, default edge, edge by index, back, leaving a node early.

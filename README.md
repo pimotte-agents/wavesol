@@ -4,7 +4,7 @@ Graph-based presentations for academic talks and lectures. Nodes (slides, figure
 Lean proofs) sit on one canvas, and the camera flies between them along the edges of a graph. The name
 is a play on the Dutch *weefsel*, "fabric".
 
-The documentation is itself a wavesol talk: [docs/](docs/), published to GitHub Pages.
+The documentation is itself a wavesol talk: [docs/](docs/), live at https://pimotte-agents.github.io/wavesol/.
 
 ## Making a talk
 
