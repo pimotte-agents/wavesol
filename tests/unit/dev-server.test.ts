@@ -1,11 +1,12 @@
 // The `wavesol dev` server: talk assets are served with the right content type. Browsers refuse to
-// render an SVG <img> without image/svg+xml, so the docs' figure was broken in dev only.
+// render an SVG <img> without image/svg+xml, so SVG figures were broken in dev only.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { resolve } from "node:path";
 import { createServer, type ViteDevServer } from "vite";
 import { wavesol } from "../../src/build/vite-plugin.ts";
 
-const DOCS = resolve(import.meta.dirname, "../../docs");
+// a talk with just an SVG figure: no Lean, so this test never waits for lake
+const TALK = resolve(import.meta.dirname, "../fixtures/svg-talk");
 let server: ViteDevServer;
 let base: string;
 
@@ -14,7 +15,7 @@ beforeAll(async () => {
     configFile: false,
     root: resolve(import.meta.dirname, "../../src/runtime"),
     logLevel: "silent",
-    plugins: [wavesol(DOCS)],
+    plugins: [wavesol(TALK)],
     server: { host: "127.0.0.1", port: 0, hmr: false },
   });
   await server.listen();

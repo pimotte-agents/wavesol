@@ -10,10 +10,13 @@ import { compileTalk } from "../../src/build/compile.ts";
 import { formatDiagnostic } from "../../src/model/compiled.ts";
 import type { LeanData } from "../../src/plugins/lean/build.ts";
 
+const PROJECT = resolve(import.meta.dirname, "../fixtures/lean/project");
+
 function hasLake(): boolean {
   for (const cmd of [join(homedir(), ".elan", "bin", "lake"), "lake"]) {
     try {
-      execFileSync(cmd, ["--version"], { stdio: "ignore" });
+      // in the project: elan's lake needs a lean-toolchain (CI installs elan without a default)
+      execFileSync(cmd, ["--version"], { stdio: "ignore", cwd: PROJECT });
       return true;
     } catch {
       // try the next
@@ -24,7 +27,6 @@ function hasLake(): boolean {
 const lake = hasLake();
 if (!lake && process.env.REQUIRE_LEAN) throw new Error("REQUIRE_LEAN is set but lake was not found: install elan");
 
-const PROJECT = resolve(import.meta.dirname, "../fixtures/lean/project");
 let dir: string;
 
 /** A talk with the given Lean nodes (frontmatter fields per node). */

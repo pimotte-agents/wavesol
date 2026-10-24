@@ -15,7 +15,8 @@ export default defineConfig({
       command: "node bin/wavesol.js build docs --out test-results/docs-dist && npx tsx scripts/serve-subpath.ts test-results/docs-dist /wavesol/ 4180",
       url: "http://localhost:4180/wavesol/",
       reuseExistingServer: false,
-      timeout: 120_000,
+      // a cold build includes Lean (toolchain + SubVerso for docs/lean): about a minute on CI
+      timeout: 300_000,
     },
   ],
 });
