@@ -58,6 +58,13 @@ math:
   macros: macros.tex               # default: macros.tex if it exists
 bibliography: refs.bib             # (planned) for citations
 
+sync:                              # phone controller; all optional
+  phone: true                      # false: no phone control, no relay is ever contacted
+  relays:                          # replaces the built-in public relays (see Phone controller)
+    - "room:wss://wavesol-relay.example.workers.dev"
+  ice:                             # extra WebRTC servers, e.g. TURN; added to the default STUN
+    - { urls: "turn:turn.example.com:443", username: "u", credential: "p" }
+
 nodes:
   intro: {}                        # content in nodes/intro.md
   background:
@@ -106,7 +113,7 @@ defining the same field in both places is an error.
 
 | Option | Meaning |
 |---|---|
-| `label` | Text on the edge's button (edges panel now; presenter view and phone later). Defaults to the target's title. |
+| `label` | Text on the edge's button (edges panel, presenter view, phone). Defaults to the target's title. |
 | `default` | `true` marks the edge followed by `step` once the source node has no steps left. At most one default per source node. |
 | `transition` | Transition for this edge. Overrides the target node's and the global default. |
 
@@ -129,6 +136,30 @@ Either a name or `{ type, duration, easing }`:
 `easing` is a CSS easing keyword or `cubic-bezier(...)`.
 
 Precedence: edge `transition` > target node `transition` > `transitions.default`.
+
+### Phone controller
+
+Press `c` on the projector (or "Connect a phone" in the presenter view) and scan the QR code. The
+phone gets a Next button, Prev and Back, one button per outgoing edge and a laser pointer pad.
+
+- **Pairing:** the QR code holds the talk's URL with `?phone#k=<room secret>`. The secret is random
+  per projector tab (kept across a reload of that tab) and sits in the URL fragment, which browsers
+  never send to a server.
+- **Encryption:** every message through a relay is sealed (AES-256-GCM) with a key derived from the
+  secret; relays see ciphertext and a hashed room name. Messages that do not open with the key are
+  ignored, so only phones that scanned the code can control the talk.
+- **Connection:** messages go through the relays at once; meanwhile the phone sets up a direct WebRTC
+  connection to the projector, and once it is up messages go direct. If it drops (or never forms, e.g.
+  on networks that block UDP) the relay carries on.
+- **Relays:** on a static host (e.g. GitHub Pages), public relays on two independent networks: MQTT
+  brokers and Nostr relays. `sync.relays` replaces them; each entry is `mqtt:`, `nostr:` or `room:`
+  followed by a `ws(s)://` URL. `room:` is the self-hosted relay in `relay-worker/` (a Cloudflare
+  Worker, deploy guide in its README). Under `wavesol serve --host` (or `dev`) the laptop itself is
+  the relay: no internet needed, e.g. with the laptop on the phone's hotspot. The projector contacts
+  no relay until pairing is started.
+- **TURN** (`sync.ice`) is optional: it only makes the direct connection work on more networks, and
+  the relay covers the rest. A free tier exists at e.g. Metered (metered.ca, "Open Relay"); note that
+  credentials in `talk.yaml` are public once the talk is deployed.
 
 ## Node files
 

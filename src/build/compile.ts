@@ -136,6 +136,7 @@ async function compile(dir: string): Promise<CompileResult> {
     transitions: { default: talk.transitions?.default ?? "fly" },
     nodes,
     edges: loaded.edges,
+    sync: { phone: talk.sync?.phone ?? true, relays: talk.sync?.relays, ice: talk.sync?.ice ?? [] },
   };
   return { talk: compiled, diagnostics, assets, inputs };
 }

@@ -39,6 +39,9 @@ Top-level keys:
   `force` for a web of topics without one main path. Layered layouts wrap long chains into rows unless
   `wrap: false`; `direction` applies to layered only.
 - `math.macros`: path to a LaTeX macros file (default `macros.tex` if it exists).
+- `sync` (optional, phone controller): `{ phone: <bool>, relays: ["mqtt:wss://…" | "nostr:wss://…" |
+  "room:wss://…"], ice: [{ urls, username, credential }] }`. Leave it out unless asked: the defaults
+  (public relays, STUN) work.
 - `nodes`: map of node id → entry. The key is the id; the value may be `{}` (content then comes from
   `nodes/<id>.md`). Entry fields (all optional):
   - `type` — defaults to frontmatter `type`, else the file extension (`.md` → `slide`)

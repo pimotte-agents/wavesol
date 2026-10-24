@@ -59,6 +59,21 @@ export const EdgeItem = z.union([
   z.record(EdgeKey, EdgeOptions).refine((r) => Object.keys(r).length === 1, "one edge chain per list item"),
 ]);
 
+const IceServer = z.strictObject({
+  urls: z.union([z.string(), z.array(z.string())]).describe("stun:… or turn:… URL(s)"),
+  username: z.string().optional(),
+  credential: z.string().optional(),
+});
+
+export const Sync = z.strictObject({
+  phone: z.boolean().optional().describe("Phone controller (default true). false: no relay is ever contacted."),
+  relays: z
+    .array(z.string().regex(/^(mqtt|nostr|room):wss?:\/\/.+$/, "expected mqtt:, nostr: or room: followed by a ws:// or wss:// URL"))
+    .optional()
+    .describe("Relays for pairing a phone and as fallback, replacing the built-in public ones. `room:` is a self-hosted relay (Cloudflare Worker)."),
+  ice: z.array(IceServer).optional().describe("Extra ICE servers for WebRTC, e.g. a TURN server; added to the default STUN servers."),
+});
+
 export const Talk = z.strictObject({
   $schema: z.string().optional(),
   title: z.string(),
@@ -78,6 +93,7 @@ export const Talk = z.strictObject({
   layout: Layout.optional(),
   math: z.strictObject({ macros: z.string().optional() }).optional(),
   bibliography: z.string().optional().describe("Planned (citations): path to a .bib file."),
+  sync: Sync.optional(),
   nodes: z.record(NodeId, NodeEntry.nullable()).refine((r) => Object.keys(r).length > 0, "at least one node"),
   edges: z.array(EdgeItem).default([]),
 });

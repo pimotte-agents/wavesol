@@ -21,13 +21,14 @@ nodes:
   getting-around:
     type: frame
     title: Getting around
-    children: [nav-steps, nav-edges, nav-back, nav-overview, nav-presenter]
+    children: [nav-steps, nav-edges, nav-back, nav-overview, nav-presenter, nav-phone]
     layout: { direction: down }
   nav-steps: {}
   nav-edges: {}
   nav-back: {}
   nav-overview: {}
   nav-presenter: {}
+  nav-phone: {}
 
   writing:
     type: frame
@@ -61,8 +62,8 @@ edges:
   - welcome -> roadmap: { label: "Skip to the roadmap" }
   - idea -> getting-around: { default: true }
   - getting-around -> nav-steps: { default: true, transition: zoom-through }
-  - nav-steps -> nav-edges -> nav-back -> nav-overview -> nav-presenter: { default: true }
-  - nav-presenter -> writing: { default: true }
+  - nav-steps -> nav-edges -> nav-back -> nav-overview -> nav-presenter -> nav-phone: { default: true }
+  - nav-phone -> writing: { default: true }
   - writing -> format-dir: { default: true, transition: zoom-through }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
   - format-nodes -> node-types: { default: true }

@@ -1,14 +1,36 @@
-// Sync protocol between the projector (single source of truth) and its peers (presenter view now,
-// phone later). Transports only move JSON messages; the host applies intents and publishes snapshots.
+// Sync protocol between the projector (single source of truth) and its peers (presenter view, phone).
+// Transports only move JSON messages; the host applies intents and publishes snapshots.
 import type { Intent, Position } from "../runtime/nav.ts";
 
-export type SyncIntent = Intent | { type: "overview"; on?: boolean };
+export type SyncIntent =
+  | Intent
+  | { type: "overview"; on?: boolean }
+  /** laser pointer at a normalised screen position ([0,1]², top-left origin), or null to hide it */
+  | { type: "pointer"; at: [number, number] | null }
+  /** start phone pairing on the projector (contacts the relays; the snapshot then carries `pair`) */
+  | { type: "pair" };
+
+/** A phone connected through the network transport, and how its messages travel. */
+export interface Remote {
+  id: string;
+  link: "p2p" | "relay";
+}
 
 export interface Snapshot extends Position {
   history: Position[];
   overview: boolean;
   /** Outgoing edges of the current node, in order, so peers without the talk can draw buttons. */
   outgoing: { to: string; title: string; label?: string; default?: boolean }[];
+  /** Phone control, once pairing has started on the projector. */
+  phone?: PhoneState;
+}
+
+export interface PhoneState {
+  /** Pairing URL for the QR code (contains the room secret; peers on a transport already know it). */
+  url?: string;
+  /** Why there is no URL, or what to watch out for. */
+  hint?: string;
+  remotes: Remote[];
 }
 
 export type Message =
@@ -26,12 +48,24 @@ export interface Transport {
   close(): void;
 }
 
-const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview"]);
+const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "pair"]);
 /** How many recent intent ids the host remembers to drop replays. */
 const SEEN_LIMIT = 500;
 
 function isMessage(m: unknown): m is Message {
   return typeof m === "object" && m !== null && typeof (m as { kind?: unknown }).kind === "string";
+}
+
+/** Several transports as one: the host talks to the presenter window and phones alike. */
+export function fanout(...transports: Transport[]): Transport {
+  return {
+    send: (msg) => transports.forEach((t) => t.send(msg)),
+    subscribe(fn) {
+      const offs = transports.map((t) => t.subscribe(fn));
+      return () => offs.forEach((off) => off());
+    },
+    close: () => transports.forEach((t) => t.close()),
+  };
 }
 
 /** Same-browser transport for the pop-out presenter window. */

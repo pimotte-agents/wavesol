@@ -151,6 +151,57 @@
       "description": "Planned (citations): path to a .bib file.",
       "type": "string"
     },
+    "sync": {
+      "type": "object",
+      "properties": {
+        "phone": {
+          "description": "Phone controller (default true). false: no relay is ever contacted.",
+          "type": "boolean"
+        },
+        "relays": {
+          "description": "Relays for pairing a phone and as fallback, replacing the built-in public ones. `room:` is a self-hosted relay (Cloudflare Worker).",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(mqtt|nostr|room):wss?:\\/\\/.+$"
+          }
+        },
+        "ice": {
+          "description": "Extra ICE servers for WebRTC, e.g. a TURN server; added to the default STUN servers.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "urls": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "stun:… or turn:… URL(s)"
+              },
+              "username": {
+                "type": "string"
+              },
+              "credential": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "urls"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "nodes": {
       "type": "object",
       "propertyNames": {

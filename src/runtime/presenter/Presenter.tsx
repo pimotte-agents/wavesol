@@ -9,6 +9,7 @@ import { bindKeys, type Controls } from "../keys.ts";
 import { NavGraph, navigate } from "../nav.ts";
 import { MiniMap } from "./MiniMap.tsx";
 import { NodePreview } from "./NodePreview.tsx";
+import { PairPanel, linkLabel } from "../ui/PairPanel.tsx";
 
 interface Props {
   talk: CompiledTalk;
@@ -26,6 +27,7 @@ export function Presenter({ talk, peer, plugins }: Props) {
   const byId = useMemo(() => new Map(talk.nodes.map((n) => [n.id, n])), [talk]);
   const timer = useTimer();
   const now = useNow();
+  const [pairing, setPairing] = useState(false);
 
   useEffect(() => {
     const controls: Controls = {
@@ -33,8 +35,9 @@ export function Presenter({ talk, peer, plugins }: Props) {
       dispatch: (intent) => peer.send(intent),
       toggleOverview: (on) => peer.send({ type: "overview", on: on ?? !peer.current.state?.overview }),
       zoomOverview: () => {},
+      pair: () => peer.send({ type: "pair" }),
     };
-    return bindKeys(controls, () => {});
+    return bindKeys(controls, (panel) => panel === "pair" && setPairing((on) => !on));
   }, [peer, talk]);
 
   // the clock starts with the first move away from where the presenter view found the talk
@@ -93,6 +96,28 @@ export function Presenter({ talk, peer, plugins }: Props) {
           </button>
           <span className="ws-clock">{new Date(now).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
         </header>
+        <div className="ws-presenter-phone">
+          <span>
+            Phone:{" "}
+            {!s?.phone ? (
+              <span className="ws-muted">not paired</span>
+            ) : s.phone.remotes.length ? (
+              s.phone.remotes.map(linkLabel).join(", ")
+            ) : (
+              <span className="ws-muted">none connected</span>
+            )}
+          </span>
+          <button
+            className="ws-pair-button"
+            onClick={() => {
+              if (!pairing) peer.send({ type: "pair" });
+              setPairing(!pairing);
+            }}
+          >
+            {pairing ? "Hide QR code" : "Connect a phone"}
+          </button>
+        </div>
+        {pairing && <PairPanel phone={s?.phone} />}
         <div className="ws-presenter-edges" aria-label="Outgoing edges">
           <h2 className="ws-ph">Edges</h2>
           {s && s.outgoing.length === 0 && <p className="ws-muted">No outgoing edges. Backspace goes back.</p>}

@@ -42,6 +42,8 @@ export interface CompiledTalk {
   transitions: { default: TransitionSpec };
   nodes: CompiledNode[];
   edges: CompiledEdge[];
+  /** Phone controller settings; unset relays mean the built-in public ones. */
+  sync: { phone: boolean; relays?: string[]; ice: { urls: string | string[]; username?: string; credential?: string }[] };
 }
 
 export interface Diagnostic {

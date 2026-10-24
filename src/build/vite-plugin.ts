@@ -5,6 +5,7 @@ import { relative, sep } from "node:path";
 import { lookup } from "mrmime";
 import type { Plugin, ViteDevServer } from "vite";
 import { compileTalk, type CompileResult } from "./compile.ts";
+import { createRelay, lanOrigins } from "../cli/relay.ts";
 import { formatDiagnostic } from "../model/compiled.ts";
 
 const ID = "virtual:wavesol/talk";
@@ -27,6 +28,12 @@ export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResu
       return `export default ${JSON.stringify({ talk: r.talk, diagnostics: r.diagnostics })};`;
     },
     configureServer(server: ViteDevServer) {
+      // local relay for phones, as in `wavesol serve`; other upgrades (Vite's HMR) are left alone
+      const port = () => (server.httpServer?.address() as { port?: number } | null)?.port ?? 0;
+      const relay = createRelay("/", () => ({ lan: server.config.server.host ? lanOrigins(port()) : [] }));
+      server.httpServer?.on("upgrade", (req, socket, head) => relay.handleUpgrade(req, socket, head));
+      server.httpServer?.on("close", () => relay.close());
+      server.middlewares.use((req, res, next) => relay.handleRequest(req, res) || next());
       server.watcher.add(talkDir);
       let timer: ReturnType<typeof setTimeout> | undefined;
       server.watcher.on("all", (_event, file) => {

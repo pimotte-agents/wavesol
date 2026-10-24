@@ -1,7 +1,7 @@
 // Keyboard bindings for the projector window. Clickers send PageDown/PageUp (and sometimes arrows).
 import type { Intent } from "./nav.ts";
 
-export type Panel = "edges" | "help";
+export type Panel = "edges" | "help" | "pair";
 
 /** What the keys drive: the presentation itself, or the projector from the presenter view. */
 export interface Controls {
@@ -11,6 +11,8 @@ export interface Controls {
   zoomOverview(factor: number): void;
   /** Opens the presenter view (projector only). */
   openPresenter?(): void;
+  /** Starts pairing a phone (contacts the relays). */
+  pair?(): void;
 }
 
 export const KEY_HELP: [string, string][] = [
@@ -23,6 +25,7 @@ export const KEY_HELP: [string, string][] = [
   ["Home", "go to the start"],
   ["e", "show outgoing edges"],
   ["p", "open the presenter view (notes, next, timer)"],
+  ["c", "connect a phone (QR code)"],
   ["f", "fullscreen"],
   ["?", "this help"],
   ["Esc", "close panels and the overview"],
@@ -68,6 +71,14 @@ export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) =>
       case "p":
         if (p.openPresenter) p.openPresenter();
         else handled = false;
+        break;
+      case "c":
+        if (!p.pair) {
+          handled = false;
+          break;
+        }
+        p.pair();
+        togglePanel("pair");
         break;
       case "e":
         togglePanel("edges");

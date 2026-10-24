@@ -531,3 +531,189 @@ body {
   stroke: var(--ws-accent);
   stroke-width: 2;
 }
+
+/* ---------- laser pointer (from a phone) ---------- */
+.ws-laser {
+  position: absolute;
+  left: -11px;
+  top: -11px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #e5332a;
+  box-shadow:
+    0 0 0 4px rgb(229 51 42 / 0.25),
+    0 0 18px 6px rgb(229 51 42 / 0.45);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 5;
+}
+.ws-laser.ws-on {
+  opacity: 1;
+}
+
+/* ---------- phone pairing ---------- */
+.ws-pair h3 {
+  margin: 0 0 8px;
+  font: 600 16px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-pair p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.ws-qr {
+  width: min(240px, 60vw);
+  background: #fff;
+  border-radius: 8px;
+  line-height: 0;
+}
+.ws-qr svg {
+  width: 100%;
+  height: auto;
+}
+.ws-pair-url a {
+  color: var(--ws-accent);
+}
+.ws-pair-hint {
+  color: #b42318;
+}
+.ws-presenter-phone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.ws-pair-button {
+  font: inherit;
+  color: inherit;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.ws-presenter-side > .ws-pair {
+  padding: 12px 14px;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 12px;
+}
+
+/* ---------- phone controller ---------- */
+.ws-phone {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: max(10px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  font-size: 17px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+.ws-phone button {
+  font: inherit;
+  color: inherit;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+.ws-phone button:active:not(:disabled) {
+  background: var(--ws-accent-soft);
+}
+.ws-phone button:disabled {
+  color: var(--ws-muted);
+}
+.ws-phone-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ws-phone-status {
+  align-self: flex-start;
+  font-size: 13px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--ws-accent-soft);
+  color: var(--ws-accent);
+}
+.ws-phone-status.ws-connecting,
+.ws-phone-status.ws-offline {
+  background: #fdecea;
+  color: #b42318;
+}
+.ws-phone-title {
+  font: 600 19px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-phone-laser {
+  aspect-ratio: 16 / 9;
+  max-height: 30vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--ws-frame-border);
+  border-radius: 14px;
+  color: var(--ws-muted);
+  font-size: 14px;
+  touch-action: none;
+}
+.ws-phone-laser.ws-active {
+  border-color: #e5332a;
+  background: rgb(229 51 42 / 0.06);
+}
+.ws-phone-edges {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ws-phone-edges button {
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px;
+  text-align: left;
+}
+.ws-phone-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr 2fr;
+  gap: 8px;
+  height: 22vh;
+  min-height: 96px;
+}
+.ws-phone button.ws-phone-next {
+  font-size: 26px;
+  font-weight: 600;
+  background: var(--ws-accent);
+  color: #fff;
+  border-color: var(--ws-accent);
+}
+.ws-phone-waiting .ws-phone-nav,
+.ws-phone-waiting .ws-phone-edges,
+.ws-phone-waiting .ws-phone-laser {
+  opacity: 0.4;
+}
+.ws-phone-hint,
+.ws-phone-error p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ws-muted);
+}
+.ws-phone-error {
+  justify-content: center;
+  text-align: center;
+}
+.ws-phone-error p {
+  font-size: 18px;
+}

@@ -11,6 +11,7 @@ const talk: CompiledTalk = {
   start: "a",
   theme: { base: "academic-light", vars: {} },
   transitions: { default: "fly" },
+  sync: { phone: true, ice: [] },
   nodes: [node("a", 2), node("b"), node("c", 1, "cut"), node("d")],
   edges: [
     { from: "a", to: "b", default: true },

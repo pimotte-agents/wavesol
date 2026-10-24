@@ -1,14 +1,30 @@
-// Screen-space chrome over the canvas: outgoing-edges panel and keyboard help.
-import { useEffect, useState } from "react";
+// Screen-space chrome over the canvas: outgoing-edges panel, keyboard help and phone pairing.
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { Presentation, PresentationState } from "../presentation.ts";
-import { KEY_HELP, bindKeys, type Panel } from "../keys.ts";
+import { KEY_HELP, bindKeys, type Controls, type Panel } from "../keys.ts";
+import type { PhoneControl } from "../remote.ts";
+import { PairPanel } from "./PairPanel.tsx";
 
-export function Overlay({ presentation }: { presentation: Presentation }) {
+export function Overlay({ presentation, phone }: { presentation: Presentation; phone: PhoneControl }) {
   const [state, setState] = useState<PresentationState>(presentation.state);
   const [panel, setPanel] = useState<Panel | undefined>();
+  const phoneState = useSyncExternalStore(
+    useCallback((fn) => phone.onChange(fn), [phone]),
+    () => phone.state,
+  );
 
   useEffect(() => presentation.subscribe(setState), [presentation]);
-  useEffect(() => bindKeys(presentation, (p) => setPanel((cur) => (p === undefined || cur === p ? undefined : p))), [presentation]);
+  useEffect(() => {
+    const controls: Controls = {
+      talk: presentation.talk,
+      dispatch: (i) => presentation.dispatch(i),
+      toggleOverview: (on) => presentation.toggleOverview(on),
+      zoomOverview: (f) => presentation.zoomOverview(f),
+      openPresenter: () => presentation.openPresenter(),
+      pair: phone.enabled ? () => void phone.start() : undefined,
+    };
+    return bindKeys(controls, (p) => setPanel((cur) => (p === undefined || cur === p ? undefined : p)));
+  }, [presentation, phone]);
 
   return (
     <>
@@ -26,6 +42,11 @@ export function Overlay({ presentation }: { presentation: Presentation }) {
               </li>
             ))}
           </ol>
+        </aside>
+      )}
+      {panel === "pair" && (
+        <aside className="ws-panel ws-pair-panel" aria-label="Connect a phone">
+          <PairPanel phone={phoneState} />
         </aside>
       )}
       {panel === "help" && (

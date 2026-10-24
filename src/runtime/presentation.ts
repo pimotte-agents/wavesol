@@ -11,6 +11,10 @@ const OVERVIEW_MARGIN = 0.05;
 const FAR_PX = 160;
 /** Pointer travel (px) after which a press in the overview is a drag, not a click. */
 const DRAG_PX = 5;
+/** Fraction of the remaining distance the laser dot covers per frame. */
+const LASER_EASE = 0.35;
+/** The laser dot hides after this long without an update. */
+const LASER_IDLE_MS = 4000;
 
 export interface PresentationState {
   nav: NavState;
@@ -34,6 +38,12 @@ export class Presentation {
   /** Set once the current overview press has moved far enough to be a pan; suppresses the click. */
   private dragged = false;
   private listeners = new Set<(s: PresentationState) => void>();
+  private laser: HTMLElement;
+  /** Laser pointer: where it is drawn, where it is heading (screen px), and when it last moved. */
+  private laserAt?: { x: number; y: number };
+  private laserTarget?: { x: number; y: number };
+  private laserMoved = 0;
+  private laserFrame = 0;
 
   constructor(
     root: HTMLElement,
@@ -45,7 +55,8 @@ export class Presentation {
 
     this.stage = el("div", "ws-stage");
     this.world = el("div", "ws-world");
-    this.stage.append(this.world);
+    this.laser = el("div", "ws-laser");
+    this.stage.append(this.world, this.laser);
     root.append(this.stage);
 
     // Paint order per depth d: edges whose shallower endpoint is at depth d, then the nodes at depth d.
@@ -216,6 +227,40 @@ export class Presentation {
     };
     stage.addEventListener("pointerup", end);
     stage.addEventListener("pointercancel", end);
+  }
+
+  /**
+   * Shows the laser pointer at a normalised position of the screen ([0,1]², from a phone), or hides it.
+   * Updates arrive throttled (and over a relay, unevenly), so the dot glides towards each new target.
+   */
+  setPointer(at: [number, number] | null): void {
+    if (!at) {
+      this.laserTarget = undefined;
+      return this.drawLaser();
+    }
+    const { vw, vh } = this.viewport();
+    const clamp = (v: number) => Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0));
+    this.laserTarget = { x: clamp(at[0]) * vw, y: clamp(at[1]) * vh };
+    this.laserMoved = performance.now();
+    this.laserAt ??= this.laserTarget;
+    if (!this.laserFrame) this.laserFrame = requestAnimationFrame(() => this.drawLaser());
+  }
+
+  private drawLaser() {
+    this.laserFrame = 0;
+    const t = this.laserTarget;
+    // a phone that stops sending (dropped connection) must not leave the dot on screen
+    if (!t || performance.now() - this.laserMoved > LASER_IDLE_MS) {
+      this.laserAt = this.laserTarget = undefined;
+      this.laser.classList.remove("ws-on");
+      return;
+    }
+    const a = this.laserAt!;
+    a.x += (t.x - a.x) * LASER_EASE;
+    a.y += (t.y - a.y) * LASER_EASE;
+    this.laser.style.transform = `translate(${a.x}px, ${a.y}px)`;
+    this.laser.classList.add("ws-on");
+    this.laserFrame = requestAnimationFrame(() => this.drawLaser());
   }
 
   /** Opens the presenter view in a pop-out window (or focuses it if it is already open). */

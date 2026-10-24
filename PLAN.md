@@ -11,8 +11,8 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | 0 — Foundations and spikes | Done. Open: camera check on real hardware. |
 | 1 — Core fabric MVP | Done. Docs live at https://pimotte-agents.github.io/wavesol/ |
 | 2 — Presenter view | Done |
-| 3 — Phone controller | Next |
-| 4 — Lean nodes | Not started (spike done; `lean` frontmatter schema reserved) |
+| 3 — Phone controller | Done; open: real-world runs (eduroam, hotspot) |
+| 4 — Lean nodes | Next (spike done; `lean` frontmatter schema reserved) |
 | 5 — Academic content and polish | Not started |
 | 6 — Audience polls | Not started |
 
@@ -32,13 +32,13 @@ Where things are documented:
 | Steps | Nodes have internal steps (fragments, Lean tactics, animation sections). `step` advances within the node, and when the node is done it follows the default edge. Taking an edge early skips the remaining steps. |
 | Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview (wheel/pinch/+/− zoom, drag pans), `e` = edges panel, `p` = presenter view, `?` = help, `f` = fullscreen. |
 | Source format | Directory: `talk.yaml` (graph, layout hints, theme, transitions) + `nodes/*.md` with frontmatter + `lean/` lake project + `figures/`, `refs.bib`, `macros.tex`. |
-| Build | `wavesol build` → `dist/` static site, base-path aware. `wavesol dev` = live reload. `wavesol serve` = local presenting from the laptop (phone control still needs internet, e.g. via phone hotspot). |
+| Build | `wavesol build` → `dist/` static site, base-path aware. `wavesol dev` = live reload. `wavesol serve` = local presenting from the laptop; with `--host` it is also the phone relay, so no internet is needed (e.g. laptop on the phone hotspot). |
 | Stack | TypeScript + Vite + React for core UI. Single npm package with internal module boundaries (see Architecture). |
 | Plugins | Framework-agnostic node plugin API. Built-in plugins only for now (no external loading until the API stabilises). |
 | Slides | Own renderer, not reveal.js: Markdown → HTML, KaTeX at build time with shared macros, Shiki code highlighting, reveal-style fragments. |
 | Lean | Lake project inside the talk. **SubVerso** extracts highlighting, hovers and goal states at build time. Infoview inside the node. Click-a-tactic exploration + scripted step-through. No live editing, no Lean in the browser. |
 | Manim | Not scheduled; under "Later / maybe" (video-with-sections vs JS-native still open). |
-| Sync | Fallback chain behind one transport interface. Presenter popout via `BroadcastChannel`. Phone via WebRTC (multi-relay signaling over public MQTT/Nostr/tracker relays, trystero-style, + STUN, optional TURN). If no P2P connection forms within a few seconds, messages are relayed through the signaling channel (end-to-end encrypted). Optional self-hosted Cloudflare Worker for signaling + relay. QR pairing with a room secret. |
+| Sync | Fallback chain behind one transport interface. Presenter popout via `BroadcastChannel`. Phone via WebRTC (signaling over public MQTT and Nostr relays in parallel, own small clients, + STUN, optional TURN). Messages go through the relays (end-to-end encrypted) until the direct connection is up, and whenever it is down. Optional self-hosted Cloudflare Worker for signaling + relay. QR pairing with a room secret. |
 | Deploy | One talk per repo. GitHub Pages via an Action template. Must work from any base URL/subpath. |
 | Theme | Calm academic, light default (off-white, one accent, thin curved edges, projector-safe), with bundled fonts so talks look the same on any machine. Dark variant in Phase 5. CSS-variable based, overridable in `talk.yaml`. |
 | AI authoring | JSON Schema for `talk.yaml` and frontmatter (generated from zod), `wavesol check` with precise errors, bundled `AGENTS.md`/`CLAUDE.md` in the talk template. |
@@ -75,17 +75,18 @@ src/
   plugins/       node types, each with build.ts (Node) and runtime.ts (browser): slide, image, frame
   runtime/       presentation (canvas, edges, LOD), camera + transitions, navigation state machine,
                  keyboard, ui/ (React overlay: edges panel, help), presenter/ (presenter view)
-  sync/          state protocol (host/peer, versioned intents) and transports (BroadcastChannel)
+  sync/          state protocol (host/peer, versioned intents), transports (BroadcastChannel; network:
+                 relay + WebRTC), room crypto, signals (MQTT, Nostr, room protocol)
   theme/         base.css (structure) + academic-light.css (variables)
-  cli/           new / dev / build / serve / check
+  cli/           new / dev / build / serve / check; local relay for serve/dev
+relay-worker/    optional self-hosted relay (Cloudflare Worker + Durable Object), with deploy guide
 templates/talk/  the starter talk copied by `wavesol new` (incl. AGENTS.md, Pages workflow)
 docs/            the documentation, written as a wavesol talk (deployed to GitHub Pages)
 tests/           unit/ + fixtures/ (check diagnostics), e2e/ (Playwright, visual baselines)
 spikes/          Phase 0 spikes (camera, Lean)
 ```
 
-Planned additions: WebRTC/relay transports and the fallback chain in `src/sync/`, the phone controller
-UI (Phase 3), plugins `lean`, `tikz`, `references`, `poll`.
+Planned additions: plugins `lean`, `tikz`, `references`, `poll`.
 
 **Node plugin contract** (framework-agnostic), split so build-only dependencies (Shiki, KaTeX, Lean
 tooling) never reach the browser bundle. See `src/plugins/types.ts`:
@@ -111,16 +112,17 @@ interface NodeInstance {
 The build compiles a talk into one `CompiledTalk` JSON (layout positions, plugin data, steps), served
 to the runtime as the virtual module `virtual:wavesol/talk`.
 
-**State protocol** (`src/sync/protocol.ts`; BroadcastChannel since Phase 2, network transports in
-Phase 3): the projector page is the single source of truth. A snapshot is `{ node, step, history,
-overview, outgoing }` (outgoing edges with titles and labels, so peers without the talk can draw
-buttons); `pointer` comes with the phone. Peers send a `hello` and get the current snapshot; every state
-change is published with a new version. Peers send intents (`step`, `prev`, `edge`, `back`, `goto`,
-`overview`) tagged with a unique id and the (session, version) they were issued against. The host drops
-intents from an earlier projector session, replays (an id seen before), and `edge` intents issued
-against an older version (an edge index only means something on its node); other stale intents still
-apply, so quick repeated presses all count. Transports only move JSON messages. In Phase 3, peers must
-also prove knowledge of the room secret (from the QR code) before their intents are accepted.
+**State protocol** (`src/sync/protocol.ts`; BroadcastChannel to the presenter window, the network
+transport in `src/sync/net.ts` to phones): the projector page is the single source of truth. A snapshot
+is `{ node, step, history, overview, outgoing, phone }` (outgoing edges with titles and labels, so peers
+without the talk can draw buttons; `phone` = pairing URL and connected phones). Peers send a `hello`
+and get the current snapshot; every state change is published with a new version. Peers send intents
+(`step`, `prev`, `edge`, `back`, `goto`, `overview`, `pointer`, `pair`) tagged with a unique id and the
+(session, version) they were issued against. The host drops intents from an earlier projector session,
+replays (an id seen before), and `edge` intents issued against an older version (an edge index only
+means something on its node); other stale intents still apply, so quick repeated presses all count.
+Transports only move JSON messages. On the network, everything is sealed with the room key from the
+QR code; what does not open with it is ignored, which is how only paired phones get in.
 
 ## Testing
 
@@ -217,6 +219,32 @@ also prove knowledge of the room secret (from the QR code) before their intents 
   - End-to-end: two browser contexts (projector and phone) connected through a local signaling/relay
     stub, including a dropped connection and the switch to relaying. Real public relays only get a
     manual or nightly smoke test, so CI doesn't depend on them.
+- **Status: done** (2026-10-24), except the exit's real-world runs (eduroam; `serve` on a hotspot),
+  which need a phone and are still to do. `c` on the projector or "Connect a phone" in the presenter
+  view shows the QR code; the phone page (`?phone#k=<secret>`) has Next/Prev/Back, edge buttons, a
+  laser pad (smoothed dot on the projector), connection status and Wake Lock. Unit tests: room
+  crypto, protocol (incl. intents without the secret, forged and replayed messages, reload), the
+  network transport over an in-memory relay, the local relay server. End-to-end (projector and phone
+  in separate browser contexts through the test server's relay): pairing, both directions, presenter
+  status, laser, a dropped direct connection (fallback to relay and back), relay-only through a relay
+  restart, a wrong key, a projector reload. `scripts/smoke-relays.ts` checks the public relays (all
+  six pass) or a deployed Worker; the Worker was checked under `wrangler dev`.
+  Decisions made along the way:
+  - Own small clients (MQTT 3.1.1 over WebSocket, Nostr) behind one signal interface instead of
+    trystero: the same channel carries WebRTC signaling and the encrypted relay fallback, and tests
+    use a 30-line local relay. BitTorrent trackers dropped: they can carry only signaling, not the
+    fallback, and public ones come and go.
+  - Messages use the relay from the start and move to the data channel once it opens (rather than
+    waiting a few seconds for P2P first); the protocol's versions and intent ids make the switch safe.
+  - Encryption is pure JS (`@noble/ciphers`, AES-256-GCM, HKDF from the secret) because a phone on
+    `wavesol serve` loads the page over plain HTTP, where Web Crypto is unavailable.
+  - Default relays: three MQTT brokers (ports 8884/8084/8081) and three Nostr relays (port 443, for
+    networks that block other ports). Nostr relays reject ephemeral events from a clock more than about
+    a minute off, so the client corrects its clock offset when a relay says "expired" or "future".
+  - The projector contacts no relay until pairing is started (or the tab was paired before a reload),
+    and publishes nothing while no phone is connected.
+  - `wavesol serve` and `dev` serve `__wavesol/serve.json` and a local relay; the page uses them when
+    present, so a hotspot setup needs no internet.
 
 ### Phase 4 — Lean nodes
 - Use SubVerso as is: the talk's lake project requires SubVerso (version pinned per wavesol release),

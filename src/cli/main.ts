@@ -9,6 +9,7 @@ import react from "@vitejs/plugin-react";
 import sirv from "sirv";
 import { build, createServer, type InlineConfig } from "vite";
 import { compileTalk } from "../build/compile.ts";
+import { attachRelay, createRelay, lanOrigins } from "./relay.ts";
 import { printDiagnostics, wavesol } from "../build/vite-plugin.ts";
 
 const PKG = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -112,9 +113,15 @@ export async function main(argv: string[]): Promise<number> {
       if (!(await buildTalk(talkDir, out))) return 1;
       const listenPort = port ?? 4173;
       const host = values.host ? "0.0.0.0" : "127.0.0.1";
-      createHttpServer(sirv(out, { dev: true })).listen(listenPort, host);
+      // the local relay lets a phone on the same network control the talk without internet
+      const relay = createRelay("/", () => ({ lan: values.host ? lanOrigins(listenPort) : [] }));
+      const files = sirv(out, { dev: true });
+      const server = createHttpServer((req, res) => relay.handleRequest(req, res) || files(req, res));
+      attachRelay(server, relay);
+      server.listen(listenPort, host);
       console.log(`serving ${out} at http://localhost:${listenPort}/`);
       if (values.host) for (const a of lanAddresses()) console.log(`  on the network: http://${a}:${listenPort}/`);
+      else console.log("  phone control needs the network: add --host");
       return new Promise(() => {});
     }
     default:
