@@ -1,16 +1,22 @@
 // Screen-space chrome over the canvas: outgoing-edges panel, keyboard help and phone pairing.
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { renderSVG } from "uqr";
 import type { Presentation, PresentationState } from "../presentation.ts";
 import { KEY_HELP, bindKeys, type Controls, type Panel } from "../keys.ts";
-import type { PhoneControl } from "../remote.ts";
+import type { AudienceHub, PhoneControl } from "../remote.ts";
 import { PairPanel } from "./PairPanel.tsx";
 
-export function Overlay({ presentation, phone }: { presentation: Presentation; phone: PhoneControl }) {
+export function Overlay({ presentation, phone, audience }: { presentation: Presentation; phone: PhoneControl; audience: AudienceHub }) {
   const [state, setState] = useState<PresentationState>(presentation.state);
   const [panel, setPanel] = useState<Panel | undefined>();
   const phoneState = useSyncExternalStore(
     useCallback((fn) => phone.onChange(fn), [phone]),
     () => phone.state,
+  );
+
+  const audienceState = useSyncExternalStore(
+    useCallback((fn) => audience.onChange(fn), [audience]),
+    () => audience.state,
   );
 
   useEffect(() => presentation.subscribe(setState), [presentation]);
@@ -22,10 +28,11 @@ export function Overlay({ presentation, phone }: { presentation: Presentation; p
       zoomOverview: (f) => presentation.zoomOverview(f),
       openPresenter: () => presentation.openPresenter(),
       pair: phone.enabled ? () => void phone.start() : undefined,
+      join: audience.enabled ? () => void audience.start() : undefined,
       toggleDragMode: import.meta.env.DEV ? () => presentation.setDragMode(!presentation.dragMode) : undefined,
     };
     return bindKeys(controls, (p) => setPanel((cur) => (p === undefined || cur === p ? undefined : p)));
-  }, [presentation, phone]);
+  }, [presentation, phone, audience]);
 
   return (
     <>
@@ -50,6 +57,16 @@ export function Overlay({ presentation, phone }: { presentation: Presentation; p
           Drag mode: drag a node to pin it in talk.yaml. <kbd>o</kbd> overview, <kbd>d</kbd> to leave.
         </div>
       )}
+      {panel === "join" && (
+        <div className="ws-join" role="dialog" aria-label="Join the poll">
+          <h2>Join with your phone</h2>
+          <JoinCode url={audienceState?.url} />
+          {audienceState?.hint && <p className="ws-pair-hint">{audienceState.hint}</p>}
+          <p className="ws-muted" role="status">
+            {audienceState ? `${audienceState.joined} joined` : "Starting…"}
+          </p>
+        </div>
+      )}
       {panel === "pair" && (
         <aside className="ws-panel ws-pair-panel" aria-label="Connect a phone">
           <PairPanel phone={phoneState} />
@@ -68,6 +85,19 @@ export function Overlay({ presentation, phone }: { presentation: Presentation; p
           </dl>
         </aside>
       )}
+    </>
+  );
+}
+
+function JoinCode({ url }: { url?: string }) {
+  const svg = useMemo(() => (url ? renderSVG(url, { border: 2 }) : undefined), [url]);
+  if (!svg) return null;
+  return (
+    <>
+      <div className="ws-qr ws-join-qr" role="img" aria-label="QR code to join" dangerouslySetInnerHTML={{ __html: svg }} />
+      <p className="ws-join-url">
+        or open <a href={url}>this link</a>
+      </p>
     </>
   );
 }

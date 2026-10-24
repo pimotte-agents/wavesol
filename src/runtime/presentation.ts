@@ -417,6 +417,11 @@ export class Presentation {
     this.laserFrame = requestAnimationFrame(() => this.drawLaser());
   }
 
+  /** Passes live data (e.g. a poll's votes) to a node's plugin. */
+  setLive(id: string, live: unknown): void {
+    this.instances.get(id)?.setLive?.(live);
+  }
+
   /** Opens the presenter view in a pop-out window (or focuses it if it is already open). */
   openPresenter(): void {
     const url = new URL(location.href);

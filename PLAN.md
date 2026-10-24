@@ -14,7 +14,7 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | 3 — Phone controller | Done; open: real-world runs (eduroam, hotspot) |
 | 4 — Lean nodes | Done |
 | 5 — Academic content and polish | Done |
-| 6 — Audience polls | Next |
+| 6 — Audience polls | Done; open: a real seminar-room run |
 
 Where things are documented:
 - [`spec/FORMAT.md`](spec/FORMAT.md): the source format (authoritative; schemas in `schema/`).
@@ -320,6 +320,21 @@ QR code; what does not open with it is ignored, which is how only paired phones 
 - `poll` node plugin: multiple choice, live histogram on the projector, results in the presenter view.
 - Exit: run a poll with ~30 phones in a seminar room.
 - Tests: end-to-end with ~30 simulated audience connections answering a poll.
+- **Status: done** (2026-10-24), except the exit's run with ~30 real phones in a seminar room.
+  `type: poll` nodes: question (body) and options; step 0 shows the options and the number of votes,
+  Space reveals a bar per option (`results: live`: from the start). A join QR code on the poll slide,
+  `j` for a full-size one; the audience page (`?audience#k=…`) shows the poll on screen, one vote per
+  phone (voter id kept in localStorage), changeable. The presenter view always shows the results; votes
+  survive a projector reload (sessionStorage). Tests: unit (votes per voter, changing votes, only the
+  poll on screen and valid options, closing/reopening, a phone and the projector reloading); end to end
+  with 30 simulated phones (network clients through the test server's relay) plus two browser phones:
+  counts, changed votes, presenter before the reveal, reveal, closing; and that the audience's code
+  cannot drive the talk.
+  Decisions made along the way:
+  - The audience has its own room (secret, topic), separate from the controller's: its QR code is
+    public, and in that room the projector only takes votes. Same transport (relay, WebRTC upgrade);
+    the network layer became generic over its message type.
+  - Results are revealed with Space by default, so early votes don't sway later ones.
 
 ### Later / maybe
 - Animations: choose between manim pre-rendered video with `next_section()` steps (+ alpha video for

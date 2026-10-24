@@ -10,10 +10,12 @@ interface Props {
   step: number;
   /** A detail of the step the laser selected on the projector (e.g. a Lean tactic). */
   focus?: number;
+  /** The node's live data from the projector (e.g. poll votes); previews always show poll results. */
+  live?: unknown;
   plugins: Record<string, RuntimePlugin>;
 }
 
-export function NodePreview({ talk, node: id, step, focus, plugins }: Props) {
+export function NodePreview({ talk, node: id, step, focus, live, plugins }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const root = useRef<NodeInstance | undefined>(undefined);
@@ -49,6 +51,10 @@ export function NodePreview({ talk, node: id, step, focus, plugins }: Props) {
       w.replaceChildren();
     };
   }, [talk, node, plugins]);
+
+  useLayoutEffect(() => {
+    root.current?.setLive?.({ ...(live as object | undefined), showResults: true });
+  }, [live, node]);
 
   useLayoutEffect(() => {
     root.current?.setStep(step, { animate: true });

@@ -3,7 +3,7 @@
 ## What this is
 
 A wavesol talk is a **graph of nodes** on one canvas: each node is a slide (a Markdown file in
-`nodes/`), an image, a TikZ figure, a Lean proof, a references list, or a frame (a group drawn around
+`nodes/`), an image, a TikZ figure, a Lean proof, an audience poll, a references list, or a frame (a group drawn around
 its children); directed **edges** connect the nodes and are shown as buttons. The audience follows the
 *default* edges with Space; other edges are labeled detours. Slides can cite works from `refs.bib` with
 `[@key]` and draw diagrams in ` ```tikzcd ` fences.
@@ -157,6 +157,20 @@ C \arrow[r, "k"'] & D
 The body is the picture: TikZ commands, or a whole `tikzpicture` / `tikzcd` environment. LaTeX draws
 it at build time (needs TeX Live and poppler); `npm run check` reports LaTeX errors at their line.
 Black becomes the theme's ink colour, so don't hard-code `black`/`white` for strokes or text.
+
+### `poll`
+
+```markdown
+---
+type: poll
+options: [Induction, Contradiction, "Something else: tell me after"]
+results: reveal   # reveal (default): Space shows the results | live
+---
+# Which proof technique do you use most?
+```
+
+The audience votes from their phones (QR code on the slide; `j` shows it full-size). Keep options
+short (2–9). A poll has one step when results are revealed: give it a default edge onwards as usual.
 
 ### `references`
 

@@ -15,7 +15,11 @@ import { SyncHost, SyncPeer, broadcastTransport, fanout, type Snapshot } from ".
 import { Phone, PhoneError } from "./phone/Phone.tsx";
 import { Presentation, type PresentationState } from "./presentation.ts";
 import { Presenter } from "./presenter/Presenter.tsx";
-import { PhoneControl, joinRoom } from "./remote.ts";
+import { AudienceHub, PhoneControl, joinRoom } from "./remote.ts";
+import { Audience, voterId } from "./audience/Audience.tsx";
+import { Voter, type AudienceMessage } from "../sync/audience.ts";
+import type { PollData } from "../plugins/poll/build.ts";
+import type { PollLive } from "../plugins/poll/runtime.ts";
 import { Overlay } from "./ui/Overlay.tsx";
 
 const compiled = virtualTalk as { talk?: CompiledTalk; diagnostics: Diagnostic[] };
@@ -40,7 +44,16 @@ if (!compiled.talk) {
 
   const mode = new URLSearchParams(location.search);
 
-  if (mode.has("phone")) {
+  if (mode.has("audience")) {
+    document.title = talk.meta.title;
+    const r = createRoot(root);
+    void joinRoom<AudienceMessage>(talk, "audience").then((net) => {
+      if ("error" in net) return r.render(<PhoneError message={net.error} />);
+      const voter = new Voter(net, voterId());
+      r.render(<Audience title={talk.meta.title} voter={voter} net={net} />);
+      (window as unknown as { wavesolAudience: { voter: Voter; net: typeof net } }).wavesolAudience = { voter, net };
+    });
+  } else if (mode.has("phone")) {
     document.title = `Remote: ${talk.meta.title}`;
     const r = createRoot(root);
     void joinRoom(talk).then((net) => {
@@ -59,7 +72,8 @@ if (!compiled.talk) {
     const ui = document.createElement("div");
     document.body.append(ui);
     const phone = new PhoneControl(talk);
-    createRoot(ui).render(<Overlay presentation={presentation} phone={phone} />);
+    const audience = new AudienceHub(talk);
+    createRoot(ui).render(<Overlay presentation={presentation} phone={phone} audience={audience} />);
     (window as unknown as { wavesol: Presentation }).wavesol = presentation;
     (window as unknown as { wavesolPhoneControl: PhoneControl }).wavesolPhoneControl = phone;
 
@@ -70,9 +84,30 @@ if (!compiled.talk) {
       else if (intent.type === "pair") void phone.start();
       else presentation.dispatch(intent);
     });
-    const publish = () => host.publish({ ...snapshot(presentation.state), phone: phone.state });
-    presentation.subscribe(publish);
+    // polls: the audience room follows the poll on screen; votes update the poll node live
+    const pollLive = () => {
+      const node = presentation.state.node;
+      if (node.type !== "poll") return undefined;
+      return { results: audience.results(node.id), join: audience.state?.url } satisfies PollLive;
+    };
+    const publish = () => host.publish({ ...snapshot(presentation.state), phone: phone.state, ...(pollLive() ? { live: pollLive() } : {}) });
+    const followPoll = () => {
+      const node = presentation.state.node;
+      const data = node.data as PollData;
+      audience.show(node.type === "poll" ? { id: node.id, question: data.question, options: data.options } : undefined);
+      const live = pollLive();
+      if (live) presentation.setLive(node.id, live);
+    };
+    presentation.subscribe(() => {
+      followPoll();
+      publish();
+    });
+    audience.onChange(() => {
+      followPoll();
+      publish();
+    });
     phone.onChange(publish);
+    followPoll();
     publish();
     window.addEventListener("pagehide", () => host.close());
   }

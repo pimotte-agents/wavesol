@@ -4,17 +4,20 @@
 // Anything that does not open with the room key is ignored: that is what keeps strangers out.
 import { open, seal, type Room } from "./crypto.ts";
 import type { Message, Remote, Transport } from "./protocol.ts";
+
+/** What travels: the sync protocol's messages by default; the audience room has its own. */
+export type AnyMessage = { kind: string };
 import type { Signal } from "./signal.ts";
 
 type Role = "host" | "peer";
 type RtcData = { sdp: RTCSessionDescriptionInit } | { ice: RTCIceCandidateInit };
 
-interface Envelope {
+interface Envelope<M extends AnyMessage = AnyMessage> {
   from: string;
   role: Role;
   /** Recipient; absent = every peer (or the host, from a phone). */
   to?: string;
-  msg?: Message;
+  msg?: M;
   rtc?: RtcData;
 }
 
@@ -41,13 +44,13 @@ const RTC_RETRY_MAX = 30_000;
 
 const randomId = () => Math.random().toString(36).slice(2, 12);
 
-function isEnvelope(x: unknown): x is Envelope {
-  const e = x as Envelope;
+function isEnvelope<M extends AnyMessage>(x: unknown): x is Envelope<M> {
+  const e = x as Envelope<M>;
   return typeof e === "object" && e !== null && typeof e.from === "string" && (e.role === "host" || e.role === "peer");
 }
 
 /** One WebRTC connection with a single ordered data channel. */
-class Link {
+class Link<M extends AnyMessage> {
   private pc: RTCPeerConnection;
   private dc?: RTCDataChannel;
   private pending: RTCIceCandidateInit[] = [];
@@ -58,7 +61,7 @@ class Link {
     ice: RTCIceServer[],
     initiator: boolean,
     private out: (d: RtcData) => void,
-    private onMessage: (m: Message) => void,
+    private onMessage: (m: M) => void,
     private onChange: () => void,
   ) {
     this.pc = new RTCPeerConnection({ iceServers: ice });
@@ -99,7 +102,7 @@ class Link {
     }
   }
 
-  send(m: Message): void {
+  send(m: M): void {
     this.dc!.send(JSON.stringify(m));
   }
 
@@ -117,7 +120,7 @@ class Link {
     dc.onclose = () => this.close();
     dc.onmessage = (e) => {
       try {
-        this.onMessage(JSON.parse(String(e.data)) as Message);
+        this.onMessage(JSON.parse(String(e.data)) as M);
       } catch {
         // not ours
       }
@@ -125,9 +128,9 @@ class Link {
   }
 }
 
-abstract class NetNode {
+abstract class NetNode<M extends AnyMessage> {
   readonly id: string;
-  private subs = new Set<(m: Message) => void>();
+  private subs = new Set<(m: M) => void>();
   private offSignal: () => void;
 
   constructor(
@@ -137,13 +140,13 @@ abstract class NetNode {
     this.id = opts.id ?? randomId();
     this.offSignal = opts.signal.subscribe((data) => {
       const env = open(opts.room, data);
-      if (!isEnvelope(env) || env.from === this.id || env.role === this.role) return;
+      if (!isEnvelope<M>(env) || env.from === this.id || env.role === this.role) return;
       if (env.to && env.to !== this.id) return;
       this.receive(env);
     });
   }
 
-  subscribe(fn: (m: Message) => void): () => void {
+  subscribe(fn: (m: M) => void): () => void {
     this.subs.add(fn);
     return () => this.subs.delete(fn);
   }
@@ -152,13 +155,13 @@ abstract class NetNode {
     this.offSignal();
   }
 
-  protected abstract receive(env: Envelope): void;
+  protected abstract receive(env: Envelope<M>): void;
 
-  protected publish(env: Omit<Envelope, "from" | "role">) {
+  protected publish(env: Omit<Envelope<M>, "from" | "role">) {
     this.opts.signal.publish(seal(this.opts.room, { ...env, from: this.id, role: this.role }));
   }
 
-  protected deliver(m: Message) {
+  protected deliver(m: M) {
     for (const fn of this.subs) fn(m);
   }
 
@@ -169,8 +172,8 @@ abstract class NetNode {
 }
 
 /** Projector side: one entry per phone; messages go over each phone's data channel, else the relay. */
-export class NetHost extends NetNode implements Transport {
-  private peers = new Map<string, { seen: number; link?: Link }>();
+export class NetHost<M extends AnyMessage = Message> extends NetNode<M> implements Transport<M> {
+  private peers = new Map<string, { seen: number; link?: Link<M> }>();
   private remoteSubs = new Set<(r: Remote[]) => void>();
   private lastRemotes = "[]";
   private sweep = setInterval(() => this.expire(), 5_000);
@@ -179,7 +182,7 @@ export class NetHost extends NetNode implements Transport {
     super("host", opts);
   }
 
-  send(m: Message): void {
+  send(m: M): void {
     // relay only when a phone has no open data channel; with no phones, nothing leaves the laptop
     let relay = false;
     for (const p of this.peers.values()) {
@@ -204,7 +207,7 @@ export class NetHost extends NetNode implements Transport {
     super.close();
   }
 
-  protected receive(env: Envelope) {
+  protected receive(env: Envelope<M>) {
     let p = this.peers.get(env.from);
     if (!p) this.peers.set(env.from, (p = { seen: 0 }));
     p.seen = Date.now();
@@ -213,12 +216,12 @@ export class NetHost extends NetNode implements Transport {
     this.changed();
   }
 
-  private onRtc(id: string, p: { seen: number; link?: Link }, d: RtcData) {
+  private onRtc(id: string, p: { seen: number; link?: Link<M> }, d: RtcData) {
     const ice = this.ice;
     if (!ice) return;
     if ("sdp" in d && d.sdp.type === "offer") {
       p.link?.close();
-      const link: Link = new Link(
+      const link: Link<M> = new Link<M>(
         ice,
         false,
         (x) => this.publish({ to: id, rtc: x }),
@@ -258,16 +261,16 @@ export class NetHost extends NetNode implements Transport {
 export type PeerStatus = "offline" | "connecting" | "relay" | "p2p";
 
 /** Phone side: talks to whichever projector last spoke in the room; upgrades to WebRTC when it can. */
-export class NetPeer extends NetNode implements Transport {
+export class NetPeer<M extends AnyMessage = Message> extends NetNode<M> implements Transport<M> {
   private host?: string;
   private lastHost = 0;
-  private link?: Link;
+  private link?: Link<M>;
   private retryTimer?: ReturnType<typeof setTimeout>;
   private retryDelay = RTC_RETRY_MIN;
   private statusSubs = new Set<(s: PeerStatus) => void>();
   private lastStatus: PeerStatus = "offline";
   private heartbeat = setInterval(() => {
-    this.send({ kind: "hello" });
+    this.send({ kind: "hello" } as M);
     this.changed();
   }, HEARTBEAT_MS);
   private offStatus: () => void;
@@ -276,13 +279,13 @@ export class NetPeer extends NetNode implements Transport {
     super("peer", opts);
     // (re)connected to the relay: ask for a full snapshot
     this.offStatus = opts.signal.onStatus((up) => {
-      if (up) this.send({ kind: "hello" });
+      if (up) this.send({ kind: "hello" } as M);
       this.changed();
     });
     this.changed();
   }
 
-  send(m: Message): void {
+  send(m: M): void {
     if (this.link?.open) this.link.send(m);
     // no `to`: a reloaded projector (new id) must still hear the phone
     else this.publish({ msg: m });
@@ -313,7 +316,7 @@ export class NetPeer extends NetNode implements Transport {
     super.close();
   }
 
-  protected receive(env: Envelope) {
+  protected receive(env: Envelope<M>) {
     if (env.from !== this.host) {
       // first contact, or the projector was reloaded: start over with the new one
       this.host = env.from;
@@ -325,7 +328,7 @@ export class NetPeer extends NetNode implements Transport {
     if (env.msg) {
       this.deliver(env.msg);
       // the projector is going away (reload): ask the next one for its state as soon as it is up
-      if (env.msg.kind === "bye") for (const ms of [1_000, 3_000]) setTimeout(() => this.send({ kind: "hello" }), ms);
+      if (env.msg.kind === "bye") for (const ms of [1_000, 3_000]) setTimeout(() => this.send({ kind: "hello" } as M), ms);
     }
     this.changed();
   }
@@ -341,7 +344,7 @@ export class NetPeer extends NetNode implements Transport {
 
   private connectRtc(ice: RTCIceServer[]) {
     const host = this.host!;
-    const link: Link = new Link(
+    const link: Link<M> = new Link<M>(
       ice,
       true,
       (d) => this.publish({ to: host, rtc: d }),

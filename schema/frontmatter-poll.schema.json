@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "poll"
+    },
+    "title": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "options": {
+      "minItems": 2,
+      "maxItems": 9,
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "The answers (Markdown)."
+    },
+    "results": {
+      "description": "reveal (default): Space shows the results; live: shown from the start.",
+      "type": "string",
+      "enum": [
+        "reveal",
+        "live"
+      ]
+    }
+  },
+  "required": [
+    "type",
+    "options"
+  ],
+  "additionalProperties": false
+}

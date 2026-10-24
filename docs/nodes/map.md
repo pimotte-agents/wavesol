@@ -3,7 +3,7 @@
 Press a number, or open the overview with **o** and click a topic.
 
 1. **Navigating**: Space, edges, back, the overview
-2. **Presenting**: presenter view, phone controller, transitions
+2. **Presenting**: presenter view, phone controller, audience polls, transitions
 3. **Writing a talk**: the directory, `talk.yaml`, edges, node files
 4. **Content**: slides, fragments, math and code, figures, TikZ, citations
 5. **Structure and look**: frames, layout, theming

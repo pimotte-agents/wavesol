@@ -31,9 +31,10 @@ nodes:
   presenting:
     type: frame
     title: Presenting
-    children: [nav-presenter, nav-phone, transitions]
+    children: [nav-presenter, nav-phone, poll, transitions]
   nav-presenter: {}
   nav-phone: {}
+  poll: {}
   transitions: {}
 
   writing:
@@ -110,7 +111,7 @@ edges:
 
   # through each topic
   - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
-  - nav-presenter -> nav-phone -> transitions: { default: true }
+  - nav-presenter -> nav-phone -> poll -> transitions: { default: true }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
   - slides -> fragments -> math-code -> figure -> tikz -> tikz-figure -> citations: { default: true }
   - frames -> layout -> theming: { default: true }

@@ -246,6 +246,33 @@ packages: [xcolor]                #   packages and preamble
 \begin{tikzcd} A \arrow[r] & B \end{tikzcd}
 ```
 
+### `poll`
+
+A question the audience answers from their phones. The body is the question (Markdown):
+
+```markdown
+---
+type: poll
+options:                          # 2–9 answers (Markdown)
+  - Induction
+  - Contradiction
+  - "Something else: tell me after"
+results: reveal                   # reveal (default): Space shows the results | live: shown from the start
+---
+# Which proof technique do you use most?
+```
+
+The slide shows the options (A, B, …), the number of votes, a join QR code in the corner and, once
+revealed, a bar per option. Audience phones join with the QR code (or with `j`, which shows it
+full-size) and see the poll while it is on screen: one vote per phone, and tapping another answer moves
+it. Phones show only their own vote; the presenter view always shows the results. Votes survive a
+reload of the projector tab.
+
+The audience has its own room, separate from the phone controller's: its code is public, so in that
+room the projector only accepts votes for the poll on screen. It uses the same relays and direct
+connections as the phone controller (see Phone controller), and contacts them only when a poll is
+shown or `j` is pressed.
+
 ### `references`
 
 Defined in `talk.yaml` only (no file): `refs: { type: references, title: References }`. Lists every

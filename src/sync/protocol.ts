@@ -25,6 +25,8 @@ export interface Snapshot extends Position {
   focus?: number;
   /** Phone control, once pairing has started on the projector. */
   phone?: PhoneState;
+  /** Live data of the current node, e.g. a poll's votes (for previews). */
+  live?: unknown;
 }
 
 export interface PhoneState {
@@ -44,9 +46,9 @@ export type Message =
   /** host → peers: the projector is going away */
   | { kind: "bye"; session: string };
 
-export interface Transport {
-  send(msg: Message): void;
-  subscribe(fn: (msg: Message) => void): () => void;
+export interface Transport<M = Message> {
+  send(msg: M): void;
+  subscribe(fn: (msg: M) => void): () => void;
   close(): void;
 }
 

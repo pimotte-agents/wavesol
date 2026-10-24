@@ -71,6 +71,8 @@ export interface NodeInstance {
   setFocus?(focus: number | undefined): void;
   /** Marks items by id (a references node: the works a clicked citation cites); [] clears. */
   mark?(ids: string[]): void;
+  /** Live data from the projector, e.g. a poll's votes and join link; plugin-specific. */
+  setLive?(live: unknown): void;
   setDetail?(level: Detail): void;
   unmount?(): void;
 }

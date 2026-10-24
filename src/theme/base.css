@@ -129,6 +129,118 @@ body {
   overflow: hidden;
 }
 
+/* ---------- polls ---------- */
+.ws-type-poll {
+  background: var(--ws-card);
+  border: 2px solid var(--ws-card-border);
+  border-radius: var(--ws-radius);
+  box-shadow: var(--ws-card-shadow);
+  overflow: hidden;
+}
+.ws-poll {
+  position: relative;
+  height: 100%;
+  box-sizing: border-box;
+}
+.ws-poll-question > :last-child {
+  margin-bottom: 0.4em;
+}
+.ws-poll-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35em;
+  max-width: calc(100% - 300px);
+}
+.ws-poll-options li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.2em 0.5em;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.ws-poll-letter {
+  flex: none;
+  width: 1.6em;
+  height: 1.6em;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--ws-accent);
+  color: #fff;
+  font-weight: 600;
+  z-index: 1;
+}
+.ws-poll-text {
+  flex: 1;
+  z-index: 1;
+}
+.ws-poll-bar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: var(--ws-accent-soft);
+  transition: width 0.4s ease;
+}
+.ws-poll-count {
+  z-index: 1;
+  font-weight: 600;
+  color: var(--ws-accent);
+}
+.ws-poll-status {
+  margin-top: 0.6em;
+  color: var(--ws-muted);
+}
+.ws-poll-qr {
+  position: absolute;
+  right: 64px;
+  bottom: 64px;
+  width: 240px;
+  line-height: 0;
+  background: #fff;
+  border-radius: 12px;
+}
+.ws-poll-qr svg {
+  width: 100%;
+  height: auto;
+}
+
+/* the audience's join code (j), full-size on the projector */
+.ws-join {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: min(520px, 90vw);
+  height: fit-content;
+  padding: 28px 32px;
+  text-align: center;
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 20px;
+  box-shadow: var(--ws-card-shadow);
+  z-index: 20;
+}
+.ws-join h2 {
+  margin: 0 0 16px;
+  font: 600 28px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-join .ws-join-qr {
+  width: min(380px, 70vw);
+  margin: 0 auto;
+}
+.ws-join p {
+  font-size: 16px;
+}
+.ws-join a {
+  color: var(--ws-accent);
+}
+
 /* ---------- citations ---------- */
 .ws-cite {
   cursor: help;
@@ -986,6 +1098,49 @@ body {
   margin: 0;
   font-size: 13px;
   color: var(--ws-muted);
+}
+.ws-audience-wait {
+  margin: auto 0;
+  text-align: center;
+  color: var(--ws-muted);
+}
+.ws-audience-question {
+  font-size: 20px;
+}
+.ws-audience-question h1,
+.ws-audience-question h2 {
+  font: 600 22px var(--ws-font-heading);
+  margin: 0 0 8px;
+  color: var(--ws-heading);
+}
+.ws-audience-question > :last-child {
+  margin-bottom: 0;
+}
+.ws-audience-options {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ws-audience-options button {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  text-align: left;
+}
+.ws-audience-options button.ws-chosen {
+  border: 2px solid var(--ws-accent);
+  background: var(--ws-accent-soft);
+}
+.ws-audience-mine {
+  margin: 0;
+  color: var(--ws-muted);
+  font-size: 15px;
 }
 .ws-phone-error {
   justify-content: center;

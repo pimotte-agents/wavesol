@@ -1,7 +1,7 @@
 // Keyboard bindings for the projector window. Clickers send PageDown/PageUp (and sometimes arrows).
 import type { Intent } from "./nav.ts";
 
-export type Panel = "edges" | "help" | "pair";
+export type Panel = "edges" | "help" | "pair" | "join";
 
 /** What the keys drive: the presentation itself, or the projector from the presenter view. */
 export interface Controls {
@@ -13,6 +13,8 @@ export interface Controls {
   openPresenter?(): void;
   /** Starts pairing a phone (contacts the relays). */
   pair?(): void;
+  /** Starts the audience room (polls) for the join panel. */
+  join?(): void;
   /** Toggles drag mode (wavesol dev only). */
   toggleDragMode?(): void;
 }
@@ -28,6 +30,7 @@ export const KEY_HELP: [string, string][] = [
   ["e", "show outgoing edges"],
   ["p", "open the presenter view (notes, next, timer)"],
   ["c", "connect a phone (QR code)"],
+  ["j", "show the audience's join code (polls)"],
   ["d", "drag mode: drag nodes to pin them in talk.yaml (wavesol dev)"],
   ["f", "fullscreen"],
   ["?", "this help"],
@@ -82,6 +85,14 @@ export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) =>
         }
         p.pair();
         togglePanel("pair");
+        break;
+      case "j":
+        if (!p.join) {
+          handled = false;
+          break;
+        }
+        p.join();
+        togglePanel("join");
         break;
       case "d":
         if (p.toggleDragMode) p.toggleDragMode();

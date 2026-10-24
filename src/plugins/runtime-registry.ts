@@ -5,5 +5,6 @@ import { frame } from "./frame/runtime.ts";
 import { lean } from "./lean/runtime.ts";
 import { tikz } from "./tikz/runtime.ts";
 import { references } from "./references/runtime.ts";
+import { poll } from "./poll/runtime.ts";
 
-export const runtimePlugins: Record<string, RuntimePlugin> = { slide, image, frame, lean, tikz, references };
+export const runtimePlugins: Record<string, RuntimePlugin> = { slide, image, frame, lean, tikz, references, poll };

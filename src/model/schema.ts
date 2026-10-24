@@ -136,6 +136,12 @@ export const LeanFrontmatter = CommonFrontmatter.extend({
 
 export const FrameFrontmatter = CommonFrontmatter.extend({ type: z.literal("frame") });
 
+export const PollFrontmatter = CommonFrontmatter.extend({
+  type: z.literal("poll"),
+  options: z.array(z.string()).min(2, "a poll needs at least two options").max(9, "at most 9 options").describe("The answers (Markdown)."),
+  results: z.enum(["reveal", "live"]).optional().describe("reveal (default): Space shows the results; live: shown from the start."),
+});
+
 export const ReferencesFrontmatter = CommonFrontmatter.extend({ type: z.literal("references") });
 
 export const TikzFrontmatter = CommonFrontmatter.extend({
@@ -151,6 +157,7 @@ export const frontmatterSchemas = {
   lean: LeanFrontmatter,
   tikz: TikzFrontmatter,
   references: ReferencesFrontmatter,
+  poll: PollFrontmatter,
 } as const;
 
 export interface Edge {
