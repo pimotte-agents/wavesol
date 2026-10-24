@@ -140,7 +140,8 @@ Precedence: edge `transition` > target node `transition` > `transitions.default`
 ### Phone controller
 
 Press `c` on the projector (or "Connect a phone" in the presenter view) and scan the QR code. The
-phone gets a Next button, Prev and Back, one button per outgoing edge and a laser pointer pad.
+phone gets a Next button, Prev and Back, one button per outgoing edge and a laser pointer pad: drag to
+point, tap to click whatever is under the dot on the projector (e.g. a tactic in a Lean node).
 
 - **Pairing:** the QR code holds the talk's URL with `?phone#k=<room secret>`. The secret is random
   per projector tab (kept across a reload of that tab) and sits in the URL fragment, which browsers

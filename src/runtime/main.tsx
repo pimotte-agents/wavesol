@@ -19,6 +19,7 @@ import { Overlay } from "./ui/Overlay.tsx";
 
 const compiled = virtualTalk as { talk?: CompiledTalk; diagnostics: Diagnostic[] };
 const root = document.getElementById("app")!;
+root.replaceChildren(); // the "Building the talk…" placeholder
 
 if (!compiled.talk) {
   // Only reachable in `wavesol dev`; `wavesol build` refuses to build a talk with errors.
@@ -65,6 +66,7 @@ if (!compiled.talk) {
     const host = new SyncHost(fanout(broadcastTransport(channel), phone), (intent) => {
       if (intent.type === "overview") presentation.toggleOverview(intent.on);
       else if (intent.type === "pointer") presentation.setPointer(intent.at);
+      else if (intent.type === "click") presentation.clickAt(intent.at);
       else if (intent.type === "pair") void phone.start();
       else presentation.dispatch(intent);
     });

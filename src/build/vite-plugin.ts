@@ -13,11 +13,14 @@ const RESOLVED = "\0" + ID;
 
 export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResult) => void } = {}): Plugin {
   let result: CompileResult | undefined;
-  const compile = async () => {
-    result = await compileTalk(talkDir);
-    opts.onDiagnostics?.(result);
-    return result;
-  };
+  // one compile per state of the talk: started eagerly by the dev server, shared with the page's request
+  let current: Promise<CompileResult> | undefined;
+  const compile = () =>
+    (current ??= compileTalk(talkDir).then((r) => {
+      result = r;
+      opts.onDiagnostics?.(r);
+      return r;
+    }));
 
   return {
     name: "wavesol",
@@ -35,12 +38,16 @@ export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResu
       server.httpServer?.on("close", () => relay.close());
       server.middlewares.use((req, res, next) => relay.handleRequest(req, res) || next());
       server.watcher.add(talkDir);
+      // compile right away (incl. Lean builds, which log their progress), not on the first page load
+      void compile();
       let timer: ReturnType<typeof setTimeout> | undefined;
       server.watcher.on("all", (_event, file) => {
         const rel = relative(talkDir, file);
         if (rel.startsWith("..") || rel.split(sep).some((part) => part === "dist" || part === "node_modules" || part.startsWith("."))) return;
         clearTimeout(timer);
         timer = setTimeout(() => {
+          current = undefined;
+          void compile();
           const mod = server.moduleGraph.getModuleById(RESOLVED);
           if (mod) server.moduleGraph.invalidateModule(mod);
           server.ws.send({ type: "full-reload" });

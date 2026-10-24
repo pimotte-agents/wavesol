@@ -7,6 +7,8 @@ export type SyncIntent =
   | { type: "overview"; on?: boolean }
   /** laser pointer at a normalised screen position ([0,1]², top-left origin), or null to hide it */
   | { type: "pointer"; at: [number, number] | null }
+  /** laser "click": a click on whatever is at that normalised screen position (e.g. a Lean tactic) */
+  | { type: "click"; at: [number, number] }
   /** start phone pairing on the projector (contacts the relays; the snapshot then carries `pair`) */
   | { type: "pair" };
 
@@ -48,7 +50,7 @@ export interface Transport {
   close(): void;
 }
 
-const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "pair"]);
+const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "click", "pair"]);
 /** How many recent intent ids the host remembers to drop replays. */
 const SEEN_LIMIT = 500;
 

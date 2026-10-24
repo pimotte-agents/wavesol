@@ -9,7 +9,7 @@ import { join, relative } from "node:path";
 import type { z } from "zod";
 import { LeanFrontmatter } from "../../model/schema.ts";
 import { renderMarkdown } from "../slide/build.ts";
-import type { BuildCtx, BuildPlugin } from "../types.ts";
+import type { BuildPlugin } from "../types.ts";
 import { select, type CodeNode, type ModuleJson, type Tactic } from "./subverso.ts";
 
 type Data = z.infer<typeof LeanFrontmatter>;
@@ -28,8 +28,20 @@ export interface LeanData {
   infoview: "right" | "below";
 }
 
+/** Lean's own errors, at their place in the project (paths relative to lean/). */
+interface LeanError {
+  file: string;
+  line: number;
+  col: number;
+  message: string;
+}
+type Extracted = ModuleJson | { error: string; leanErrors?: LeanError[] };
+
 /** Results per lean/ project and module, valid while the project's sources are unchanged. */
-const cache = new Map<string, { key: string; modules: Map<string, Promise<ModuleJson | { error: string }>> }>();
+const cache = new Map<string, { key: string; modules: Map<string, Promise<Extracted>> }>();
+
+/** Lake runs longer than this stream lake's own progress lines (a first build takes minutes). */
+const STREAM_AFTER_MS = 3000;
 
 /** Hash of everything lake's result depends on: Lean sources, lake config, toolchain. */
 function projectKey(leanDir: string): string {
@@ -51,39 +63,73 @@ function lakeCommand(): string {
   return existsSync(elanLake) ? elanLake : "lake";
 }
 
+/** Runs lake; after STREAM_AFTER_MS its output is echoed (prefixed), so long builds show progress. */
 function run(cmd: string, args: string[], cwd: string): Promise<{ code: number | null; output: string; missing?: boolean }> {
   return new Promise((resolve) => {
     let output = "";
+    let streaming = false;
+    let partial = "";
+    const echo = (text: string) => {
+      const lines = (partial + text).split("\n");
+      partial = lines.pop()!;
+      for (const line of lines) if (line.trim()) console.error(`lean | ${line}`);
+    };
+    const timer = setTimeout(() => {
+      streaming = true;
+      echo(output);
+    }, STREAM_AFTER_MS);
     const child = spawn(cmd, args, { cwd, env: process.env });
-    child.stdout.on("data", (d) => (output += d));
-    child.stderr.on("data", (d) => (output += d));
-    child.on("error", (e: NodeJS.ErrnoException) => resolve({ code: null, output: e.message, missing: e.code === "ENOENT" }));
-    child.on("close", (code) => resolve({ code, output }));
+    const data = (d: Buffer) => {
+      output += d;
+      if (streaming) echo(String(d));
+    };
+    child.stdout.on("data", data);
+    child.stderr.on("data", data);
+    child.on("error", (e: NodeJS.ErrnoException) => {
+      clearTimeout(timer);
+      resolve({ code: null, output: e.message, missing: e.code === "ENOENT" });
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (streaming && partial.trim()) console.error(`lean | ${partial}`);
+      resolve({ code, output });
+    });
   });
 }
 
-async function extract(leanDir: string, module: string, ctx: BuildCtx): Promise<ModuleJson | { error: string }> {
+function extract(leanDir: string, module: string, talkDir: string): Promise<Extracted> {
   const key = projectKey(leanDir);
   let entry = cache.get(leanDir);
   if (entry?.key !== key) cache.set(leanDir, (entry = { key, modules: new Map() }));
   let job = entry.modules.get(module);
   if (!job) {
-    job = (async () => {
+    job = (async (): Promise<Extracted> => {
       const out = join(leanDir, ".lake", "build", "highlighted", ...module.split(".")) + ".json";
-      if (!existsSync(out)) console.error(`lean: building ${module} with SubVerso (the first build of a project can take a few minutes)`);
-      const r = await run(lakeCommand(), ["build", `+${module}:highlighted`], leanDir);
-      if (r.missing) return { error: "Lean nodes need Lean: install elan (https://lean-lang.org/install), which provides lake" };
-      if (r.code !== 0) {
-        // Lean's own errors point into the project: report them there
-        let found = false;
-        for (const m of r.output.matchAll(/^error: (?:\.\/)*(.+?\.lean):(\d+):(\d+): (.*)$/gm)) {
-          ctx.reportIn(relative(ctx.talkDir, join(leanDir, m[1]!)), "error", m[4]!, Number(m[2]), Number(m[3]) + 1);
-          found = true;
-        }
-        const tail = r.output.trim().split("\n").slice(-8).join("\n");
-        return { error: found ? `lake build of ${module} failed (errors above)` : `lake build of ${module} failed:\n${tail}` };
+      const args = ["build", `+${module}:highlighted`];
+      const first = existsSync(out) ? "" : " - a first build can take a few minutes";
+      const where = relative(process.cwd(), leanDir);
+      console.error(`lean: building ${module} (lake ${args.join(" ")} in ${where.startsWith("..") ? leanDir : where || "."})${first}`);
+      const t0 = performance.now();
+      const r = await run(lakeCommand(), args, leanDir);
+      const took = `${((performance.now() - t0) / 1000).toFixed(1)} s`;
+      if (r.missing) {
+        console.error(`lean: ${module} failed: lake not found`);
+        return { error: "Lean nodes need Lean: install elan (https://lean-lang.org/install), which provides lake" };
       }
-      if (!existsSync(out)) return { error: `SubVerso wrote no ${relative(ctx.talkDir, out)}: does lean/lakefile require subverso?` };
+      if (r.code !== 0) {
+        console.error(`lean: ${module} failed after ${took}`);
+        // Lean's own errors point into the project: kept, so every compile reports them there
+        const leanErrors = [...r.output.matchAll(/^error: (?:\.\/)*(.+?\.lean):(\d+):(\d+): (.*)$/gm)].map((m) => ({
+          file: m[1]!,
+          line: Number(m[2]),
+          col: Number(m[3]) + 1,
+          message: m[4]!,
+        }));
+        const tail = r.output.trim().split("\n").slice(-8).join("\n");
+        return { error: leanErrors.length ? `lake build of ${module} failed (errors above)` : `lake build of ${module} failed:\n${tail}`, leanErrors };
+      }
+      console.error(`lean: ${module} ready (${took})`);
+      if (!existsSync(out)) return { error: `SubVerso wrote no ${relative(talkDir, out)}: does lean/lakefile require subverso?` };
       return JSON.parse(readFileSync(out, "utf8")) as ModuleJson;
     })();
     entry.modules.set(module, job);
@@ -109,8 +155,9 @@ export const lean: BuildPlugin<Data> = {
       ctx.report("error", `Lean source lean/${source} not found`);
       return empty;
     }
-    const mod = await extract(leanDir, source.replace(/\.lean$/, "").split("/").join("."), ctx);
+    const mod = await extract(leanDir, source.replace(/\.lean$/, "").split("/").join("."), ctx.talkDir);
     if ("error" in mod) {
+      for (const e of mod.leanErrors ?? []) ctx.reportIn(relative(ctx.talkDir, join(leanDir, e.file)), "error", e.message, e.line, e.col);
       ctx.report("error", mod.error);
       return empty;
     }

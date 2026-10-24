@@ -246,6 +246,21 @@ export class Presentation {
     if (!this.laserFrame) this.laserFrame = requestAnimationFrame(() => this.drawLaser());
   }
 
+  /** A laser "click" at a normalised screen position: clicks whatever is there, with a ripple. */
+  clickAt(at: [number, number]): void {
+    const { vw, vh } = this.viewport();
+    const clamp = (v: number) => Math.min(1, Math.max(0, Number.isFinite(v) ? v : 0));
+    const x = clamp(at[0]) * vw;
+    const y = clamp(at[1]) * vh;
+    const ripple = el("div", "ws-laser-click");
+    ripple.style.transform = `translate(${x}px, ${y}px)`;
+    this.stage.append(ripple);
+    setTimeout(() => ripple.remove(), 600);
+    const r = this.stage.getBoundingClientRect();
+    const target = document.elementFromPoint(r.left + x, r.top + y);
+    target?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window, clientX: r.left + x, clientY: r.top + y }));
+  }
+
   private drawLaser() {
     this.laserFrame = 0;
     const t = this.laserTarget;

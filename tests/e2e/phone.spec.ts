@@ -190,3 +190,34 @@ test("the phone follows a reloaded projector (same pairing)", async ({ context, 
   await phone.getByRole("button", { name: "Next" }).tap();
   await expect.poll(() => nav(projector)).not.toEqual(before);
 });
+
+test("tapping the laser pad clicks on the projector: a Lean tactic shows its goals", async ({ context, browser }) => {
+  const projector = await openProjector(context);
+  const phone = await openPhone(browser, await pairUrl(projector));
+  await expect.poll(() => phoneStatus(phone), { timeout: 15_000 }).toBe("p2p");
+  await projector.keyboard.press("Escape"); // close the pairing panel
+
+  // go to the stepped Lean proof, and find a tactic on the projector screen
+  const id = await projector.evaluate(() =>
+    (window as unknown as { wavesol: { talk: { nodes: { id: string; type: string; steps: number }[] } } }).wavesol.talk.nodes
+      .filter((n) => n.type === "lean")
+      .sort((a, b) => b.steps - a.steps)[0]!.id,
+  );
+  await projector.evaluate((node) => (location.hash = `#/${node}/0`), id);
+  const root = projector.locator(`.ws-node[data-id="${id}"]`);
+  await expect(root).toHaveAttribute("data-detail", "active");
+  // wait for the camera to arrive
+  await expect.poll(() => projector.evaluate(() => document.querySelector<HTMLElement>(".ws-world")!.style.willChange)).not.toBe("transform");
+  const target = root.locator(".ws-tac", { hasText: /^rfl$/ }).last();
+  const box = (await target.boundingBox())!;
+  const vp = projector.viewportSize()!;
+  const at = [(box.x + box.width / 2) / vp.width, (box.y + box.height / 2) / vp.height];
+
+  // a quick tap at the same place on the phone's pad
+  const pad = (await phone.locator(".ws-phone-laser").boundingBox())!;
+  await phone.mouse.click(pad.x + at[0]! * pad.width, pad.y + at[1]! * pad.height);
+  await expect(target).toHaveClass(/ws-tac-current/);
+  await expect(root.locator(".ws-lean-info .ws-info-head code")).toHaveText("rfl");
+  // a click does not navigate
+  expect(await nav(projector)).toEqual({ node: id, step: 0 });
+});

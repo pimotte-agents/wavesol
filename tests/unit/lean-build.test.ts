@@ -1,7 +1,7 @@
 // Lean nodes through the real build: a temporary talk whose lean/ is the fixture project
 // (tests/fixtures/lean/project), so lake and SubVerso really run. Needs elan; skipped without it
 // unless REQUIRE_LEAN=1 (CI), where a missing Lean is a failure.
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -61,6 +61,19 @@ describe.skipIf(!lake)("Lean nodes (with lake)", { timeout: 600_000 }, () => {
     expect(node.title).toBe("haveBlock");
   });
 
+  it("logs each lake run: what it builds, and when it is done", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      // the first use of this module in the process, so lake runs
+      await talk({ a: { source: "Fixture/Broken.lean", decl: "broken" } });
+      const lines = log.mock.calls.map((c) => String(c[0]));
+      expect(lines).toContainEqual(expect.stringMatching(/^lean: building Fixture\.Broken \(lake build \+Fixture\.Broken:highlighted in \/.*\/lean\)( - a first build can take a few minutes)?$/));
+      expect(lines).toContainEqual(expect.stringMatching(/^lean: Fixture\.Broken failed after \d+(\.\d)? s$/));
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it("named proof states as steps", async () => {
     const r = await talk({ a: { source: "Fixture.lean", decl: "bullets", steps: ["left"] } });
     expect(r.diagnostics).toEqual([]);
@@ -82,10 +95,13 @@ describe.skipIf(!lake)("Lean nodes (with lake)", { timeout: 600_000 }, () => {
     ]);
   });
 
-  it("reports Lean's own errors in the Lean file", async () => {
-    const r = await talk({ a: { source: "Fixture/Broken.lean", decl: "broken" } });
-    const lines = r.diagnostics.map(formatDiagnostic);
-    expect(lines[0]).toMatch(/^lean\/Fixture\/Broken\.lean:3:3: error: Tactic `rfl` failed/);
-    expect(lines.at(-1)).toBe("nodes/a.md: error: lake build of Fixture.Broken failed (errors above)");
+  it("reports Lean's own errors in the Lean file, also when lake's result is reused", async () => {
+    // twice: the second compile reuses the cached lake run (as `dev` does on every reload)
+    for (let i = 0; i < 2; i++) {
+      const r = await talk({ a: { source: "Fixture/Broken.lean", decl: "broken" } });
+      const lines = r.diagnostics.map(formatDiagnostic);
+      expect(lines[0]).toMatch(/^lean\/Fixture\/Broken\.lean:3:3: error: Tactic `rfl` failed/);
+      expect(lines.at(-1)).toBe("nodes/a.md: error: lake build of Fixture.Broken failed (errors above)");
+    }
   });
 });
