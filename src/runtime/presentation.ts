@@ -2,13 +2,15 @@
 // applies navigation intents. UI chrome (panels, help) subscribes to its state from React.
 import type { CompiledEdge, CompiledNode, CompiledTalk } from "../model/compiled.ts";
 import type { NodeInstance, RuntimePlugin } from "../plugins/types.ts";
-import { Animator, fitBox, type Box, type View } from "./camera.ts";
+import { Animator, fitBox, panBy, zoomAt, type Box, type View } from "./camera.ts";
 import { NavGraph, initialState, navigate, type Intent, type NavState } from "./nav.ts";
 
 const NODE_MARGIN = 0.03;
 const OVERVIEW_MARGIN = 0.05;
 /** Slides narrower than this on screen show a title card instead of their content. */
 const FAR_PX = 160;
+/** Pointer travel (px) after which a press in the overview is a drag, not a click. */
+const DRAG_PX = 5;
 
 export interface PresentationState {
   nav: NavState;
@@ -29,6 +31,8 @@ export class Presentation {
   private view: View = { cx: 0, cy: 0, w: 1 };
   private nav: NavState;
   private overview = false;
+  /** Set once the current overview press has moved far enough to be a pan; suppresses the click. */
+  private dragged = false;
   private listeners = new Set<(s: PresentationState) => void>();
 
   constructor(
@@ -69,7 +73,7 @@ export class Presentation {
         this.instances.set(n.id, inst);
       }
       nodeEl.addEventListener("click", (e) => {
-        if (!this.overview) return;
+        if (!this.overview || this.dragged) return;
         e.stopPropagation();
         this.dispatch({ type: "goto", node: n.id });
       });
@@ -80,6 +84,8 @@ export class Presentation {
       setOpacity: (o) => (this.world.style.opacity = String(o)),
       moving: (on) => (this.world.style.willChange = on ? "transform" : "auto"),
     });
+
+    this.bindPanZoom();
 
     this.nav = initialState(this.graph, parseHash(location.hash) ?? { node: talk.start, step: 0 }, talk.start);
     this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: false });
@@ -128,6 +134,88 @@ export class Presentation {
     this.overview = on;
     void this.animator.run(this.view, this.targetView(), on ? { type: "fly", duration: 900 } : this.graph.transitionTo(this.nav.node));
     this.emit();
+  }
+
+  /** Zooms the overview around the screen center; ignored outside the overview. */
+  zoomOverview(factor: number): void {
+    if (!this.overview) return;
+    const { vw, vh } = this.viewport();
+    this.setOverviewView(zoomAt(this.view, factor, vw / 2, vh / 2, vw, vh));
+  }
+
+  /** Applies a user pan/zoom, cancelling any transition and keeping the view on the talk. */
+  private setOverviewView(v: View) {
+    this.animator.stop();
+    const { vw, vh } = this.viewport();
+    const fit = fitBox(bounds(this.talk.nodes.filter((n) => n.depth === 0)), vw, vh, OVERVIEW_MARGIN);
+    const minW = Math.min(...this.talk.nodes.map((n) => n.w)) / (1 - 2 * NODE_MARGIN);
+    const w = Math.min(Math.max(v.w, minW), fit.w * 2);
+    // the view's center may roam over the area the fitted overview shows, no further
+    const halfW = fit.w / 2;
+    const halfH = (fit.w * vh) / vw / 2;
+    const clamp = (x: number, c: number, r: number) => Math.min(Math.max(x, c - r), c + r);
+    this.applyView({ cx: clamp(v.cx, fit.cx, halfW), cy: clamp(v.cy, fit.cy, halfH), w });
+  }
+
+  /** Overview only: wheel or pinch zooms around the pointer, dragging pans. */
+  private bindPanZoom() {
+    const stage = this.stage;
+    stage.addEventListener(
+      "wheel",
+      (e) => {
+        if (!this.overview) return;
+        e.preventDefault();
+        const r = stage.getBoundingClientRect();
+        const lines = e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? r.height : 1;
+        // ctrlKey marks a trackpad pinch, whose deltas are much smaller than wheel ticks
+        const factor = Math.exp(e.deltaY * lines * (e.ctrlKey ? 0.01 : 0.0015));
+        const { vw, vh } = this.viewport();
+        this.setOverviewView(zoomAt(this.view, factor, e.clientX - r.left, e.clientY - r.top, vw, vh));
+      },
+      { passive: false },
+    );
+
+    const pointers = new Map<number, { x: number; y: number }>();
+    let start: { x: number; y: number } | undefined;
+    const centroid = () => {
+      const ps = [...pointers.values()];
+      const x = ps.reduce((s, p) => s + p.x, 0) / ps.length;
+      const y = ps.reduce((s, p) => s + p.y, 0) / ps.length;
+      return { x, y, spread: ps.length > 1 ? Math.hypot(ps[0]!.x - ps[1]!.x, ps[0]!.y - ps[1]!.y) : 0 };
+    };
+    stage.addEventListener("pointerdown", (e) => {
+      if (!this.overview || (e.pointerType === "mouse" && e.button !== 0)) return;
+      if (pointers.size === 0) {
+        this.dragged = false;
+        start = { x: e.clientX, y: e.clientY };
+      }
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    });
+    stage.addEventListener("pointermove", (e) => {
+      const prev = pointers.get(e.pointerId);
+      if (!prev || !this.overview) return;
+      if (!this.dragged && start && Math.hypot(e.clientX - start.x, e.clientY - start.y) < DRAG_PX) return;
+      if (!this.dragged) {
+        this.dragged = true;
+        stage.classList.add("ws-panning");
+        // capture only once it is a drag: capturing on press would retarget the click away from the node
+        for (const id of pointers.keys()) if (!stage.hasPointerCapture(id)) stage.setPointerCapture(id);
+      }
+      const before = centroid();
+      pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      const after = centroid();
+      const r = stage.getBoundingClientRect();
+      const { vw, vh } = this.viewport();
+      let v = panBy(this.view, after.x - before.x, after.y - before.y, vw);
+      if (before.spread > 0 && after.spread > 0) v = zoomAt(v, before.spread / after.spread, after.x - r.left, after.y - r.top, vw, vh);
+      this.setOverviewView(v);
+    });
+    const end = (e: PointerEvent) => {
+      pointers.delete(e.pointerId);
+      if (pointers.size === 0) stage.classList.remove("ws-panning");
+    };
+    stage.addEventListener("pointerup", end);
+    stage.addEventListener("pointercancel", end);
   }
 
   private emit() {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { directZoom, fitBox, smoothZoom, type View } from "./camera.ts";
+import { directZoom, fitBox, panBy, smoothZoom, zoomAt, type View } from "./camera.ts";
 
 const close = (a: View, b: View) => {
   expect(a.cx).toBeCloseTo(b.cx, 6);
@@ -46,5 +46,23 @@ describe("camera paths", () => {
     expect(fitBox({ x: 0, y: 0, w: 1600, h: 900 }, 1600, 900, 0)).toEqual({ cx: 800, cy: 450, w: 1600 });
     expect(fitBox({ x: 0, y: 0, w: 900, h: 900 }, 1600, 900, 0).w).toBe(1600);
     expect(fitBox({ x: 0, y: 0, w: 1600, h: 900 }, 1600, 900, 0.1).w).toBeCloseTo(2000);
+  });
+});
+
+describe("pan and zoom", () => {
+  const v = { cx: 1000, cy: 500, w: 4000 };
+  // world point under screen (px, py) for a 1600x900 viewport
+  const under = (view: View, px: number, py: number) => [view.cx + ((px - 800) * view.w) / 1600, view.cy + ((py - 450) * view.w) / 1600];
+
+  it("zoomAt keeps the point under the cursor fixed", () => {
+    const z = zoomAt(v, 0.5, 300, 700, 1600, 900);
+    expect(z.w).toBeCloseTo(2000);
+    expect(under(z, 300, 700)[0]).toBeCloseTo(under(v, 300, 700)[0]!);
+    expect(under(z, 300, 700)[1]).toBeCloseTo(under(v, 300, 700)[1]!);
+  });
+
+  it("panBy moves the world with the drag", () => {
+    const p = panBy(v, 160, -90, 1600);
+    expect(under(p, 960, 360)).toEqual(under(v, 800, 450));
   });
 });

@@ -31,7 +31,7 @@ Top-level keys:
 - `title` (required), `subtitle`, `authors`, `date`, `venue`
 - `start`: first node id; defaults to the first key of `nodes`.
 - `theme`: `{ base: academic-light, accent: "#hex", vars: { ... } }` — `vars` are CSS custom
-  properties without the `--ws-` prefix. (A dark theme is planned; don't use `academic-dark` yet.)
+  properties without the `--ws-` prefix. (A dark theme is planned.)
 - `transitions.default`: `fly` (default) | `cut` | `fade` | `zoom-through`, or
   `{ type, duration, easing }`.
 - `layout`: `{ algorithm: layered | force | grid | manual, direction: right | down | left | up,

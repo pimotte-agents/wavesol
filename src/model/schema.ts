@@ -69,7 +69,7 @@ export const Talk = z.strictObject({
   start: NodeId.optional(),
   theme: z
     .strictObject({
-      base: z.enum(["academic-light", "academic-dark"]).optional(),
+      base: z.enum(["academic-light"]).optional().describe("Built-in theme. A dark variant is planned."),
       accent: z.string().optional(),
       vars: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
     })
@@ -77,7 +77,7 @@ export const Talk = z.strictObject({
   transitions: z.strictObject({ default: Transition.optional() }).optional(),
   layout: Layout.optional(),
   math: z.strictObject({ macros: z.string().optional() }).optional(),
-  bibliography: z.string().optional(),
+  bibliography: z.string().optional().describe("Planned (citations): path to a .bib file."),
   nodes: z.record(NodeId, NodeEntry.nullable()).refine((r) => Object.keys(r).length > 0, "at least one node"),
   edges: z.array(EdgeItem).default([]),
 });

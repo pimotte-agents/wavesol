@@ -13,5 +13,5 @@ my-talk/
 - All paths are relative to the talk directory.
 
 ::: notes
-Optional extras include a lean/ lake project for Lean nodes and refs.bib for citations.
+Planned extras: a lean/ lake project for Lean nodes and refs.bib for citations.
 :::

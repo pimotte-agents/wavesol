@@ -74,7 +74,15 @@ async function compile(dir: string): Promise<CompileResult> {
   if (diagnostics.some((d) => d.severity === "error")) return { diagnostics, assets, inputs };
 
   const ids = [...loaded.nodes.keys()];
-  const sizeOf = (id: string) => (loaded.nodes.get(id)!.entry.size as [number, number] | undefined) ?? NODE_SIZE;
+  // frames default to somewhat larger than a slide, growing with their children (4 children: 1.5x, 7+: 2x)
+  const childCount = (id: string) => [...loaded.parents.values()].filter((p) => p === id).length;
+  const sizeOf = (id: string): [number, number] => {
+    const { entry, type } = loaded.nodes.get(id)!;
+    if (entry.size) return entry.size as [number, number];
+    if (type !== "frame") return NODE_SIZE;
+    const k = Math.min(2, Math.max(1, 0.75 * Math.sqrt(childCount(id))));
+    return [NODE_SIZE[0] * k, NODE_SIZE[1] * k];
+  };
   const placements = await layout(
     ids.map((id) => {
       const { entry, type } = loaded.nodes.get(id)!;

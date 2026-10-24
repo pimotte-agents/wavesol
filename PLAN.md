@@ -4,6 +4,24 @@ wavesol (from Dutch *weefsel*, "fabric") is a graph-based presentation tool for 
 lectures. Nodes sit on one 2D canvas, and the camera flies between them along the edges of a graph.
 A talk is a directory of human-editable files, mostly written by AI, that builds to a static site.
 
+## Progress
+
+| Phase | Status |
+|---|---|
+| 0 — Foundations and spikes | Done. Open: camera check on real hardware. |
+| 1 — Core fabric MVP | Done. Docs live at https://pimotte-agents.github.io/wavesol/ |
+| 2 — Presenter view | Next |
+| 3 — Phone controller | Not started |
+| 4 — Lean nodes | Not started (spike done; `lean` frontmatter schema reserved) |
+| 5 — Academic content and polish | Not started |
+| 6 — Audience polls | Not started |
+
+Where things are documented:
+- [`spec/FORMAT.md`](spec/FORMAT.md): the source format (authoritative; schemas in `schema/`).
+- [`docs/`](docs/): user documentation, written as a wavesol talk and deployed to Pages.
+- [`templates/talk/AGENTS.md`](templates/talk/AGENTS.md): the guide for agents writing talks.
+- `spikes/*/FINDINGS.md`: Phase 0 spike results.
+
 ## Decisions
 
 | Topic | Decision |
@@ -12,7 +30,7 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | Hierarchy | **Frames** are nodes that contain a subgraph, drawn smaller inside them. Layout runs recursively per frame. |
 | Navigation | Directed edges with optional labels. Each node may mark one **default** edge. There is a separate history **back** stack. All outgoing edges are available at any time. |
 | Steps | Nodes have internal steps (fragments, Lean tactics, animation sections). `step` advances within the node, and when the node is done it follows the default edge. Taking an edge early skips the remaining steps. |
-| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback: space or → = step, 1–9 = edge, Backspace = back, `o` = overview. |
+| Input | Phone controller is primary (step button, one button per edge, back, laser pointer). Keyboard fallback (implemented): Space/→/PageDown = step, ←/PageUp = step back, 1–9 = edge, Backspace = back, Home = start, `o` = overview, `e` = edges panel, `?` = help, `f` = fullscreen. |
 | Source format | Directory: `talk.yaml` (graph, layout hints, theme, transitions) + `nodes/*.md` with frontmatter + `lean/` lake project + `figures/`, `refs.bib`, `macros.tex`. |
 | Build | `wavesol build` → `dist/` static site, base-path aware. `wavesol dev` = live reload. `wavesol serve` = local presenting from the laptop (phone control still needs internet, e.g. via phone hotspot). |
 | Stack | TypeScript + Vite + React for core UI. Single npm package with internal module boundaries (see Architecture). |
@@ -22,7 +40,7 @@ A talk is a directory of human-editable files, mostly written by AI, that builds
 | Manim | Not scheduled; under "Later / maybe" (video-with-sections vs JS-native still open). |
 | Sync | Fallback chain behind one transport interface. Presenter popout via `BroadcastChannel`. Phone via WebRTC (multi-relay signaling over public MQTT/Nostr/tracker relays, trystero-style, + STUN, optional TURN). If no P2P connection forms within a few seconds, messages are relayed through the signaling channel (end-to-end encrypted). Optional self-hosted Cloudflare Worker for signaling + relay. QR pairing with a room secret. |
 | Deploy | One talk per repo. GitHub Pages via an Action template. Must work from any base URL/subpath. |
-| Theme | Calm academic, light default (off-white, one accent, thin curved edges, projector-safe) + dark variant. CSS-variable based, overridable in `talk.yaml`. |
+| Theme | Calm academic, light default (off-white, one accent, thin curved edges, projector-safe), with bundled fonts so talks look the same on any machine. Dark variant in Phase 5. CSS-variable based, overridable in `talk.yaml`. |
 | AI authoring | JSON Schema for `talk.yaml` and frontmatter (generated from zod), `wavesol check` with precise errors, bundled `AGENTS.md`/`CLAUDE.md` in the talk template. |
 | Figures | Shared LaTeX macros, TikZ/tikz-cd → SVG at build time, BibTeX citations + references node, images (incl. PDF pages). |
 | Polls (later) | Seminar scale (<50). The presenter's browser acts as the WebRTC hub (star topology) over the same transport layer, with relay fallback per attendee. |
@@ -34,71 +52,38 @@ Technical choices made without a question (revisit if they bite):
   LOD: off-screen nodes hidden, tiny slides show a title card.
 - **Default transition:** van Wijk–Nuij "smooth zoom" (zoom out, pan, zoom in), with duration scaled by
   distance. Per-edge, per-node and global overrides: `fly` (default), `cut`, `fade`, `zoom-through`.
-- **Layout:** elkjs (layered by default), hints (`direction`, `near: {left-of: x}`; ELK ignores layer constraints, so no `rank`) and `pin: [x, y]`.
+- **Layout:** elkjs at build time (layered by default, long chains wrapped into rows), hints
+  (`direction`, `near: {left-of: x}`) and `pin: [x, y]`. ELK ignores layer constraints, so there is no
+  `rank` hint.
 - **Tests:** vitest for unit tests, Playwright for end-to-end and visual regression (see Testing).
 
-## Source format sketch
+## Source format
 
-```
-my-talk/
-  talk.yaml
-  nodes/
-    intro.md
-    main-thm.md        # type: lean
-  lean/                # lake project (may depend on Mathlib)
-  figures/ refs.bib macros.tex
-  AGENTS.md            # agent guide, from template
-  .github/workflows/deploy.yml
-```
-
-```yaml
-# talk.yaml
-title: Fabrics of proofs
-theme: { base: academic-light, accent: "#2b6cb0" }
-transitions: { default: fly }
-start: intro
-nodes:
-  intro: {}                              # nodes/intro.md
-  background:
-    type: frame
-    children: [defs, examples]
-    layout: { direction: down }
-  main-thm: { pin: [1200, 0] }
-edges:
-  - intro -> background: { label: "Background", default: true }
-  - intro -> main-thm: { label: "Skip to theorem" }
-  - background -> main-thm: { default: true, transition: zoom-through }
-```
-
-```markdown
----
-title: Introduction
-notes: |
-  Mention the audience poll later.
----
-# Why fabrics?
-
-- A first point {.fragment}
-- $\Hom(A, B)$ uses a shared macro {.fragment}
-```
-
-The final syntax is settled in Phase 0. Node frontmatter is validated by each plugin's schema.
+The format is specified in [`spec/FORMAT.md`](spec/FORMAT.md). In short: `talk.yaml` holds metadata,
+nodes, edges (`a -> b`, chains, `label`/`default`/`transition`), layout, theme and transitions; each
+content node is a Markdown file in `nodes/` with YAML frontmatter; frames are declared in `talk.yaml`.
 
 ## Architecture (inside the single package)
 
 ```
+bin/wavesol.js   CLI entry; runs the TypeScript sources through tsx (no build step)
 src/
-  model/       graph types, parsing, zod schemas → JSON Schema, validation (`check`)
-  build/       Vite plugin + build pipeline; per-plugin build hooks; content cache
-  layout/      elkjs integration, recursive frames, hints, pins
-  runtime/     canvas, camera + transitions, navigation state machine, step engine
-  sync/        state protocol + transports (broadcast, webrtc, relay) + fallback chain
-  ui/          presenter view, controller (phone) app, overview — React
-  plugins/     slide, frame, image, lean, tikz, references, (later) manim, poll
-  theme/       CSS variables, default themes
-  cli/         new / dev / build / serve / check
-docs/          the documentation, written as a wavesol talk (deployed to GitHub Pages)
+  model/         zod schemas (→ schema/*.json), compiled-talk and diagnostic types
+  build/         loader + validation (`check`), YAML positions, macros, compile, Vite plugin
+  layout/        elkjs integration, recursive frames, pins, near hints
+  plugins/       node types, each with build.ts (Node) and runtime.ts (browser): slide, image, frame
+  runtime/       presentation (canvas, edges, LOD), camera + transitions, navigation state machine,
+                 keyboard, ui/ (React overlay: edges panel, help)
+  theme/         base.css (structure) + academic-light.css (variables)
+  cli/           new / dev / build / serve / check
+templates/talk/  the starter talk copied by `wavesol new` (incl. AGENTS.md, Pages workflow)
+docs/            the documentation, written as a wavesol talk (deployed to GitHub Pages)
+tests/           unit/ + fixtures/ (check diagnostics), e2e/ (Playwright, visual baselines)
+spikes/          Phase 0 spikes (camera, Lean)
 ```
+
+Planned additions: `src/sync/` (state protocol, transports, fallback chain; Phases 2–3), presenter view
+and phone controller UIs (Phases 2–3), plugins `lean`, `tikz`, `references`, `poll`.
 
 **Node plugin contract** (framework-agnostic), split so build-only dependencies (Shiki, KaTeX, Lean
 tooling) never reach the browser bundle. See `src/plugins/types.ts`:
@@ -124,9 +109,10 @@ interface NodeInstance {
 The build compiles a talk into one `CompiledTalk` JSON (layout positions, plugin data, steps), served
 to the runtime as the virtual module `virtual:wavesol/talk`.
 
-**State protocol:** the projector page is the single source of truth. State is `{ node, step,
+**State protocol** (Phases 2–3; navigation intents already exist in `src/runtime/nav.ts`): the
+projector page is the single source of truth. State is `{ node, step,
 history, pointer }`. Peers (presenter view, phone, later audience) send intents (`step`, `edge:i`,
-`back`, `goto`, `pointer`) and receive state snapshots plus the outgoing edges and labels for the
+`back`, `goto`, `pointer`; implemented so far: `step`, `prev`, `edge`, `back`, `goto`) and receive state snapshots plus the outgoing edges and labels for the
 current node. Transports only move JSON messages. Intents carry the state version they were issued
 against, so replays after a reconnect are dropped. Peers must prove knowledge of the room secret (from
 the QR code) before their intents are accepted.
@@ -151,7 +137,7 @@ the QR code) before their intents are accepted.
 - **Spike: Lean.** Run SubVerso on a small lake project (core Lean only, no Mathlib) and confirm the
   JSON has goal states per tactic and hovers. Check toolchain coupling.
 - Exit: format spec written, both spikes green or risks re-planned.
-- **Status: done.** Format v0 in `spec/FORMAT.md`, both spikes green (`spikes/*/FINDINGS.md`). Open:
+- **Status: done** (2026-10-24). Format v0 in `spec/FORMAT.md`, both spikes green (`spikes/*/FINDINGS.md`). Open:
   check camera flights on real hardware (GPU raster cost is not measurable headless).
 
 ### Phase 1 — Core fabric MVP (presentable with keyboard)
@@ -168,9 +154,10 @@ the QR code) before their intents are accepted.
   navigation, layout, theming and the CLI, and doubles as the end-to-end test fixture. Every later
   phase extends it with that phase's features.
 - Exit: the docs talk (~15+ nodes) is deployed and can be presented from the Pages site.
-- **Status: done.** Docs deployed at https://pimotte-agents.github.io/wavesol/. All items above are in place with unit tests (check
-  fixtures, layout, navigation, camera, slide build) and end-to-end tests on the docs talk (served
-  from a subpath, incl. visual baselines). Decisions made along the way:
+- **Status: done** (2026-10-24). Docs deployed at https://pimotte-agents.github.io/wavesol/. All items
+  above are in place with unit tests (check fixtures, layout, navigation, camera, slide build) and
+  end-to-end tests on the docs talk (served from a subpath, incl. visual baselines). Decisions made
+  along the way:
   - Plugins are split into a build half (Node) and a runtime half (browser); see the contract above.
   - Layout: ELK ignores layer constraints, so there is no `rank` hint. Layered layouts wrap long
     chains into rows (`wrap: true` by default) so the overview reads as a fabric, not a ribbon.
@@ -269,3 +256,5 @@ the QR code) before their intents are accepted.
 - **DOM zoom performance on weak GPUs:** main-thread cost is low (< 4 ms/frame at 300 nodes); GPU
   raster cost still to be checked on real hardware.
 - **TeX dependency** for TikZ: optional at build time, with a clear `check` error when missing.
+- **Running TypeScript via tsx:** keeps the package build-free, but every CLI start compiles on the
+  fly and talks depend on a git dependency. Publish compiled JS to npm once the format stabilises.

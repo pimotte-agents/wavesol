@@ -19,6 +19,17 @@ export function fitBox(b: Box, vw: number, vh: number, margin: number): View {
   return { cx: b.x + b.w / 2, cy: b.y + b.h / 2, w: Math.max(b.w, (b.h * vw) / vh) / (1 - 2 * margin) };
 }
 
+/** Scales the visible width by `factor`, keeping the world point under screen position (px, py) fixed. */
+export function zoomAt(v: View, factor: number, px: number, py: number, vw: number, vh: number): View {
+  const w = v.w * factor;
+  return { cx: v.cx + ((px - vw / 2) * (v.w - w)) / vw, cy: v.cy + ((py - vh / 2) * (v.w - w)) / vw, w };
+}
+
+/** Moves the view so the world follows a screen-space drag of (dx, dy) pixels. */
+export function panBy(v: View, dx: number, dy: number, vw: number): View {
+  return { cx: v.cx - (dx * v.w) / vw, cy: v.cy - (dy * v.w) / vw, w: v.w };
+}
+
 type Path = { at: (t: number) => View; duration: number };
 
 const RHO = Math.SQRT2;
@@ -134,6 +145,13 @@ export class Animator {
     return this.frames(token, duration, (t) => this.hooks.apply(t >= 1 ? to : path.at(ease(t)))).then((ok) => {
       if (ok) this.hooks.moving(false);
     });
+  }
+
+  /** Cancels the running transition, leaving the view where it is. */
+  stop(): void {
+    this.token++;
+    this.hooks.setOpacity(1);
+    this.hooks.moving(false);
   }
 
   private frames(token: number, duration: number, step: (t: number) => void): Promise<boolean> {

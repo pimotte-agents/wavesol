@@ -16,7 +16,11 @@ my-talk/
   refs.bib           # optional bibliography
 ```
 
-All paths are relative to the talk directory unless stated otherwise.
+All paths are relative to the talk directory unless stated otherwise. Sections marked *(planned)*
+describe syntax that is reserved but not implemented yet.
+
+Editors get autocompletion and validation for `talk.yaml` from the JSON Schema: start the file with
+`$schema: ./node_modules/wavesol/schema/talk.schema.json` (the talk template does this).
 
 ## Node ids
 
@@ -35,7 +39,7 @@ venue: Lean Together
 start: intro                       # first node; defaults to the first key of `nodes`
 
 theme:
-  base: academic-light             # built-in theme: academic-light | academic-dark
+  base: academic-light             # built-in theme (a dark variant is planned)
   accent: "#2b6cb0"                # shorthand for the --ws-accent variable
   vars:                            # any CSS custom property, without the --ws- prefix
     font-body: "Source Serif 4"
@@ -44,14 +48,15 @@ transitions:
   default: fly                     # fly | cut | fade | zoom-through, or { type, duration, easing }
 
 layout:
-  algorithm: layered               # layered | force | grid | manual
+  algorithm: layered               # layered | force | grid | manual (manual: only pins; unpinned nodes go on a grid)
+                                   # force: for web-like talks; few edge crossings, filled to 16:9 (levels that are only chains use layered)
   direction: right                 # right | down | left | up (layered only)
-  spacing: 1                       # multiplier on the theme's default spacing
+  spacing: 1                       # multiplier on the default gap between nodes
   wrap: true                       # layered: wrap long chains into rows (default)
 
 math:
   macros: macros.tex               # default: macros.tex if it exists
-bibliography: refs.bib             # default: refs.bib if it exists
+bibliography: refs.bib             # (planned) for citations
 
 nodes:
   intro: {}                        # content in nodes/intro.md
@@ -82,13 +87,13 @@ The key is the node id. The value has these fields, all optional:
 |---|---|
 | `type` | Node plugin. Defaults to the frontmatter `type`, else from the file extension (`.md` → `slide`). |
 | `file` | Content file. Defaults to `nodes/<id>.md`. Not allowed for `frame`. |
-| `title` | Display title (edge buttons, overview, presenter view). Defaults to the frontmatter title, else the first heading, else the id. |
+| `title` | Display title (edge buttons, overview title cards, presenter view). Defaults to the frontmatter title, else the slide's first `#` heading, else the id. |
 | `children` | `frame` only: ids of the nodes inside it. A node has at most one parent frame. |
 | `layout` | `frame` only: layout settings for the frame's children, same shape as the top-level `layout`. |
 | `pin` | `[x, y]` position of the top-left corner in the layout space of the node's level. At the top level that is world units. Inside a frame it is the frame's own layout space, which is then scaled to fit the frame. |
-| `size` | `[w, h]` in world units. Defaults to the theme's slide size (1600×900). |
-| `scale` | Uniform scale of the node on the canvas (default 1). |
-| `near` | Layout hint: `{ left-of \| right-of \| above \| below: <id> }`. |
+| `size` | `[w, h]`: the size the node's content is laid out at, default 1600×900 (16:9). Frames default to 1600×900 × 0.75·√children, between 1× and 2× (4 children: 1.5×). |
+| `scale` | Uniform scale of the node on the canvas (default 1); the node takes `size × scale` space. |
+| `near` | `{ left-of \| right-of \| above \| below: <id> }`: place the node right next to another node of the same level, overriding the layout. |
 | `transition` | Default transition for edges *into* this node. |
 
 Plugin-specific fields go in the node file's frontmatter. They may also be given in `talk.yaml`, but
@@ -101,7 +106,7 @@ defining the same field in both places is an error.
 
 | Option | Meaning |
 |---|---|
-| `label` | Text on the phone/presenter button. Defaults to the target's title. |
+| `label` | Text on the edge's button (edges panel now; presenter view and phone later). Defaults to the target's title. |
 | `default` | `true` marks the edge followed by `step` once the source node has no steps left. At most one default per source node. |
 | `transition` | Transition for this edge. Overrides the target node's and the global default. |
 
@@ -149,9 +154,9 @@ The body is Markdown (CommonMark + GFM tables) with:
 - **Fragments (gradual reveal):** an attribute block `{.fragment}` at the end of a paragraph, list item
   or heading, or a `::: fragment` block around any content (use the block for display math, code and
   images). A fragment comes one step after the previous fragment; `{.fragment step=2}` or
-  `::: fragment step=2` puts it in step 2 explicitly, and fragments with the same step appear together. Optional effect:
-  `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g. `{.fragment .fade-up}` or
-  `::: fragment fade-up`.
+  `::: fragment step=2` puts it in step 2 explicitly, and fragments with the same step appear
+  together. Optional effect: `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g.
+  `{.fragment .fade-up}` or `::: fragment fade-up`.
 - **Frontmatter `fragments: lists`:** every top-level list item becomes a fragment.
 - **Blocks:** `::: notes` (speaker notes, removed from the slide) and columns. For columns the outer
   fence needs more colons than the inner ones:
@@ -166,7 +171,7 @@ The body is Markdown (CommonMark + GFM tables) with:
   :::
   ::::
   ```
-- **Citations:** `[@key]` or `[@key, p. 3]` from the bibliography (Phase 5).
+- **Citations** *(planned)*: `[@key]` or `[@key, p. 3]` from the bibliography.
 - **Images:** standard Markdown images, paths relative to the node file.
 
 Step count = number of distinct fragment steps.
@@ -182,12 +187,14 @@ box. Visiting a frame shows it whole. It has 0 steps.
 ---
 type: image
 src: ../figures/diagram.svg
-caption: The fabric of the proof.   # optional, Markdown
+caption: "The fabric of the proof."  # optional, Markdown; quote it if it contains ": "
 fit: contain                        # contain | cover
 ---
 ```
 
-### `lean` (Phase 4)
+Set `title` too: without it, the overview and edge buttons show the node id.
+
+### `lean` *(planned)*
 
 ```markdown
 ---
@@ -205,12 +212,16 @@ Exploration (click a tactic to see its goals, hover a token to see its signature
 
 ## Validation
 
-`wavesol check` reports, with `file:line`:
+`wavesol check` reports problems as `file:line:col: error|warning: message`:
 
-- schema violations in `talk.yaml` and in frontmatter (per plugin)
+- YAML syntax errors and schema violations in `talk.yaml` and in frontmatter (per node type), including
+  unknown fields
 - unknown node types, missing node files, files in `nodes/` that no node uses (warning)
-- edges to unknown nodes, more than one `default` edge per node
-- a node in two frames, frame cycles, `children` on a non-frame
+- edges to unknown nodes, more than one `default` edge per node, an unknown `start`
+- a node in two frames, frame cycles, `children` or `layout` on a non-frame, a `file` on a frame
 - fields defined in both `talk.yaml` and frontmatter
-- unreachable nodes from `start` (warning)
-- plugin build checks (e.g. Lean anchor not found)
+- nodes that cannot be reached from `start` along edges (warning)
+- content errors from the node builds: invalid math, broken `macros.tex` definitions, missing images,
+  unknown code-block languages (warning)
+
+`wavesol build` refuses to build a talk with errors; `wavesol dev` shows them in the browser.

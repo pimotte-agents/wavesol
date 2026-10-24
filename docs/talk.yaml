@@ -12,6 +12,7 @@ transitions:
 
 layout:
   direction: right
+  algorithm: force
 
 nodes:
   welcome: {}

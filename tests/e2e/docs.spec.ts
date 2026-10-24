@@ -121,6 +121,75 @@ test("overview: o zooms out, clicking a node flies there", async ({ page }) => {
   expect((await state(page)).overview).toBe(false);
 });
 
+/** The world transform as [tx, ty, scale]. */
+const camera = (page: Page) =>
+  page.evaluate(() => {
+    const m = document.querySelector<HTMLElement>(".ws-world")!.style.transform.match(/translate\(([-\d.e]+)px, ([-\d.e]+)px\) scale\(([-\d.e]+)\)/)!;
+    return [Number(m[1]), Number(m[2]), Number(m[3])] as const;
+  });
+
+test("overview: wheel zooms around the cursor, + and − zoom, zoom is limited", async ({ page }) => {
+  await open(page);
+  await page.keyboard.press("o");
+  await settled(page);
+  const [tx0, ty0, k0] = await camera(page);
+  const [px, py] = [1000, 400];
+  const world = (tx: number, ty: number, k: number) => [(px - tx) / k, (py - ty) / k];
+  await page.mouse.move(px, py);
+  await page.mouse.wheel(0, -300);
+  const [tx1, ty1, k1] = await camera(page);
+  expect(k1).toBeGreaterThan(k0);
+  // the world point under the cursor stays put
+  expect(world(tx1, ty1, k1)[0]).toBeCloseTo(world(tx0, ty0, k0)[0]!, 0);
+  expect(world(tx1, ty1, k1)[1]).toBeCloseTo(world(tx0, ty0, k0)[1]!, 0);
+
+  await page.keyboard.press("-");
+  expect((await camera(page))[2]).toBeLessThan(k1);
+  await page.keyboard.press("+");
+  expect((await camera(page))[2]).toBeCloseTo(k1, 5);
+
+  for (let i = 0; i < 30; i++) await page.mouse.wheel(0, 1000);
+  expect((await camera(page))[2]).toBeCloseTo(k0 / 2, 5); // at most twice the fitted width
+  expect((await state(page)).overview).toBe(true);
+});
+
+test("overview: dragging pans and does not navigate; a click still does", async ({ page }) => {
+  await open(page);
+  const start = (await state(page)).nav.node;
+  await page.keyboard.press("o");
+  await settled(page);
+  const vp = page.viewportSize()!;
+  await page.mouse.move(vp.width / 2, vp.height / 2);
+  await page.mouse.wheel(0, -300); // zoom in so the pan is not clamped
+  const [tx0, ty0] = await camera(page);
+  // a slide whose center is on screen, so the press lands on it
+  const visible = await page.evaluate(([w, h]) => {
+    for (const el of document.querySelectorAll<HTMLElement>(".ws-node.ws-type-slide")) {
+      const r = el.getBoundingClientRect();
+      const [cx, cy] = [r.x + r.width / 2, r.y + r.height / 2];
+      if (cx > 150 && cx < w! - 150 && cy > 100 && cy < h! - 100 && document.elementFromPoint(cx, cy)?.closest(".ws-node") === el) return el.dataset.id;
+    }
+  }, [vp.width, vp.height]);
+  expect(visible).toBeDefined();
+  expect(visible).not.toBe(start);
+  const target = page.locator(`.ws-node[data-id="${visible}"]`);
+  const box = (await target.boundingBox())!;
+  // press on a node, then drag: a pan, not a click on that node
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 120, box.y + box.height / 2 + 60, { steps: 8 });
+  await page.mouse.up();
+  const [tx1, ty1] = await camera(page);
+  expect(tx1 - tx0).toBeCloseTo(-120, 0);
+  expect(ty1 - ty0).toBeCloseTo(60, 0);
+  expect((await state(page)).overview).toBe(true);
+  expect((await state(page)).nav.node).toBe(start);
+
+  await target.click();
+  expect((await state(page)).overview).toBe(false);
+  expect((await state(page)).nav.node).toBe(await target.getAttribute("data-id"));
+});
+
 test("the edges panel lists outgoing edges and navigates", async ({ page }) => {
   await open(page);
   await page.keyboard.press("e");

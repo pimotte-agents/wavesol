@@ -52,6 +52,14 @@ body {
   font: 600 110px/1.15 var(--ws-font-heading);
   color: var(--ws-heading);
 }
+.ws-stage.ws-overview {
+  cursor: grab;
+  touch-action: none;
+}
+.ws-stage.ws-panning,
+.ws-stage.ws-panning .ws-node {
+  cursor: grabbing;
+}
 .ws-overview .ws-node {
   cursor: pointer;
 }

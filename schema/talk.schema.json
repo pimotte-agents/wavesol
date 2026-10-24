@@ -36,10 +36,10 @@
       "type": "object",
       "properties": {
         "base": {
+          "description": "Built-in theme. A dark variant is planned.",
           "type": "string",
           "enum": [
-            "academic-light",
-            "academic-dark"
+            "academic-light"
           ]
         },
         "accent": {
@@ -148,6 +148,7 @@
       "additionalProperties": false
     },
     "bibliography": {
+      "description": "Planned (citations): path to a .bib file.",
       "type": "string"
     },
     "nodes": {

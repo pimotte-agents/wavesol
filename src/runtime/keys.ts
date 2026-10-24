@@ -9,6 +9,7 @@ export const KEY_HELP: [string, string][] = [
   ["1 – 9", "take the n-th outgoing edge"],
   ["Backspace", "back (history)"],
   ["o", "overview; click a node to fly there"],
+  ["+ / −", "zoom the overview (also wheel, pinch; drag to pan)"],
   ["Home", "go to the start"],
   ["e", "show outgoing edges"],
   ["f", "fullscreen"],
@@ -45,6 +46,13 @@ export function bindKeys(p: Presentation, togglePanel: (panel: Panel | undefined
       case "Escape":
         p.toggleOverview(false);
         togglePanel(undefined);
+        break;
+      case "+":
+      case "=":
+        p.zoomOverview(1 / 1.4);
+        break;
+      case "-":
+        p.zoomOverview(1.4);
         break;
       case "e":
         togglePanel("edges");

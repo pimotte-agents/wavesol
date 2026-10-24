@@ -7,6 +7,7 @@ title: Layout
 
 - `algorithm`: `layered` (default), `force`, `grid` or `manual`.
 - `direction`: `right | down | left | up` — the flow, for layered.
+- Long chains wrap into rows, so the overview stays compact (`wrap: false` turns it off).
 - **`pin: [x, y]`** fixes a node's exact position; overrides the layout.
 - **`near: { right-of: intro }`** places a node right next to another one.
 - **`scale`** and **`size: [w, h]`** control how big a node is drawn.

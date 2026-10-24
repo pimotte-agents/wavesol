@@ -149,10 +149,12 @@ async function place(
     ids.forEach((id, i) => pos.set(id, { x: (i % cols) * cell, y: Math.floor(i / cols) * row }));
     return pos;
   }
+  // force on a level that is only chains falls back to layered, which wraps them into rows
+  if (algorithm === "force" && !isChains(edges)) return forceLayout(ids, box, edges, spacing, aspect);
   const graph: ElkNode = {
     id: "root",
     layoutOptions: {
-      "elk.algorithm": algorithm,
+      "elk.algorithm": "layered",
       "elk.direction": DIRECTIONS[opts.direction ?? "right"],
       "elk.spacing.nodeNode": String(GAP * spacing),
       "elk.layered.spacing.nodeNodeBetweenLayers": String(GAP * 1.5 * spacing),
@@ -168,4 +170,70 @@ async function place(
   const result = await elk.layout(graph);
   for (const c of result.children ?? []) pos.set(c.id, { x: c.x ?? 0, y: c.y ?? 0 });
   return pos;
+}
+
+/** True if no node branches (at most one edge in and one out): chains, which force would draw as a line. */
+function isChains(edges: { from: string; to: string }[]): boolean {
+  const out = new Map<string, number>();
+  const inc = new Map<string, number>();
+  for (const e of edges) {
+    out.set(e.from, (out.get(e.from) ?? 0) + 1);
+    inc.set(e.to, (inc.get(e.to) ?? 0) + 1);
+  }
+  return [...out.values(), ...inc.values()].every((d) => d <= 1);
+}
+
+/**
+ * Force layout for web-like talks: stress majorization (few edge crossings, even edge lengths), then
+ * the rotation and per-axis stretch that best fill the target aspect while keeping every pair of
+ * boxes at least a quarter node width apart. Affine maps keep crossings, so the fit costs no untangling.
+ */
+async function forceLayout(
+  ids: string[],
+  box: (id: string) => { w: number; h: number },
+  edges: { from: string; to: string }[],
+  spacing: number,
+  aspect: number,
+): Promise<Map<string, { x: number; y: number }>> {
+  const sizes = ids.map(box);
+  const meanW = sizes.reduce((s, b) => s + b.w, 0) / Math.max(ids.length, 1);
+  const result = await elk.layout({
+    id: "root",
+    layoutOptions: { "elk.algorithm": "stress", "elk.stress.desiredEdgeLength": String(1.5 * meanW), "elk.randomSeed": "1" },
+    children: ids.map((id, i) => ({ id, width: sizes[i]!.w, height: sizes[i]!.h })),
+    edges: edges.map((e, i) => ({ id: `e${i}`, sources: [e.from], targets: [e.to] })),
+  });
+  const at = new Map((result.children ?? []).map((c) => [c.id, c]));
+  const centers = ids.map((id, i) => [(at.get(id)?.x ?? 0) + sizes[i]!.w / 2, (at.get(id)?.y ?? 0) + sizes[i]!.h / 2] as const);
+  const gap = (meanW / 4) * spacing;
+
+  let best = { fill: -1, pts: centers.map(([x, y]) => [x, y]) };
+  for (let deg = 0; deg < 180; deg += 3) {
+    const a = (deg * Math.PI) / 180;
+    const rot = centers.map(([x, y]) => [x * Math.cos(a) - y * Math.sin(a), x * Math.sin(a) + y * Math.cos(a)] as const);
+    for (let k = -12; k <= 12; k++) {
+      const stretchY = 1.15 ** k;
+      // smallest uniform scale at which every pair is separated by `gap` along x or y
+      let t = 0;
+      for (let i = 0; i < ids.length; i++) {
+        for (let j = i + 1; j < ids.length; j++) {
+          const dx = Math.abs(rot[i]![0] - rot[j]![0]);
+          const dy = Math.abs(rot[i]![1] - rot[j]![1]) * stretchY;
+          if (dx + dy < 1e-9) continue; // coincident centers: no scale separates them
+          const needX = (sizes[i]!.w + sizes[j]!.w) / 2 + gap;
+          const needY = (sizes[i]!.h + sizes[j]!.h) / 2 + gap;
+          t = Math.max(t, Math.min(dx ? needX / dx : Infinity, dy ? needY / dy : Infinity));
+        }
+      }
+      if (t === 0) t = 1;
+      const pts = rot.map(([x, y]) => [x * t, y * stretchY * t]);
+      const minX = Math.min(...pts.map(([x], i) => x! - sizes[i]!.w / 2));
+      const maxX = Math.max(...pts.map(([x], i) => x! + sizes[i]!.w / 2));
+      const minY = Math.min(...pts.map(([, y], i) => y! - sizes[i]!.h / 2));
+      const maxY = Math.max(...pts.map(([, y], i) => y! + sizes[i]!.h / 2));
+      const fill = Math.min(aspect / (maxX - minX), 1 / (maxY - minY)); // node scale when fitted to the target box
+      if (fill > best.fill) best = { fill, pts };
+    }
+  }
+  return new Map(ids.map((id, i) => [id, { x: best.pts[i]![0]! - sizes[i]!.w / 2, y: best.pts[i]![1]! - sizes[i]!.h / 2 }]));
 }

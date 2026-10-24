@@ -101,7 +101,10 @@ export async function main(argv: string[]): Promise<number> {
     case "dev": {
       const server = await createServer(viteConfig(talkDir, { server: { port, host: values.host, fs: { allow: [PKG, talkDir] } } }));
       await server.listen();
-      server.printUrls();
+      // printUrls() logs at info level, which logLevel "warn" suppresses
+      const urls = server.resolvedUrls!;
+      console.log(`dev server for ${talkDir} at ${urls.local[0]}`);
+      for (const u of urls.network) console.log(`  on the network: ${u}`);
       return new Promise(() => {}); // run until interrupted
     }
     case "serve": {
