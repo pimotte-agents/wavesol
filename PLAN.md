@@ -341,7 +341,6 @@ QR code; what does not open with it is ignored, which is how only paired phones 
   overlays) and a JS-native animation plugin, possibly both (video first). Includes overlays: a node or
   layer drawn on top of another node (e.g. an animation over a slide).
 - External plugin loading (per-talk `plugins/`, then npm).
-- `wavesol shoot` headless screenshots for AI visual feedback.
 - Scaffold commands (`wavesol add node`).
 - Annotation/drawing layer.
 

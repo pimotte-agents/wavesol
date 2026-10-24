@@ -15,6 +15,8 @@ export interface Controls {
   pair?(): void;
   /** Starts the audience room (polls) for the join panel. */
   join?(): void;
+  /** Black screen on the projector; no argument toggles. */
+  blackout?(on?: boolean): void;
   /** Toggles drag mode (wavesol dev only). */
   toggleDragMode?(): void;
 }
@@ -33,6 +35,7 @@ export const KEY_HELP: [string, string][] = [
   ["j", "show the audience's join code (polls)"],
   ["d", "drag mode: drag nodes to pin them in talk.yaml (wavesol dev)"],
   ["f", "fullscreen"],
+  ["b / .", "black screen (again, or Esc, to show the talk)"],
   ["?", "this help"],
   ["Esc", "close panels and the overview"],
 ];
@@ -65,7 +68,13 @@ export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) =>
         break;
       case "Escape":
         p.toggleOverview(false);
+        p.blackout?.(false);
         togglePanel(undefined);
+        break;
+      case "b":
+      case ".":
+        if (p.blackout) p.blackout();
+        else handled = false;
         break;
       case "+":
       case "=":

@@ -62,6 +62,7 @@ tikz:                              # LaTeX setup for all TikZ pictures; all opti
   libraries: [arrows.meta, positioning]
   preamble: \definecolor{accent}{HTML}{2B6CB0}
 
+pdf: true                          # wavesol build also writes talk.pdf; or { file, steps: last | all }
 sync:                              # phone controller; all optional
   phone: true                      # false: no phone control, no relay is ever contacted
   relays:                          # replaces the built-in public relays (see Phone controller)
@@ -372,3 +373,18 @@ template's Pages workflow does this). wavesol is tested with SubVerso `verso-v4.
   unknown code-block languages (warning)
 
 `wavesol build` refuses to build a talk with errors; `wavesol dev` shows them in the browser.
+
+`wavesol check --render` also builds the talk and looks at every node at every step in a headless
+browser, warning about content that is too tall or too wide for its slide, an overflowing Lean
+infoview or code, and images that don't load. `--shots <dir>` saves a screenshot of every node and step
+(`<node>-<step>.png`). Both need Playwright with Chromium in the talk
+(`npm install --save-dev playwright && npx playwright install chromium`).
+
+### PDF
+
+With `pdf: true` in `talk.yaml` (or `wavesol build --pdf`), `wavesol build` also writes `talk.pdf` next
+to the site, and the help panel (`?`) links to it. One 16:9 page per node, as the node looks at its
+last step, in reading order: the main path along the default edges from the start, then the detours
+(breadth first), then nodes no edge reaches. `pdf: { file: slides.pdf, steps: all }` names the file
+and gives a page per step instead. Text stays text (selectable, searchable). Needs Playwright with
+Chromium, as `check --render` does.

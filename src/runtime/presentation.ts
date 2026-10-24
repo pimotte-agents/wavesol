@@ -28,6 +28,8 @@ export interface PresentationState {
   focus?: number;
   /** Drag mode (wavesol dev): dragging nodes pins them. */
   dragMode: boolean;
+  /** The screen is black (b). */
+  blackout: boolean;
 }
 
 export class Presentation {
@@ -45,6 +47,8 @@ export class Presentation {
   /** Set once the current overview press has moved far enough to be a pan; suppresses the click. */
   private dragged = false;
   private dragging = false;
+  private black = false;
+  private blackLayer: HTMLElement;
   private listeners = new Set<(s: PresentationState) => void>();
   private laser: HTMLElement;
   /** Laser pointer: where it is drawn, where it is heading (screen px), and when it last moved. */
@@ -70,8 +74,11 @@ export class Presentation {
     this.stage = el("div", "ws-stage");
     this.world = el("div", "ws-world");
     this.laser = el("div", "ws-laser");
+    this.blackLayer = el("div", "ws-blackout");
+    this.blackLayer.hidden = true;
     this.stage.append(this.world, this.laser);
     root.append(this.stage);
+    document.body.append(this.blackLayer); // above the stage and the UI panels
 
     // Paint order per depth d: edges whose shallower endpoint is at depth d, then the nodes at depth d.
     // So frames cover edges that pass behind them, while edges between their children stay visible.
@@ -136,6 +143,7 @@ export class Presentation {
       outgoing: this.graph.outgoing(node.id).map((edge) => ({ edge, target: this.nodes.get(edge.to)! })),
       ...(this.focus !== undefined ? { focus: this.focus } : {}),
       dragMode: this.dragging,
+      blackout: this.black,
     };
   }
 
@@ -415,6 +423,14 @@ export class Presentation {
     this.laser.classList.add("ws-on");
     this.dwell(a);
     this.laserFrame = requestAnimationFrame(() => this.drawLaser());
+  }
+
+  /** Black screen (b): covers everything; navigation goes on behind it. No argument toggles. */
+  setBlackout(on = !this.black): void {
+    if (on === this.black) return;
+    this.black = on;
+    this.blackLayer.hidden = !on;
+    this.emit();
   }
 
   /** Passes live data (e.g. a poll's votes) to a node's plugin. */

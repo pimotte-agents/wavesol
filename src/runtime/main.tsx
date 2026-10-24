@@ -15,6 +15,7 @@ import { SyncHost, SyncPeer, broadcastTransport, fanout, type Snapshot } from ".
 import { Phone, PhoneError } from "./phone/Phone.tsx";
 import { Presentation, type PresentationState } from "./presentation.ts";
 import { Presenter } from "./presenter/Presenter.tsx";
+import { Print } from "./print/Print.tsx";
 import { AudienceHub, PhoneControl, joinRoom } from "./remote.ts";
 import { Audience, voterId } from "./audience/Audience.tsx";
 import { Voter, type AudienceMessage } from "../sync/audience.ts";
@@ -44,7 +45,10 @@ if (!compiled.talk) {
 
   const mode = new URLSearchParams(location.search);
 
-  if (mode.has("audience")) {
+  if (mode.has("print")) {
+    document.documentElement.classList.add("ws-print-mode");
+    createRoot(root).render(<Print talk={talk} plugins={runtimePlugins} steps={mode.get("steps") === "all" ? "all" : "last"} />);
+  } else if (mode.has("audience")) {
     document.title = talk.meta.title;
     const r = createRoot(root);
     void joinRoom<AudienceMessage>(talk, "audience").then((net) => {
@@ -82,6 +86,7 @@ if (!compiled.talk) {
       if (intent.type === "overview") presentation.toggleOverview(intent.on);
       else if (intent.type === "pointer") presentation.setPointer(intent.at);
       else if (intent.type === "pair") void phone.start();
+      else if (intent.type === "blackout") presentation.setBlackout(intent.on);
       else presentation.dispatch(intent);
     });
     // polls: the audience room follows the poll on screen; votes update the poll node live
@@ -119,6 +124,7 @@ function snapshot(s: PresentationState): Snapshot {
     step: s.nav.step,
     history: s.nav.history,
     overview: s.overview,
+    ...(s.blackout ? { blackout: true } : {}),
     ...(s.focus !== undefined ? { focus: s.focus } : {}),
     outgoing: s.outgoing.map(({ edge, target }) => ({ to: target.id, title: target.title, label: edge.label, default: edge.default })),
   };

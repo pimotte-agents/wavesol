@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "wavesol dev",
     "check": "wavesol check",
+    "check:render": "wavesol check --render",
     "build": "wavesol build",
     "serve": "wavesol serve"
   },

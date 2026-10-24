@@ -29,6 +29,7 @@ export function Overlay({ presentation, phone, audience }: { presentation: Prese
       openPresenter: () => presentation.openPresenter(),
       pair: phone.enabled ? () => void phone.start() : undefined,
       join: audience.enabled ? () => void audience.start() : undefined,
+      blackout: (on) => presentation.setBlackout(on),
       toggleDragMode: import.meta.env.DEV ? () => presentation.setDragMode(!presentation.dragMode) : undefined,
     };
     return bindKeys(controls, (p) => setPanel((cur) => (p === undefined || cur === p ? undefined : p)));
@@ -75,6 +76,13 @@ export function Overlay({ presentation, phone, audience }: { presentation: Prese
       {panel === "help" && (
         <aside className="ws-panel ws-help-panel" aria-label="Keyboard help">
           <h3>Keys</h3>
+          {presentation.talk.pdf && (
+            <p>
+              <a href={presentation.talk.pdf.file} download>
+                Download the talk as PDF
+              </a>
+            </p>
+          )}
           <dl>
             {KEY_HELP.map(([k, v]) => (
               <div key={k}>

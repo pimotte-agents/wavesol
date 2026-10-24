@@ -1,5 +1,6 @@
 // wavesol CLI: new, dev, build, serve, check.
-import { cpSync, existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { createServer as createHttpServer } from "node:http";
 import { networkInterfaces } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -10,6 +11,7 @@ import sirv from "sirv";
 import { build, createServer, type InlineConfig } from "vite";
 import { compileTalk } from "../build/compile.ts";
 import { attachRelay, createRelay, lanOrigins } from "./relay.ts";
+import { checkRender, writePdf } from "./render.ts";
 import { printDiagnostics, wavesol } from "../build/vite-plugin.ts";
 
 const PKG = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
@@ -27,7 +29,10 @@ Commands:
 Options:
   --port <n>     port for dev/serve
   --host         listen on all interfaces (dev/serve)
-  --out <dir>    output directory for build/serve`;
+  --out <dir>    output directory for build/serve
+  --pdf          build: also write talk.pdf (as pdf: in talk.yaml; needs Playwright)
+  --render       check: render every node at every step and report what overflows or fails to load
+  --shots <dir>  check: also save a screenshot of every node and step (implies --render)`;
 
 function viteConfig(talkDir: string, extra: InlineConfig = {}): InlineConfig {
   return {
@@ -41,8 +46,21 @@ function viteConfig(talkDir: string, extra: InlineConfig = {}): InlineConfig {
   };
 }
 
-async function check(talkDir: string): Promise<boolean> {
+async function check(talkDir: string, render: boolean, shots?: string): Promise<boolean> {
   const r = await compileTalk(talkDir);
+  if (render && r.talk && !r.diagnostics.some((d) => d.severity === "error")) {
+    // build to a temporary folder and look at every node at every step in a browser
+    const out = mkdtempSync(join(tmpdir(), "wavesol-check-"));
+    try {
+      await build(viteConfig(talkDir, { build: { outDir: out, emptyOutDir: true }, plugins: [react(), wavesol(talkDir)] }));
+      r.diagnostics.push(...(await checkRender(out, r.files!, shots && resolve(shots))));
+      if (shots) console.error(`screenshots in ${shots}`);
+    } catch (e) {
+      r.diagnostics.push({ severity: "error", file: "talk.yaml", message: (e as Error).message });
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
+  }
   printDiagnostics(r);
   const errors = r.diagnostics.filter((d) => d.severity === "error").length;
   const warnings = r.diagnostics.length - errors;
@@ -50,7 +68,7 @@ async function check(talkDir: string): Promise<boolean> {
   return errors === 0;
 }
 
-async function buildTalk(talkDir: string, out: string): Promise<boolean> {
+async function buildTalk(talkDir: string, out: string, forcePdf = false): Promise<boolean> {
   const r = await compileTalk(talkDir);
   if (r.diagnostics.some((d) => d.severity === "error")) {
     printDiagnostics(r);
@@ -60,6 +78,16 @@ async function buildTalk(talkDir: string, out: string): Promise<boolean> {
   await build(viteConfig(talkDir, { build: { outDir: out, emptyOutDir: true }, plugins: [react(), wavesol(talkDir)] }));
   printDiagnostics(r);
   console.error(`built ${out}`);
+  const pdf = r.talk!.pdf ?? (forcePdf ? { file: "talk.pdf", steps: "last" as const } : undefined);
+  if (pdf) {
+    try {
+      const pages = await writePdf(out, pdf.file, pdf.steps);
+      console.error(`wrote ${join(out, pdf.file)} (${pages} pages)`);
+    } catch (e) {
+      console.error(`PDF: ${(e as Error).message}`);
+      return false;
+    }
+  }
   return true;
 }
 
@@ -74,7 +102,15 @@ export async function main(argv: string[]): Promise<number> {
   const { positionals, values } = parseArgs({
     args: argv,
     allowPositionals: true,
-    options: { port: { type: "string" }, host: { type: "boolean" }, out: { type: "string" }, help: { type: "boolean", short: "h" } },
+    options: {
+      port: { type: "string" },
+      host: { type: "boolean" },
+      out: { type: "string" },
+      render: { type: "boolean" },
+      shots: { type: "string" },
+      pdf: { type: "boolean" },
+      help: { type: "boolean", short: "h" },
+    },
   });
   const [command, dirArg] = positionals;
   if (!command || values.help) {
@@ -96,9 +132,9 @@ export async function main(argv: string[]): Promise<number> {
       return 0;
     }
     case "check":
-      return (await check(talkDir)) ? 0 : 1;
+      return (await check(talkDir, !!values.render || !!values.shots, values.shots)) ? 0 : 1;
     case "build":
-      return (await buildTalk(talkDir, resolve(values.out ?? join(talkDir, "dist")))) ? 0 : 1;
+      return (await buildTalk(talkDir, resolve(values.out ?? join(talkDir, "dist")), !!values.pdf)) ? 0 : 1;
     case "dev": {
       const server = await createServer(viteConfig(talkDir, { server: { port, host: values.host, fs: { allow: [PKG, talkDir] } } }));
       await server.listen();

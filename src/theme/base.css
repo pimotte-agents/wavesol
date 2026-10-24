@@ -67,6 +67,49 @@ body {
   outline: 12px solid var(--ws-accent);
 }
 
+/* ---------- print view (?print): one 1600×900 page per node and step ---------- */
+@page {
+  size: 1600px 900px;
+  margin: 0;
+}
+.ws-print-mode,
+.ws-print-mode body {
+  height: auto;
+  overflow: visible;
+}
+.ws-print-page {
+  position: relative;
+  width: 1600px;
+  height: 900px;
+  overflow: hidden;
+  /* each page on its own: without containment, the previews' (transformed, oversized) worlds leak
+     into Chrome's print layout, which then shrinks every page once there are enough of them */
+  contain: strict;
+  background: var(--ws-bg);
+  break-after: page;
+  print-color-adjust: exact;
+  -webkit-print-color-adjust: exact;
+}
+.ws-print-page > .ws-preview {
+  position: absolute;
+  inset: 0;
+}
+
+/* black screen (b) */
+.ws-blackout {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 100;
+}
+.ws-blackout[hidden] {
+  display: none;
+}
+.ws-status.ws-black {
+  background: #000;
+  color: #fff;
+}
+
 /* drag mode (wavesol dev) */
 .ws-drag-mode .ws-node {
   cursor: move;

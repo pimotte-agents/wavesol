@@ -116,6 +116,29 @@ test("on a frame, the edges include every node inside it", async ({ context }) =
   await expect.poll(async () => (await nav(projector)).node).toBe(frame.children.at(-1));
 });
 
+test("b blacks out the projector, from either window; navigation goes on behind it", async ({ context }) => {
+  const projector = await openProjector(context);
+  const black = projector.locator(".ws-blackout");
+  await expect(black).toBeHidden();
+  await projector.keyboard.press("b");
+  await expect(black).toBeVisible();
+  expect(await black.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgb(0, 0, 0)");
+  // navigation goes on behind the black screen
+  await projector.keyboard.press("Space");
+  await expect(black).toBeVisible();
+  await projector.keyboard.press("b");
+  await expect(black).toBeHidden();
+
+  // from the presenter view: . works too; the presenter sees that the screen is black
+  const presenter = await popOut(projector);
+  await presenter.keyboard.press(".");
+  await expect(black).toBeVisible();
+  await expect(presenter.locator(".ws-presenter-bar")).toContainText("Screen is black");
+  await presenter.keyboard.press("Escape");
+  await expect(black).toBeHidden();
+  await expect(presenter.locator(".ws-presenter-bar")).not.toContainText("Screen is black");
+});
+
 test("shows the speaker notes and what Space does next", async ({ context }) => {
   const projector = await openProjector(context);
   const t = await talk(projector);

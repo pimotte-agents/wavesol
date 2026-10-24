@@ -4,6 +4,8 @@ title: wavesol
 subtitle: Presentations woven as a fabric
 authors: [The wavesol authors]
 
+pdf: true                      # wavesol build also writes talk.pdf (see the help panel, ?)
+
 theme:
   base: academic-light
 

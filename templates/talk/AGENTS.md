@@ -12,6 +12,10 @@ Commands (run from this talk directory):
 
 - `npm run check` — validate the talk. **Run it after EVERY change** and fix all errors *and*
   warnings. Output is `file:line:col`.
+- `npm run check:render` — also renders every node at every step and warns about content that
+  overflows its slide or images that don't load. Run it before you finish; `npx wavesol check --shots
+  shots/` saves screenshots of every node and step to look at. (Needs Playwright: `npm install
+  --save-dev playwright && npx playwright install chromium`.)
 - `npm run dev` — live preview in the browser.
 - `npm run build` — production build.
 
@@ -23,6 +27,7 @@ Commands (run from this talk directory):
 2. **Write the node files** in `nodes/` (one Markdown file per slide), then declare everything in
    `talk.yaml`: metadata, `nodes`, `edges`.
 3. **Run `npm run check` until clean** — no errors, no warnings. Re-run after each change.
+4. **Then `npm run check:render` until clean**: the slides fit and the images load.
 
 ## `talk.yaml` reference
 
@@ -39,6 +44,7 @@ Top-level keys:
   `force` for a web of topics without one main path. Layered layouts wrap long chains into rows unless
   `wrap: false`; `direction` applies to layered only.
 - `math.macros`: path to a LaTeX macros file (default `macros.tex` if it exists).
+- `pdf`: `true` (or `{ file: slides.pdf, steps: last | all }`) — `npm run build` also writes a PDF.
 - `bibliography`: BibTeX file for `[@key]` citations (default `refs.bib` if it exists).
 - `tikz`: `{ packages: [...], libraries: [...], preamble: "..." }` — LaTeX setup for all TikZ
   pictures (optional).

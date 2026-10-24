@@ -100,6 +100,16 @@ export const Talk = z.strictObject({
   math: z.strictObject({ macros: z.string().optional() }).optional(),
   bibliography: z.string().optional().describe("BibTeX file for [@key] citations; default refs.bib if it exists."),
   sync: Sync.optional(),
+  pdf: z
+    .union([
+      z.boolean(),
+      z.strictObject({
+        file: z.string().regex(/^[\w.-]+\.pdf$/, "a file name ending in .pdf").optional().describe("default: talk.pdf"),
+        steps: z.enum(["last", "all"]).optional().describe("last (default): a page per node; all: a page per step"),
+      }),
+    ])
+    .optional()
+    .describe("wavesol build also writes a PDF next to the site (needs Playwright with Chromium)."),
   tikz: TikzOptions.optional().describe("LaTeX setup for all TikZ pictures (tikz nodes and ```tikz fences)."),
   nodes: z.record(NodeId, NodeEntry.nullable()).refine((r) => Object.keys(r).length > 0, "at least one node"),
   edges: z.array(EdgeItem).default([]),

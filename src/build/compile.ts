@@ -22,6 +22,8 @@ export interface CompileResult {
   inputs: string[];
   /** Each frame's child space, to turn a dragged node's world position into a pin (wavesol dev). */
   frames?: Map<string, FrameSpace>;
+  /** Each node's source file, relative to the talk (talk.yaml for nodes without a file). */
+  files?: Map<string, string>;
 }
 
 export async function compileTalk(dir: string): Promise<CompileResult> {
@@ -175,6 +177,8 @@ async function compile(dir: string): Promise<CompileResult> {
     nodes,
     edges: loaded.edges,
     sync: { phone: talk.sync?.phone ?? true, relays: talk.sync?.relays, ice: talk.sync?.ice ?? [] },
+    ...(talk.pdf ? { pdf: { file: (talk.pdf !== true && talk.pdf.file) || "talk.pdf", steps: (talk.pdf !== true && talk.pdf.steps) || "last" } } : {}),
   };
-  return { talk: compiled, diagnostics, assets, inputs, frames };
+  const files = new Map([...loaded.nodes.values()].map((n) => [n.id, n.file ? relative(dir, n.file) : "talk.yaml"]));
+  return { talk: compiled, diagnostics, assets, inputs, frames, files };
 }

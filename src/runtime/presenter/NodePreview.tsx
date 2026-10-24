@@ -12,10 +12,12 @@ interface Props {
   focus?: number;
   /** The node's live data from the projector (e.g. poll votes); previews always show poll results. */
   live?: unknown;
+  /** A fixed box [w, h] to fit into (the print view's pages), instead of measuring the element. */
+  box?: [number, number];
   plugins: Record<string, RuntimePlugin>;
 }
 
-export function NodePreview({ talk, node: id, step, focus, live, plugins }: Props) {
+export function NodePreview({ talk, node: id, step, focus, live, plugins, box: fixed }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const world = useRef<HTMLDivElement>(null);
   const root = useRef<NodeInstance | undefined>(undefined);
@@ -67,12 +69,12 @@ export function NodePreview({ talk, node: id, step, focus, live, plugins }: Prop
     const b = box.current;
     const w = world.current;
     if (!b || !w || !node) return;
-    const fit = () => (w.style.transform = `translate(-50%, -50%) scale(${Math.min(b.clientWidth / node.w, b.clientHeight / node.h)})`);
+    const fit = () => (w.style.transform = `translate(-50%, -50%) scale(${Math.min((fixed?.[0] ?? b.clientWidth) / node.w, (fixed?.[1] ?? b.clientHeight) / node.h)})`);
     fit();
     const ro = new ResizeObserver(fit);
     ro.observe(b);
     return () => ro.disconnect();
-  }, [node]);
+  }, [node, fixed]);
 
   return (
     <div className="ws-preview" ref={box} data-node={id} data-step={step}>

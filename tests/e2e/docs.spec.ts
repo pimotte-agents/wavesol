@@ -317,6 +317,16 @@ test("the dark theme recolours the page, code highlighting and TikZ figures", as
   expect(lum(dark.bg)).toBeLessThan(lum(dark.tikz));
 });
 
+test("the help panel links to the talk's PDF, which the build wrote", async ({ page }) => {
+  await open(page);
+  await page.keyboard.press("?");
+  const link = page.getByRole("link", { name: "Download the talk as PDF" });
+  await expect(link).toHaveAttribute("href", "talk.pdf");
+  const res = await page.request.get(new URL("talk.pdf", BASE).href);
+  expect(res.status()).toBe(200);
+  expect((await res.body()).subarray(0, 5).toString()).toBe("%PDF-");
+});
+
 test("the edges panel lists outgoing edges and navigates", async ({ page }) => {
   await open(page);
   await page.keyboard.press("e");

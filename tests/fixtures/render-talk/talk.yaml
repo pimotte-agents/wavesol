@@ -1,0 +1,9 @@
+# for tests/e2e/render-check.spec.ts: one slide that fits, and two that don't
+title: Render check
+nodes:
+  fine: {}
+  long: {}
+  wide: {}
+  broken: {}
+edges:
+  - fine -> long -> wide -> broken

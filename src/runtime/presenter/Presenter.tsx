@@ -36,6 +36,7 @@ export function Presenter({ talk, peer, plugins }: Props) {
       toggleOverview: (on) => peer.send({ type: "overview", on: on ?? !peer.current.state?.overview }),
       zoomOverview: () => {},
       pair: () => peer.send({ type: "pair" }),
+      blackout: (on) => peer.send({ type: "blackout", on: on ?? !peer.current.state?.blackout }),
     };
     return bindKeys(controls, (panel) => panel === "pair" && setPairing((on) => !on));
   }, [peer, talk]);
@@ -84,6 +85,7 @@ export function Presenter({ talk, peer, plugins }: Props) {
 
       <section className="ws-presenter-side">
         <header className="ws-presenter-bar">
+          {s?.blackout && <span className="ws-status ws-black">Screen is black</span>}
           <span className={`ws-status ${view.connected ? "ws-ok" : "ws-waiting"}`} role="status">
             {view.connected ? "Projector connected" : "Waiting for the projector: open the talk in another window, or press p there"}
           </span>

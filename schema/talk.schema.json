@@ -203,6 +203,33 @@
       },
       "additionalProperties": false
     },
+    "pdf": {
+      "description": "wavesol build also writes a PDF next to the site (needs Playwright with Chromium).",
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "file": {
+              "description": "default: talk.pdf",
+              "type": "string",
+              "pattern": "^[\\w.-]+\\.pdf$"
+            },
+            "steps": {
+              "description": "last (default): a page per node; all: a page per step",
+              "type": "string",
+              "enum": [
+                "last",
+                "all"
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
     "tikz": {
       "description": "LaTeX setup for all TikZ pictures (tikz nodes and ```tikz fences).",
       "type": "object",

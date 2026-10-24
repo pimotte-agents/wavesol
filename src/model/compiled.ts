@@ -42,6 +42,8 @@ export interface CompiledTalk {
   transitions: { default: TransitionSpec };
   nodes: CompiledNode[];
   edges: CompiledEdge[];
+  /** The PDF `wavesol build` writes next to the site (file name), if the talk asks for one. */
+  pdf?: { file: string; steps: "last" | "all" };
   /** Phone controller settings; unset relays mean the built-in public ones. */
   sync: { phone: boolean; relays?: string[]; ice: { urls: string | string[]; username?: string; credential?: string }[] };
 }

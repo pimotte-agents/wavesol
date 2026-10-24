@@ -7,6 +7,8 @@ export type SyncIntent =
   | { type: "overview"; on?: boolean }
   /** laser pointer at a normalised screen position ([0,1]², top-left origin), or null to hide it */
   | { type: "pointer"; at: [number, number] | null }
+  /** black screen on the projector (on: toggle when absent) */
+  | { type: "blackout"; on?: boolean }
   /** start phone pairing on the projector (contacts the relays; the snapshot then carries `pair`) */
   | { type: "pair" };
 
@@ -19,6 +21,8 @@ export interface Remote {
 export interface Snapshot extends Position {
   history: Position[];
   overview: boolean;
+  /** The projector shows a black screen. */
+  blackout?: boolean;
   /** Outgoing edges of the current node, in order, so peers without the talk can draw buttons. */
   outgoing: { to: string; title: string; label?: string; default?: boolean }[];
   /** A detail of the current step the laser selected (e.g. a Lean tactic), for previews to mirror. */
@@ -52,7 +56,7 @@ export interface Transport<M = Message> {
   close(): void;
 }
 
-const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "pair"]);
+const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "pair", "blackout"]);
 /** How many recent intent ids the host remembers to drop replays. */
 const SEEN_LIMIT = 500;
 
