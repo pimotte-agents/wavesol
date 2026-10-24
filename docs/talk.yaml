@@ -17,18 +17,24 @@ layout:
 nodes:
   welcome: {}
   idea: {}
+  map: {}                          # the hub: one edge per topic
 
-  getting-around:
+  navigating:
     type: frame
-    title: Getting around
-    children: [nav-steps, nav-edges, nav-back, nav-overview, nav-presenter, nav-phone]
-    layout: { direction: down }
+    title: Navigating
+    children: [nav-steps, nav-edges, nav-back, nav-overview]
   nav-steps: {}
   nav-edges: {}
   nav-back: {}
   nav-overview: {}
+
+  presenting:
+    type: frame
+    title: Presenting
+    children: [nav-presenter, nav-phone, transitions]
   nav-presenter: {}
   nav-phone: {}
+  transitions: {}
 
   writing:
     type: frame
@@ -39,38 +45,85 @@ nodes:
   format-edges: {}
   format-nodes: {}
 
-  node-types:
+  content:
     type: frame
-    title: Node types
-    children: [slides, fragments, math-code, figure, frames]
+    title: Content
+    children: [slides, fragments, math-code, figure]
   slides: {}
   fragments: {}
   math-code: {}
   figure: {}
-  frames: {}
 
+  structure:
+    type: frame
+    title: Structure and look
+    children: [frames, layout, theming]
+  frames: {}
   layout: {}
-  transitions: {}
   theming: {}
+
+  tools:
+    type: frame
+    title: Tools
+    children: [cli, check, ai]
   cli: {}
   check: {}
   ai: {}
+
   roadmap: {}
 
 edges:
   - welcome -> idea: { default: true }
-  - welcome -> roadmap: { label: "Skip to the roadmap" }
-  - idea -> getting-around: { default: true }
-  - getting-around -> nav-steps: { default: true, transition: zoom-through }
-  - nav-steps -> nav-edges -> nav-back -> nav-overview -> nav-presenter -> nav-phone: { default: true }
-  - nav-phone -> writing: { default: true }
+  - welcome -> map: { label: "Skip to the topics" }
+  - idea -> map: { default: true }
+
+  # the hub: buttons 1–7, Space starts with the first topic
+  - map -> navigating: { default: true }
+  - map -> presenting
+  - map -> writing
+  - map -> content
+  - map -> structure
+  - map -> tools
+  - map -> roadmap
+
+  # into each topic
+  - navigating -> nav-steps: { default: true, transition: zoom-through }
+  - presenting -> nav-presenter: { default: true, transition: zoom-through }
   - writing -> format-dir: { default: true, transition: zoom-through }
+  - content -> slides: { default: true, transition: zoom-through }
+  - structure -> frames: { default: true, transition: zoom-through }
+  - tools -> cli: { default: true, transition: zoom-through }
+
+  # through each topic
+  - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
+  - nav-presenter -> nav-phone -> transitions: { default: true }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
-  - format-nodes -> node-types: { default: true }
-  - node-types -> slides: { default: true, transition: zoom-through }
-  - slides -> fragments -> math-code -> figure -> frames: { default: true }
-  - frames -> layout: { default: true }
-  - layout -> transitions -> theming -> cli -> check -> ai -> roadmap: { default: true }
+  - slides -> fragments -> math-code -> figure: { default: true }
+  - frames -> layout -> theming: { default: true }
+  - cli -> check -> ai: { default: true }
+
+  # Space at the end of a topic goes on to the next one; or back to the hub
+  - nav-overview -> presenting: { default: true }
+  - transitions -> writing: { default: true }
+  - format-nodes -> content: { default: true }
+  - figure -> structure: { default: true }
+  - theming -> tools: { default: true }
+  - ai -> roadmap: { default: true }
+  - nav-overview -> map: { label: "Back to the topics" }
+  - transitions -> map: { label: "Back to the topics" }
+  - format-nodes -> map: { label: "Back to the topics" }
+  - figure -> map: { label: "Back to the topics" }
+  - theming -> map: { label: "Back to the topics" }
+  - ai -> map: { label: "Back to the topics" }
+  - roadmap -> map: { label: "Back to the topics" }
   - roadmap -> welcome: { label: "Back to the start", transition: fade }
+
+  # cross-links between related slides in different topics
   - nav-edges -> roadmap: { label: "Detour: what's next?" }
+  - nav-steps -> fragments: { label: "How steps are written (fragments)" }
+  - format-edges -> nav-edges: { label: "Taking edges while presenting" }
   - math-code -> theming: { label: "How does it look? (theming)" }
+  - nav-overview -> layout: { label: "How the canvas is laid out" }
+  - nav-phone -> cli: { label: "wavesol serve --host" }
+  - check -> format-talk: { label: "What check reads: talk.yaml" }
+  - frames -> transitions: { label: "Transitions into frames" }

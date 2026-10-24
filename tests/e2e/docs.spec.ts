@@ -204,7 +204,7 @@ test.describe("visual", () => {
   for (const [name, hash, keys] of [
     ["start", "", []],
     ["fragments", "#/fragments/0", ["Space", "Space"]],
-    ["frame", "#/node-types/0", []],
+    ["frame", "#/content/0", []],
     ["overview", "", ["o"]],
   ] as const) {
     test(name, async ({ page }) => {

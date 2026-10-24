@@ -15,5 +15,5 @@ background:
 - A node has at most one parent frame; edges may cross frames.
 
 ::: notes
-This talk uses frames for "Getting around", "Writing a talk" and "Node types".
+Each topic of these docs is a frame; the Topics slide links to them all.
 :::
