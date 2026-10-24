@@ -628,7 +628,15 @@ body {
 }
 .ws-morph-copy {
   position: absolute;
-  transform-origin: 0 0;
+  transform-origin: 50% 50%;
+  white-space: nowrap;
+}
+/* a changed part's old content, centred on the moving copy while it fades out */
+.ws-morph-old {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   white-space: nowrap;
 }
 

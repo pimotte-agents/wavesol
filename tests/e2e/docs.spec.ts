@@ -259,6 +259,26 @@ test("morph: tagged parts glide to their new place between steps, and back", asy
   expect(mid.x).toBeGreaterThan(from.x + 5);
   expect(mid.x).toBeLessThan(to.x - 5);
 
+  // glyphs keep their proportions while moving: every copy scales the same in x and y
+  await page.keyboard.press("Space"); // 2x = 7 − 3 → 2x = 4: the 7 becomes a 4
+  await page.waitForTimeout(150);
+  const scales = await block.locator(".ws-morph-copy").evaluateAll((els) =>
+    els.map((e) => {
+      const m = new DOMMatrix(getComputedStyle(e).transform);
+      return [m.a, m.d];
+    }),
+  );
+  expect(scales.length).toBeGreaterThan(0);
+  for (const [sx, sy] of scales) expect(sx).toBeCloseTo(sy!, 3);
+  // a part whose content changes crossfades: the old 7 travels along, fading out
+  const oldSeven = block.locator(".ws-morph-copy .ws-morph-old", { hasText: "7" });
+  await expect(oldSeven).toHaveCount(1);
+  // and is actually visible at the start of the move
+  expect(await oldSeven.locator("[data-morph]").evaluate((e) => getComputedStyle(e).visibility)).toBe("visible");
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
+  await page.keyboard.press("ArrowLeft");
+  await expect(block.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
+
   // back: the same move in reverse
   await page.keyboard.press("ArrowLeft");
   await expect(block.locator(".ws-morph-copy")).not.toHaveCount(0);

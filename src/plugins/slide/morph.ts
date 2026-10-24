@@ -70,7 +70,8 @@ export function setupMorph(block: HTMLElement): Morph {
 
       const origin = block.getBoundingClientRect();
       const scale = origin.width / block.offsetWidth || 1;
-      const before = new Map([...tagged(from)].map(([k, el]) => [k, measure(el, origin, scale)]));
+      const fontSize = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 1;
+      const before = new Map([...tagged(from)].map(([k, el]) => [k, { box: measure(el, origin, scale), size: fontSize(el), el }]));
       show(target);
       const after = tagged(target);
       const moving = [...after].filter(([k]) => before.has(k));
@@ -83,7 +84,8 @@ export function setupMorph(block: HTMLElement): Morph {
       running.push(target.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, delay: MOVE_MS - FADE_MS, easing: "ease-in", fill: "backwards" }));
 
       for (const [k, el] of moving) {
-        const a = before.get(k)!;
+        const old = before.get(k)!;
+        const a = old.box;
         const b = measure(el, origin, scale);
         // the copy keeps the part's look: same element and font size, placed at its new box
         const copy = el.cloneNode(true) as HTMLElement;
@@ -93,19 +95,34 @@ export function setupMorph(block: HTMLElement): Morph {
         wrap.style.left = `${b.x}px`;
         wrap.style.top = `${b.y}px`;
         wrap.append(copy);
+        // content that changes (7 → 4) crossfades on the way: the old travels along, fading out
+        const changed = old.el.textContent !== el.textContent;
+        const oldCopy = document.createElement("span");
+        if (changed) {
+          oldCopy.className = "ws-morph-old";
+          const oldContent = old.el.cloneNode(true) as HTMLElement;
+          oldContent.style.visibility = ""; // the original is hidden while it moves on
+          oldCopy.append(oldContent);
+          wrap.append(oldCopy);
+        }
         layer.append(wrap);
         // line height may give the copy a slightly different box: align it with the part's
         const c = measure(copy, origin, scale);
         wrap.style.left = `${2 * b.x - c.x}px`;
         wrap.style.top = `${2 * b.y - c.y}px`;
         el.style.visibility = "hidden";
-        const sx = c.w ? a.w / c.w : 1;
-        const sy = c.h ? a.h / c.h : 1;
-        const anim = wrap.animate(
-          [{ transform: `translate(${a.x - b.x}px, ${a.y - b.y}px) scale(${sx}, ${sy})` }, { transform: "none" }],
-          { duration: MOVE_MS, easing: EASE },
+        // one scale for both axes (glyphs keep their shape): the change in font size, if any;
+        // centre to centre, so a part of another width doesn't drift
+        const s = old.size / fontSize(el);
+        const dx = a.x + a.w / 2 - (b.x + b.w / 2);
+        const dy = a.y + a.h / 2 - (b.y + b.h / 2);
+        running.push(
+          wrap.animate([{ transform: `translate(${dx}px, ${dy}px) scale(${s})` }, { transform: "none" }], { duration: MOVE_MS, easing: EASE }),
         );
-        running.push(anim);
+        if (changed) {
+          running.push(oldCopy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MOVE_MS * 0.6, easing: "ease-out", fill: "forwards" }));
+          running.push(copy.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MOVE_MS * 0.6, delay: MOVE_MS * 0.3, easing: "ease-in", fill: "backwards" }));
+        }
       }
 
       const all = running;
