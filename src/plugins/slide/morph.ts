@@ -1,18 +1,7 @@
 // Morph blocks (`::: morph` of display equations): one equation shows at a time, and between steps
 // the parts tagged with the same \mm{name}{…} glide from their old place to their new one ("magic
-// move"); untagged content crossfades. The moving parts are copies in a layer above the equations, so
-// they stay opaque while the rest fades; at the end the copies go and the new equation is complete.
-
-const MOVE_MS = 600;
-const FADE_MS = 300;
-const EASE = "cubic-bezier(0.45, 0, 0.2, 1)";
-
-interface Box {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-}
+// move", see ../move.ts); untagged content crossfades.
+import { crossfade, frameOf, glide, oldPart, reducedMotion } from "../move.ts";
 
 export interface Morph {
   /** Shows the equation for `step`; animated when `animate` (and motion is allowed). */
@@ -52,12 +41,6 @@ export function setupMorph(block: HTMLElement): Morph {
     shown = el;
   };
 
-  /** A box relative to the block, in the block's own (unscaled) units. */
-  const measure = (el: HTMLElement, origin: DOMRect, scale: number): Box => {
-    const r = el.getBoundingClientRect();
-    return { x: (r.left - origin.left) / scale, y: (r.top - origin.top) / scale, w: r.width / scale, h: r.height / scale };
-  };
-
   return {
     setStep(step, animate) {
       const target = forStep(step);
@@ -65,13 +48,10 @@ export function setupMorph(block: HTMLElement): Morph {
       for (const a of running) a.cancel();
       running = [];
       const from = shown;
-      const reduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!animate || reduced || !from || !target || !block.offsetWidth) return show(target);
+      if (!animate || reducedMotion() || !from || !target || !block.offsetWidth) return show(target);
 
-      const origin = block.getBoundingClientRect();
-      const scale = origin.width / block.offsetWidth || 1;
-      const fontSize = (el: HTMLElement) => parseFloat(getComputedStyle(el).fontSize) || 1;
-      const before = new Map([...tagged(from)].map(([k, el]) => [k, { box: measure(el, origin, scale), size: fontSize(el), el }]));
+      const frame = frameOf(block);
+      const before = new Map([...tagged(from)].map(([k, el]) => [k, oldPart(el, frame)]));
       show(target);
       const after = tagged(target);
       const moving = [...after].filter(([k]) => before.has(k));
@@ -80,50 +60,8 @@ export function setupMorph(block: HTMLElement): Morph {
       from.classList.add("ws-morph-shown");
       const fromParts = tagged(from);
       for (const [k] of moving) fromParts.get(k)!.style.visibility = "hidden";
-      running.push(from.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: "ease-out", fill: "forwards" }));
-      running.push(target.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, delay: MOVE_MS - FADE_MS, easing: "ease-in", fill: "backwards" }));
-
-      for (const [k, el] of moving) {
-        const old = before.get(k)!;
-        const a = old.box;
-        const b = measure(el, origin, scale);
-        // the copy keeps the part's look: same element and font size, placed at its new box
-        const copy = el.cloneNode(true) as HTMLElement;
-        const wrap = document.createElement("span");
-        wrap.className = "katex ws-morph-copy";
-        wrap.style.fontSize = getComputedStyle(el.parentElement ?? el).fontSize;
-        wrap.style.left = `${b.x}px`;
-        wrap.style.top = `${b.y}px`;
-        wrap.append(copy);
-        // content that changes (7 → 4) crossfades on the way: the old travels along, fading out
-        const changed = old.el.textContent !== el.textContent;
-        const oldCopy = document.createElement("span");
-        if (changed) {
-          oldCopy.className = "ws-morph-old";
-          const oldContent = old.el.cloneNode(true) as HTMLElement;
-          oldContent.style.visibility = ""; // the original is hidden while it moves on
-          oldCopy.append(oldContent);
-          wrap.append(oldCopy);
-        }
-        layer.append(wrap);
-        // line height may give the copy a slightly different box: align it with the part's
-        const c = measure(copy, origin, scale);
-        wrap.style.left = `${2 * b.x - c.x}px`;
-        wrap.style.top = `${2 * b.y - c.y}px`;
-        el.style.visibility = "hidden";
-        // one scale for both axes (glyphs keep their shape): the change in font size, if any;
-        // centre to centre, so a part of another width doesn't drift
-        const s = old.size / fontSize(el);
-        const dx = a.x + a.w / 2 - (b.x + b.w / 2);
-        const dy = a.y + a.h / 2 - (b.y + b.h / 2);
-        running.push(
-          wrap.animate([{ transform: `translate(${dx}px, ${dy}px) scale(${s})` }, { transform: "none" }], { duration: MOVE_MS, easing: EASE }),
-        );
-        if (changed) {
-          running.push(oldCopy.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MOVE_MS * 0.6, easing: "ease-out", fill: "forwards" }));
-          running.push(copy.animate([{ opacity: 0 }, { opacity: 1 }], { duration: MOVE_MS * 0.6, delay: MOVE_MS * 0.3, easing: "ease-in", fill: "backwards" }));
-        }
-      }
+      running.push(...crossfade(from, target));
+      running.push(...glide(layer, frame, moving.map(([k, el]) => [before.get(k)!, el]), "katex ws-morph-copy"));
 
       const all = running;
       void Promise.all(all.map((a) => a.finished)).then(

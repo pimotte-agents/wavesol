@@ -413,6 +413,7 @@ body {
   box-shadow: 0 0 0 3px var(--ws-accent-soft);
 }
 .ws-lean-info {
+  position: relative; /* the goals that leave, and the layer of moving tokens */
   flex: 1;
   min-width: 0;
   min-height: 0;
@@ -434,15 +435,9 @@ body {
 .ws-info-head code {
   font: 600 1em var(--ws-font-mono);
 }
-.ws-info-label,
-.ws-info-sub {
+.ws-info-label {
   font: 0.82em var(--ws-font-body);
   color: var(--ws-muted);
-}
-.ws-info-sub {
-  margin: 10px 0 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 .ws-goal + .ws-goal {
   margin-top: 12px;

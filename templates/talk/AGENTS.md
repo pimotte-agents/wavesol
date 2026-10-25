@@ -144,7 +144,8 @@ Optional caption (Markdown).
 
 Needs a `lean/` lake project requiring SubVerso (see the format spec); `npm run check` runs Lean and
 reports Lean errors in the `.lean` file. Keep shown declarations short (about 15 lines): long lines
-shrink to fit. Put each proof you show in an ANCHOR region; Space then steps through its tactics.
+shrink to fit. Put each proof you show in an ANCHOR region; Space then steps through its tactics, and
+the goals move from each state to the next by themselves (shared tokens glide, no markers needed).
 
 ### `tikz`
 

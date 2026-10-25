@@ -1,8 +1,10 @@
-// Lean nodes in the browser: highlighted code with hovers, and an infoview with the goals before and
-// after a tactic. Steps walk through the tactics (or named proof states); clicking a tactic shows its
-// goals until the next step.
+// Lean nodes in the browser: highlighted code with hovers, and an infoview with the goals after a
+// tactic. Steps walk through the tactics (or named proof states), the goals moving from one step to the
+// next; clicking a tactic shows its goals until the next step.
+import { crossfade, frameOf, glide, oldPart, reducedMotion } from "../move.ts";
 import type { RuntimePlugin } from "../types.ts";
 import type { LeanData } from "./build.ts";
+import { matchTokens } from "./match.ts";
 import { pointTarget } from "./steps.ts";
 import type { CodeNode, Goal } from "./subverso.ts";
 
@@ -13,37 +15,43 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   return e;
 }
 
-function renderCode(nodes: CodeNode[], into: HTMLElement) {
+/** Renders code; with `atoms`, every token and every word of plain text is a span that can move. */
+function renderCode(nodes: CodeNode[], into: HTMLElement, atoms = false) {
   for (const n of nodes) {
-    if (typeof n === "string") into.append(n);
-    else if ("tac" in n) {
+    if (typeof n === "string") {
+      if (!atoms) into.append(n);
+      else for (const part of n.split(/(\s+)/)) if (part) into.append(/\s/.test(part) ? part : el("span", "ws-atom", part));
+    } else if ("tac" in n) {
       const span = el("span", "ws-tac");
       span.dataset.tac = String(n.tac);
-      renderCode(n.c, span);
+      renderCode(n.c, span, atoms);
       into.append(span);
     } else {
-      const span = el("span", `lk-${n.k}`, n.t);
+      const span = el("span", atoms ? `lk-${n.k} ws-atom` : `lk-${n.k}`, n.t);
       if (n.h !== undefined) span.dataset.h = String(n.h);
       into.append(span);
     }
   }
 }
 
+/** The goals, with every token a `.ws-atom` (see renderCode), so they can move to the next goals. */
 function renderGoals(goals: Goal[]): HTMLElement {
   const box = el("div", "ws-goals");
-  if (!goals.length) box.append(el("div", "ws-goal-done", "No goals"));
+  if (!goals.length) box.append(el("div", "ws-goal-done ws-atom", "No goals"));
   for (const g of goals) {
     const goal = el("div", "ws-goal");
-    if (g.name) goal.append(el("div", "ws-goal-case", `case ${g.name}`));
+    if (g.name) goal.append(el("div", "ws-goal-case ws-atom", `case ${g.name}`));
     for (const h of g.hyps) {
       const hyp = el("div", "ws-hyp");
-      hyp.append(el("span", "ws-hyp-names", h.names.join(" ")), " : ");
-      renderCode(h.type, hyp);
+      const names = el("span", "ws-hyp-names");
+      h.names.forEach((n, i) => names.append(...(i ? [" "] : []), el("span", "ws-atom", n)));
+      hyp.append(names, " ", el("span", "ws-atom", ":"), " ");
+      renderCode(h.type, hyp, true);
       goal.append(hyp);
     }
     const concl = el("div", "ws-concl");
-    concl.append(el("span", "ws-turnstile", g.prefix.trim()), " ");
-    renderCode(g.concl, concl);
+    concl.append(el("span", "ws-turnstile ws-atom", g.prefix.trim()), " ");
+    renderCode(g.concl, concl, true);
     goal.append(concl);
     box.append(goal);
   }
@@ -93,10 +101,17 @@ export const lean: RuntimePlugin = {
     const spans = new Map([...pre.querySelectorAll<HTMLElement>(".ws-tac")].map((s) => [Number(s.dataset.tac), s]));
     const start = data.tactics.find((t) => t.kind === "by");
 
-    /** Shows tactic `i` in the infoview (undefined: the starting state). */
-    const show = (i: number | undefined, label?: string) => {
+    let goals: HTMLElement | undefined;
+    let running: Animation[] = [];
+
+    /**
+     * Shows the goals after tactic `i` in the infoview (undefined: the starting state). With `animate`,
+     * the tokens the old and new goals share move to their new place, and the rest crossfades.
+     */
+    const show = (i: number | undefined, label?: string, animate = false) => {
       for (const [n, s] of spans) s.classList.toggle("ws-tac-current", n === i);
-      info.replaceChildren();
+      for (const a of running) a.cancel();
+      running = [];
       const t = i === undefined ? undefined : data.tactics[i];
       const head = el("div", "ws-info-head");
       if (!t) head.textContent = label ?? "Start";
@@ -104,16 +119,41 @@ export const lean: RuntimePlugin = {
         head.append(el("code", undefined, t.text.replace(/,$/, "")));
         if (label) head.append(el("span", "ws-info-label", ` ${label}`));
       }
-      info.append(head);
-      if (!t) {
-        info.append(start ? renderGoals(start.after) : el("div", "ws-muted", "Click a tactic to see its goals."));
+      const next = t ? renderGoals(t.after) : start ? renderGoals(start.after) : el("div", "ws-muted", "Click a tactic to see its goals.");
+
+      const from = goals;
+      goals = next;
+      if (!animate || reducedMotion() || !from?.isConnected || !info.offsetWidth) {
+        info.replaceChildren(head, next);
         return fitInfo();
       }
-      if (t.before) {
-        info.append(el("div", "ws-info-sub", "Before"), renderGoals(t.before), el("div", "ws-info-sub", "After"));
-      }
-      info.append(renderGoals(t.after));
+      // the old goals stay where they were, at their size, while they fade out
+      const frame = frameOf(info);
+      const old = [...from.querySelectorAll<HTMLElement>(".ws-atom")].map((a) => oldPart(a, frame));
+      const place = { left: `${from.offsetLeft}px`, top: `${from.offsetTop}px`, width: `${from.offsetWidth}px`, fontSize: getComputedStyle(from).fontSize };
+      info.replaceChildren(head, next);
       fitInfo();
+      Object.assign(from.style, { position: "absolute", margin: "0", ...place });
+      const layer = el("div", "ws-morph-layer");
+      info.append(from, layer);
+
+      const now = [...next.querySelectorAll<HTMLElement>(".ws-atom")];
+      const pairs = matchTokens(old.map((p) => p.el.textContent ?? ""), now.map((a) => a.textContent ?? ""));
+      for (const [k] of pairs) old[k]!.el.style.visibility = "hidden";
+      const all = [...crossfade(from, next), ...glide(layer, frame, pairs.map(([k, j]) => [old[k]!, now[j]!]), "ws-morph-copy")];
+      running = all;
+      const settle = () => {
+        from.remove();
+        layer.remove();
+        for (const a of now) a.style.visibility = "";
+      };
+      void Promise.all(all.map((a) => a.finished)).then(
+        () => {
+          for (const a of all) a.cancel();
+          settle();
+        },
+        settle, // cancelled by the next step: its replaceChildren already took the old goals away
+      );
     };
 
     root.addEventListener("click", (e) => {
@@ -150,16 +190,16 @@ export const lean: RuntimePlugin = {
     show(undefined);
     fitCode();
     let step = 0;
-    const showStep = () => {
-      if (step === 0) return show(undefined);
+    const showStep = (animate = false) => {
+      if (step === 0) return show(undefined, undefined, animate);
       const i = data.steps[step - 1];
-      if (i !== undefined) show(i, data.stepNames?.[step - 1]);
+      if (i !== undefined) show(i, data.stepNames?.[step - 1], animate);
     };
     return {
-      setStep(s) {
+      setStep(s, { animate }) {
         hover.hidden = true;
         step = s;
-        showStep();
+        showStep(animate);
       },
       pointAt(target) {
         // the laser moves through the proof only where steps are its tactics

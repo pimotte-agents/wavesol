@@ -277,6 +277,10 @@ QR code; what does not open with it is ignored, which is how only paired phones 
   `REQUIRE_LEAN=1`, which CI sets); end-to-end: step through a proof, click a tactic, hover a constant.
   CI installs elan and caches the toolchain and SubVerso builds; the talk template's workflow does so
   only when the talk has `lean/` (and runs `lake exe cache get` with Mathlib).
+  Since 2026-10-25 the infoview shows only the goals *after* the tactic, and stepping moves them from
+  one state to the next like a morph block: shared tokens glide (matched by a longest common
+  subsequence of token texts, no markers), the rest crossfades (`src/plugins/move.ts`, shared with
+  `::: morph`).
   Decisions made along the way:
   - Lean runs at build time (not committed output): `lake build +Mod:highlighted` per module, memoised
     in-process on a hash of the Lean sources, lake config and toolchain; across runs lake's own traces
@@ -344,8 +348,6 @@ QR code; what does not open with it is ignored, which is how only paired phones 
 - External plugin loading (per-talk `plugins/`, then npm).
 - Scaffold commands (`wavesol add node`).
 - Annotation/drawing layer.
-- Lean views: selecting an element shows just the "after" goal view; going from one tactic to the
-  next morphs the goals like equations that move, with markers placed automatically (best effort).
 
 ## Risks
 - **SubVerso/Lean coupling:** SubVerso compiles with the talk's toolchain (≥ 4.25 on `main`) and its JSON

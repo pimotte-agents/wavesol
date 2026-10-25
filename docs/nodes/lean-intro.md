@@ -16,7 +16,7 @@ steps: tactics              # tactics | none | [names of -- ^ PROOF_STATE: comme
 ---
 ```
 
-- **Space** steps through the tactics; the infoview shows the goals before and after.
+- **Space** steps through the tactics; the goals after each one move into place from the step before.
 - **Click** any tactic to see its goals; **hover** a name for its type and docstring.
 
 ::: notes

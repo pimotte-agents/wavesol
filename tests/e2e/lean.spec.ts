@@ -35,7 +35,7 @@ async function openProof(page: Page) {
   return { node, root, info: root.locator(".ws-lean-info") };
 }
 
-test("Space steps through the proof: current tactic highlighted, goals before and after", async ({ page }) => {
+test("Space steps through the proof: current tactic highlighted, the goals after it", async ({ page }) => {
   const { node, root, info } = await openProof(page);
   expect(node.steps).toBeGreaterThanOrEqual(3);
   // step 0: the starting goal, no tactic highlighted
@@ -49,7 +49,7 @@ test("Space steps through the proof: current tactic highlighted, goals before an
     await expect(root.locator(".ws-tac-current")).toHaveCount(1);
     await expect(root.locator(".ws-tac-current")).toContainText(tactic.text.replace(/,$/, ""));
     await expect(info.locator(".ws-info-head code")).toHaveText(tactic.text.replace(/,$/, ""));
-    if (tactic.kind === "tactic") await expect(info.locator(".ws-info-sub")).toHaveText(["Before", "After"]);
+    await expect(info.locator(".ws-goals")).toHaveCount(1, { timeout: 2000 }); // the old goals are gone after the move
   }
   // the last tactic closes the goal
   await expect(info.locator(".ws-goals").last()).toHaveText("No goals");
@@ -65,10 +65,28 @@ test("clicking a tactic shows its goals", async ({ page }) => {
   await rfl.click();
   await expect(rfl).toHaveClass(/ws-tac-current/);
   await expect(info.locator(".ws-info-head code")).toHaveText("rfl");
-  await expect(info.locator(".ws-info-sub")).toHaveText(["Before", "After"]);
-  await expect(info.locator(".ws-goals").last()).toHaveText("No goals");
+  await expect(info.locator(".ws-goals")).toHaveText("No goals");
+  // clicking shows the goals at once, without moving them
+  await expect(info.locator(".ws-morph-copy")).toHaveCount(0);
   // clicking does not navigate
   expect(await page.evaluate(() => (window as unknown as { wavesol: { state: { nav: { step: number } } } }).wavesol.state.nav.step)).toBe(0);
+});
+
+test("stepping moves the tokens the goals share, and Back moves them back", async ({ page }) => {
+  const { info } = await openProof(page);
+  await page.keyboard.press("Space");
+  // while moving: the old goals fade out, copies of the shared tokens glide, the new ones are hidden
+  await expect(info.locator(".ws-morph-copy").first()).toBeAttached();
+  await expect(info.locator(".ws-goals")).toHaveCount(2);
+  expect(await info.locator(".ws-goals").first().locator(".ws-atom[style*='hidden']").count()).toBeGreaterThan(0);
+  // afterwards only the new goals, all visible
+  await expect(info.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
+  await expect(info.locator(".ws-goals")).toHaveCount(1);
+  expect(await info.locator(".ws-atom[style*='hidden']").count()).toBe(0);
+  await page.keyboard.press("ArrowLeft");
+  await expect(info.locator(".ws-morph-copy").first()).toBeAttached();
+  await expect(info.locator(".ws-info-head")).toHaveText("Start");
+  await expect(info.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
 });
 
 test("hovering a constant shows its signature and docstring", async ({ page }) => {

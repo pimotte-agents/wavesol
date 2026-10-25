@@ -350,12 +350,16 @@ infoview: right                # right (default) | below
 Optional Markdown caption shown above the code.
 ```
 
-- **Exploring** is always possible: click a tactic to see its goals before and after it, hover a name
-  for its type and docstring.
+- **Exploring** is always possible: click a tactic to see the goals after it, hover a name for its type
+  and docstring.
 - **Steps:** with `tactics`, each step highlights the next tactic and shows its goals, in source order;
   a tactic with parts (e.g. `rw [a, b]`) steps through the parts, and case arms and bullets show the
   goal they focus on. Step 0 shows the starting goal. With a list of names, step *k* shows the state at
   the *k*-th named `-- ^ PROOF_STATE:` comment (the state after the tactic before it).
+- **Moving goals:** stepping moves the goals from one state to the next, like a `::: morph`: tokens the
+  two states share glide to their new place and the rest crossfades; Back plays it backwards. Which
+  tokens correspond is found automatically (the longest common subsequence of the token texts), so no
+  markers are needed. Clicking a tactic shows its goals at once.
 - **Laser** (phone controller): with `steps: tactics`, the dot resting on a tactic for 100 ms selects
   the innermost tactic under it and makes it the current step, so Space continues after it. A tactic
   that is not a step itself (the `rw` around its rules) is shown with its own goals, and Space goes on
