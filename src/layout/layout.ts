@@ -27,7 +27,7 @@ export interface Placement {
 }
 
 /** Frame chrome in node units: title band on top, padding around the content box. */
-export const FRAME_HEADER = 150;
+export const FRAME_HEADER = 200;
 export const FRAME_PAD = 60;
 const GAP = 160;
 

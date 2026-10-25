@@ -15,12 +15,12 @@ exports[`layout > is deterministic (snapshot) 1`] = `
   "d1": {
     "scale": 0.4302,
     "x": 2172,
-    "y": 463,
+    "y": 488,
   },
   "d2": {
     "scale": 0.4302,
     "x": 2964,
-    "y": 463,
+    "y": 488,
   },
   "intro": {
     "scale": 1,

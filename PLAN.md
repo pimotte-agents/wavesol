@@ -344,6 +344,8 @@ QR code; what does not open with it is ignored, which is how only paired phones 
 - External plugin loading (per-talk `plugins/`, then npm).
 - Scaffold commands (`wavesol add node`).
 - Annotation/drawing layer.
+- Lean views: selecting an element shows just the "after" goal view; going from one tactic to the
+  next morphs the goals like equations that move, with markers placed automatically (best effort).
 
 ## Risks
 - **SubVerso/Lean coupling:** SubVerso compiles with the talk's toolchain (≥ 4.25 on `main`) and its JSON
