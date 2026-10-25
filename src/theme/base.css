@@ -715,14 +715,20 @@ body {
 }
 /* {mark="..."}: the part of a code block that belongs to the current fragment */
 .ws-slide .ws-mark {
-  border-radius: 6px;
+  border-radius: 4px;
   transition:
     background-color 0.35s ease,
-    box-shadow 0.35s ease;
+    box-shadow 0.35s ease,
+    color 0.35s ease;
 }
-.ws-slide .ws-mark.current-mark {
-  background-color: var(--ws-accent-soft);
-  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+/* a solid accent block with the text in the card colour, so even a lone ":" stands out on a projector */
+.ws-slide .shiki .ws-mark.current-mark,
+.ws-slide .shiki .ws-mark.current-mark span {
+  color: var(--ws-card);
+  background-color: var(--ws-accent);
+}
+.ws-slide .shiki .ws-mark.current-mark {
+  box-shadow: 0 0 0 4px var(--ws-accent);
 }
 .ws-slide.ws-no-anim .fragment,
 .ws-slide.ws-no-anim .ws-mark {
