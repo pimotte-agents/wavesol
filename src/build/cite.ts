@@ -63,6 +63,8 @@ export interface Bibliography {
   cite(items: CiteItem[]): { text: string; title: string } | { error: string };
   /** Keys cited so far, in order of first citation. */
   cited(): string[];
+  /** Announces keys cited somewhere in the talk, so citations get the same a/b suffixes as the references. */
+  expect(keys: string[]): void;
   /** The bibliography of the given keys, as HTML. */
   references(keys: string[]): string;
 }
@@ -77,17 +79,23 @@ export function loadBibliography(bibtex: string): Bibliography | { error: string
   for (const entry of all.data as { title?: string }[]) if (entry.title) entry.title = untex(entry.title);
   const ids = new Set((all.data as { id: string }[]).map((d) => d.id));
   const cited: string[] = [];
+  const expected = new Set<string>();
   return {
     cite(items) {
       const missing = items.filter((i) => !ids.has(i.id)).map((i) => i.id);
       if (missing.length) return { error: `unknown citation key${missing.length > 1 ? "s" : ""} ${missing.map((k) => `"${k}"`).join(", ")}` };
       for (const i of items) if (!cited.includes(i.id)) cited.push(i.id);
       // citation-js's typings miss `template` and want its own label union; LABELS only holds CSL labels
-      const text = all.format("citation", { template: "apa", format: "text", entry: items } as never) as string;
+      // the talk's other citations as context: two works by the same author and year become 2026a / 2026b
+      const others = [...new Set([...expected, ...cited])].filter((k) => !items.some((i) => i.id === k));
+      const text = all.format("citation", { template: "apa", format: "text", entry: items, citationsPre: others } as never) as string;
       const title = all.format("bibliography", { template: "apa", format: "text", entry: items.map((i) => i.id) }) as string;
       return { text, title: title.trim() };
     },
     cited: () => [...cited],
+    expect(keys) {
+      for (const k of keys) if (ids.has(k)) expected.add(k);
+    },
     references(keys) {
       if (!keys.length) return "";
       return (all.format("bibliography", { template: "apa", format: "html", entry: keys }) as string).trim();

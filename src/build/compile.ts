@@ -9,7 +9,7 @@ import { layout, type FrameSpace } from "../layout/layout.ts";
 import { loadTalk } from "./load.ts";
 import { parseMacros } from "./macros.ts";
 import { renderTikz, type TikzOptions } from "./tex.ts";
-import { loadBibliography, type Bibliography } from "./cite.ts";
+import { loadBibliography, parseCitation, type Bibliography } from "./cite.ts";
 
 export const NODE_SIZE: [number, number] = [1600, 900];
 
@@ -73,6 +73,10 @@ async function compile(dir: string): Promise<CompileResult> {
       if ("error" in loadedBib) diagnostics.push({ severity: "error", file: bibFile, message: loadedBib.error });
       else bib = loadedBib;
     }
+  }
+  // every work cited anywhere, before the first citation is formatted (a citation's a/b suffix depends on all of them)
+  for (const node of bib ? loaded.nodes.values() : []) {
+    for (const m of `${node.body}\n${JSON.stringify(node.data)}`.matchAll(/\[(@[^\]]+)\]/g)) bib!.expect((parseCitation(m[1]!) ?? []).map((i) => i.id));
   }
 
   const built = new Map<string, Awaited<ReturnType<(typeof buildPlugins)[string]["build"]>>>();

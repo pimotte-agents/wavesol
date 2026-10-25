@@ -51,6 +51,14 @@ describe("bibliography", () => {
     expect(b.cited()).toEqual(["many2020", "knuth1984"]);
   });
 
+  it("tells apart works by the same author and year, as the references do", () => {
+    const b = loadBibliography(`${BIB}\n@misc{knuth1984b, author = {Donald E. Knuth}, title = {Another}, year = {1984}}`) as Bibliography;
+    b.expect(["knuth1984", "knuth1984b", "unknown"]);
+    expect(b.cite([{ id: "knuth1984b" }])).toMatchObject({ text: "(Knuth, 1984a)" });
+    expect(b.cite([{ id: "knuth1984" }])).toMatchObject({ text: "(Knuth, 1984b)" });
+    expect(b.references(["knuth1984", "knuth1984b"])).toMatch(/1984a\)\. <i>Another.*1984b\)\. <i>The TeXbook/s);
+  });
+
   it("lists references as HTML", () => {
     const html = bib().references(["knuth1984", "deMoura2021"]);
     expect(html).toContain('class="csl-entry"');
