@@ -15,7 +15,8 @@
     "fragments": {
       "type": "string",
       "enum": [
-        "lists"
+        "lists",
+        "walkthrough"
       ]
     }
   },

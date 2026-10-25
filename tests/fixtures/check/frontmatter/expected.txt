@@ -1,4 +1,4 @@
 nodes/pic.md:2:1: error: src: required
 nodes/pic.md:4:1: error: fit: Invalid option: expected one of "contain"|"cover"
-nodes/s.md:2:1: error: fragments: Invalid input: expected "lists"
+nodes/s.md:2:1: error: fragments: Invalid option: expected one of "lists"|"walkthrough"
 nodes/s.md:3:1: error: unknown field "colour"

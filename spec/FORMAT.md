@@ -196,6 +196,30 @@ The body is Markdown (CommonMark + GFM tables) with:
   together. Optional effect: `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g.
   `{.fragment .fade-up}` or `::: fragment fade-up`.
 - **Frontmatter `fragments: lists`:** every top-level list item becomes a fragment.
+- **Frontmatter `fragments: walkthrough`:** as `lists`, and while an item is the current step, the
+  items before it are greyed out. One extra step after the last item shows the slide as a whole again,
+  nothing greyed or marked.
+- **Code marks:** `{mark="text"}` on a fragment (an attribute block, so also on list items, including
+  those made fragments by `fragments: lists | walkthrough`) highlights `text` in the nearest code block
+  above it while that fragment is the current step. The code block itself stays unchanged and keeps its
+  highlighting. A mark matches the first occurrence of its text after the previous mark in the same
+  code block; whitespace in the text matches any run of whitespace, so a mark can span lines; a text
+  that starts or ends with a letter, digit or `_` only matches at identifier boundaries (`f` does not
+  match inside `def`). One mark per fragment. A mark that is not on a fragment, has no code block above
+  it or does not match is an error.
+
+  ````markdown
+  ---
+  fragments: walkthrough
+  ---
+  ```lean
+  theorem foo (n : Nat) : n + 0 = n := rfl
+  ```
+
+  - the name {mark="foo"}
+  - the statement {mark="n + 0 = n"}
+  - the proof {mark="rfl"}
+  ````
 - **Blocks:** `::: notes` (speaker notes, removed from the slide and shown in the presenter view) and columns. For columns the outer
   fence needs more colons than the inner ones:
 
@@ -234,7 +258,7 @@ The body is Markdown (CommonMark + GFM tables) with:
   node (if it has one) with the cited works highlighted, and Back returns.
 - **Images:** standard Markdown images, paths relative to the node file.
 
-Step count = number of distinct fragment steps.
+Step count = number of distinct fragment steps, plus one for the summary step of `fragments: walkthrough`.
 
 ### `frame`
 

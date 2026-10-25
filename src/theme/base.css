@@ -710,7 +710,22 @@ body {
   background-color: var(--ws-accent-soft);
   border-radius: 8px;
 }
-.ws-slide.ws-no-anim .fragment {
+.ws-slide.ws-walking .ws-walk-item.visible:not(.current-fragment) {
+  opacity: 0.35;
+}
+/* {mark="..."}: the part of a code block that belongs to the current fragment */
+.ws-slide .ws-mark {
+  border-radius: 6px;
+  transition:
+    background-color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+.ws-slide .ws-mark.current-mark {
+  background-color: var(--ws-accent-soft);
+  box-shadow: 0 0 0 3px var(--ws-accent-soft);
+}
+.ws-slide.ws-no-anim .fragment,
+.ws-slide.ws-no-anim .ws-mark {
   transition: none;
 }
 

@@ -110,7 +110,7 @@ A node file is Markdown with a YAML frontmatter block. Fields common to all plug
 
 ```markdown
 ---
-fragments: lists   # optional: every top-level list item becomes a fragment
+fragments: lists   # optional: every top-level list item becomes a fragment (or: walkthrough)
 ---
 # The idea
 
@@ -207,6 +207,23 @@ CommonMark + GFM tables, plus:
   step appear together. Optional effect: `.fade-up`, `.highlight`, `.fade-out` (default: fade in),
   e.g. `{.fragment .fade-up}` or `::: fragment fade-up`.
 - **`fragments: lists`** in frontmatter: every top-level list item becomes a fragment.
+- **`fragments: walkthrough`** in frontmatter: like `lists`, but while an item is current the earlier
+  items are greyed out, and one extra step at the end shows the whole slide normally again.
+- **Code marks:** `{mark="text"}` on a fragment highlights `text` in the nearest code block above it
+  while that fragment is the current step (the code itself stays plain). Each mark matches the first
+  occurrence *after the previous mark* in that block, whitespace matches any whitespace (so a mark can
+  span lines), and identifiers only match whole (`f` does not match inside `def`). One mark per
+  fragment; a mark that does not match is an error. Pairs well with `fragments: walkthrough`:
+
+  ````markdown
+  ```lean
+  theorem foo (n : Nat) : n + 0 = n := rfl
+  ```
+
+  - the name {mark="foo"}
+  - the statement {mark="n + 0 = n"}
+  - the proof {mark="rfl"}
+  ````
 - **`::: notes ... :::`**: speaker notes, removed from the slide and shown in the presenter view (`p`).
 - **Columns:** the outer fence needs *four* colons (one more than the inner ones):
 
@@ -238,7 +255,7 @@ CommonMark + GFM tables, plus:
 - **Citations:** `[@key]`, `[@key, p. 3]`, `[@a; @b]` → (Author, 2020, p. 3), from `refs.bib`. Every key
   must exist in the bibliography.
 
-Step count of a slide = number of distinct fragment steps.
+Step count of a slide = number of distinct fragment steps (+1 for the summary step of a walkthrough).
 
 ## Idioms (complete examples)
 

@@ -125,7 +125,7 @@ export const CommonFrontmatter = z.strictObject({
 
 export const SlideFrontmatter = CommonFrontmatter.extend({
   type: z.literal("slide").optional(),
-  fragments: z.enum(["lists"]).optional(),
+  fragments: z.enum(["lists", "walkthrough"]).optional(),
 });
 
 export const ImageFrontmatter = CommonFrontmatter.extend({

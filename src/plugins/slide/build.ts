@@ -1,5 +1,6 @@
 // Slide nodes: Markdown → HTML at build time, with KaTeX math, Shiki code highlighting, reveal-style
-// fragments ({.fragment step=n} or ::: fragment blocks), ::: notes and :::: columns blocks.
+// fragments ({.fragment step=n} or ::: fragment blocks, {mark="..."} to highlight code while current),
+// ::: notes and :::: columns blocks.
 import MarkdownIt, { type Env as MdEnv, type Token } from "markdown-it";
 import { attrs } from "@mdit/plugin-attrs";
 import { container } from "@mdit/plugin-container";
@@ -14,6 +15,8 @@ import type { z } from "zod";
 
 export interface SlideData {
   html: string;
+  /** fragments: walkthrough — the step after the last item, where nothing is dimmed or marked. */
+  summaryStep?: number;
 }
 
 let highlighter: Promise<Highlighter> | undefined;
@@ -57,15 +60,36 @@ function renderMath(content: string, displayMode: boolean, env: Env): string {
   }
 }
 
+interface Mark {
+  start: number;
+  end: number;
+  step: string;
+}
+
+function highlight(h: Highlighter, code: string, lang: string, marks: Mark[] = []): string {
+  const l = lang && h.getLoadedLanguages().includes(lang) ? lang : "text";
+  // Shiki decorations stay within a line, so a mark across lines becomes one decoration per line
+  const decorations = marks.flatMap((m) => {
+    const parts: { start: number; end: number; properties: Record<string, string> }[] = [];
+    let at = m.start;
+    for (const line of code.slice(m.start, m.end).split("\n")) {
+      if (line.trim()) {
+        const lead = line.length - line.trimStart().length;
+        parts.push({ start: at + lead, end: at + line.trimEnd().length, properties: { class: "ws-mark", "data-mark-step": m.step } });
+      }
+      at += line.length + 1;
+    }
+    return parts;
+  });
+  return h.codeToHtml(code, { lang: l, themes: SHIKI_THEMES, defaultColor: false, decorations });
+}
+
 function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
   const md = new MarkdownIt({
     html: true,
     linkify: true,
     typographer: true,
-    highlight: (code, lang) => {
-      const l = lang && h.getLoadedLanguages().includes(lang) ? lang : "text";
-      return h.codeToHtml(code, { lang: l, themes: SHIKI_THEMES, defaultColor: false });
-    },
+    highlight: (code, lang) => highlight(h, code, lang),
   });
   md.use(tex, { render: (content: string, displayMode: boolean, env) => renderMath(content, displayMode, env as Env) });
   md.use(attrs);
@@ -118,7 +142,10 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
 
   const defaultFence = md.renderer.rules.fence!;
   md.renderer.rules.fence = (tokens, idx, options, mdEnv, self) => {
-    const figure = (mdEnv as Env).tikz?.get(tokens[idx]!);
+    const token = tokens[idx]!;
+    const figure = (mdEnv as Env).tikz?.get(token);
+    const marks = (token.meta as { marks?: Mark[] } | null)?.marks;
+    if (!figure && marks?.length) return highlight(h, token.content, token.info.trim().split(/\s/)[0] ?? "", marks) + "\n";
     return figure ?? defaultFence(tokens, idx, options, mdEnv, self);
   };
 
@@ -155,13 +182,16 @@ async function renderTikzFences(tokens: Token[], env: Env) {
 }
 
 /** Assigns data-step to fragment tokens and returns the number of distinct steps. */
-export function assignFragments(tokens: Token[], lists: boolean): number {
-  if (lists) {
+export function assignFragments(tokens: Token[], mode?: "lists" | "walkthrough"): number {
+  if (mode) {
     let listDepth = 0;
     for (const t of tokens) {
       if (t.type === "bullet_list_open" || t.type === "ordered_list_open") listDepth++;
       else if (t.type === "bullet_list_close" || t.type === "ordered_list_close") listDepth--;
-      else if (t.type === "list_item_open" && listDepth === 1) t.attrJoin("class", "fragment");
+      else if (t.type === "list_item_open" && listDepth === 1) {
+        t.attrJoin("class", "fragment");
+        if (mode === "walkthrough") t.attrJoin("class", "ws-walk-item");
+      }
     }
   }
   for (const t of tokens) {
@@ -211,6 +241,49 @@ export function assignFragments(tokens: Token[], lists: boolean): number {
   return ranks.length;
 }
 
+/**
+ * {mark="text"} on a fragment highlights that text in the nearest code block above while the fragment is the
+ * current step. Each mark matches the first occurrence after the previous mark in the same block; whitespace
+ * in the text matches any whitespace, so a mark can span lines, and identifiers only match whole.
+ */
+function assignMarks(tokens: Token[], report: (message: string, line?: number) => void): void {
+  let fence: Token | undefined;
+  let cursor = 0;
+  const visit = (ts: Token[]) => {
+    for (const t of ts) {
+      if (t.type === "fence" && !(t.info.trim().split(/\s/)[0]! in TIKZ_FENCES)) {
+        fence = t;
+        cursor = 0;
+      }
+      const text = t.attrGet("mark");
+      if (text !== null && t.nesting !== -1) {
+        t.attrs = (t.attrs ?? []).filter(([k]) => k !== "mark");
+        const step = t.attrGet("data-step");
+        if (step === null) report(`mark "${text}" is only allowed on a fragment`, t.map?.[0]);
+        else if (!fence) report(`mark "${text}": no code block above it`, t.map?.[0]);
+        else if (String(text).trim()) {
+          const words = String(text).trim();
+          // a mark that starts or ends like an identifier only matches whole identifiers ("f" not in "def")
+          const edge = (c: string) => (/[\p{L}\p{N}_]/u.test(c) ? "[\\p{L}\\p{N}_]" : undefined);
+          const [before, after] = [edge(words[0]!), edge(words.at(-1)!)];
+          const body = words.split(/\s+/).map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("\\s+");
+          const pattern = new RegExp(`${before ? `(?<!${before})` : ""}${body}${after ? `(?!${after})` : ""}`, "gu");
+          pattern.lastIndex = cursor;
+          const m = pattern.exec(fence.content);
+          if (!m) report(`mark "${text}" not found in the code block above${cursor ? " after the previous mark" : ""}`, t.map?.[0]);
+          else {
+            cursor = m.index + m[0].length;
+            const meta = (fence.meta ?? {}) as { marks?: Mark[] };
+            fence.meta = { ...meta, marks: [...(meta.marks ?? []), { start: m.index, end: cursor, step: String(step) }] };
+          }
+        }
+      }
+      if (t.children) visit(t.children);
+    }
+  };
+  visit(tokens);
+}
+
 function extractNotes(tokens: Token[]): { slide: Token[]; notes: Token[] } {
   const slide: Token[] = [];
   const notes: Token[] = [];
@@ -253,7 +326,11 @@ export const slide: BuildPlugin<Data> = {
     const tokens = md.parse(node.body, env);
     await renderTikzFences(tokens, env);
     const { slide: slideTokens, notes: noteTokens } = extractNotes(tokens);
-    const steps = assignFragments(slideTokens, node.data.fragments === "lists");
+    const items = assignFragments(slideTokens, node.data.fragments);
+    assignMarks(slideTokens, (message, line) => ctx.report("error", message, line === undefined ? undefined : node.bodyLine + line));
+    // walkthrough: one more step at the end shows the slide as a whole again
+    const walkthrough = node.data.fragments === "walkthrough" && items > 0;
+    const steps = walkthrough ? items + 1 : items;
 
     for (const t of tokens) {
       const lang = t.info.split(/\s/)[0]!;
@@ -264,7 +341,7 @@ export const slide: BuildPlugin<Data> = {
     const html = md.renderer.render(slideTokens, md.options, env);
 
     const notesHtml = [node.data.notes ? md.render(node.data.notes, env) : "", md.renderer.render(noteTokens, md.options, env)].join("").trim();
-    const data: SlideData = { html };
+    const data: SlideData = walkthrough ? { html, summaryStep: steps } : { html };
     return { data, steps, notes: notesHtml || undefined, title: firstHeading(slideTokens) };
   },
 };

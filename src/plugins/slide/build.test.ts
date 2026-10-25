@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { slide, type SlideData } from "./build.ts";
 import type { BuildCtx } from "../types.ts";
 
-async function build(body: string, data: { fragments?: "lists"; notes?: string } = {}) {
+async function build(body: string, data: { fragments?: "lists" | "walkthrough"; notes?: string } = {}) {
   const reports: string[] = [];
   const ctx: BuildCtx = { talkDir: "/", macros: { "\\R": "\\mathbb{R}" }, asset: (p) => `assets/${p.split("/").pop()}`, report: (s, m, l) => reports.push(`${l ?? "-"}: ${s}: ${m}`), reportIn: (f, s, m, l) => reports.push(`${f}:${l ?? "-"}: ${s}: ${m}`),
     // a two-entry bibliography
@@ -34,6 +34,33 @@ describe("slide build", () => {
   it("makes top-level list items fragments with fragments: lists", async () => {
     const r = await build("- a\n- b\n  - nested\n", { fragments: "lists" });
     expect(r.steps).toEqual([1, 2]);
+  });
+
+  it("walks through list items with fragments: walkthrough, ending on a summary step", async () => {
+    const r = await build("- a\n- b\n  - nested\n", { fragments: "walkthrough" });
+    expect(r.steps).toEqual([1, 2]);
+    expect(r.html).toContain('class="fragment ws-walk-item"');
+    expect(r.steps).toEqual([1, 2]);
+    expect((r.data as SlideData).summaryStep).toBe(3);
+  });
+
+  it("marks code for fragments, each match after the previous one", async () => {
+    const code = "```lean\ndef f (a : Nat) :\n    Nat := a\n```\n\n";
+    const r = await build(`${code}- the name {mark="f"}\n- the binder {mark="(a : Nat)"}\n- across lines {mark=": Nat"}\n- the value {mark=":="}\n`, { fragments: "walkthrough" });
+    expect(r.reports).toEqual([]);
+    const marks = [...r.html.matchAll(/<span[^>]*class="ws-mark"[^>]*data-mark-step="(\d)"[^>]*>(.*?)<\/span>/g)].map((m) => [m[1], m[2]!.replace(/<[^>]+>/g, "")]);
+    // "f" is the name, not the f of "def"; ": Nat" spans the line break, one decoration per line
+    expect(marks).toEqual([["1", "f"], ["2", "(a : Nat)"], ["3", ":"], ["3", "Nat"], ["4", ":="]]);
+    expect(r.html).not.toContain(" mark=");
+  });
+
+  it("reports marks that do not match, are not fragments, or have no code above", async () => {
+    const r = await build('- x {mark="x"}\n\n```lean\ndef f := 1\n```\n\nA {.fragment mark="g"}\n\nB {mark="f"}\n', { fragments: "lists" });
+    expect(r.reports).toEqual([
+      '3: error: mark "x": no code block above it',
+      '9: error: mark "g" not found in the code block above',
+      '11: error: mark "f" is only allowed on a fragment',
+    ]);
   });
 
   it("extracts notes, title and math, and reports errors with lines", async () => {
