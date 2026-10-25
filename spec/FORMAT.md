@@ -259,6 +259,17 @@ The body is Markdown (CommonMark + GFM tables) with:
 - **Images:** standard Markdown images, paths relative to the node file.
 - **Links to other nodes:** `[text](#node-id)` links to a node of the talk: clicking it flies there,
   like taking an edge, and Back returns. The link needs no edge. An unknown node id is an error.
+- **QR codes:** a ` ```qr ` fence holds a URL on its first line and, optionally, the link's text on the
+  second; it renders as the QR code (dark on white in every theme) with the link below it, opening in
+  a new tab. A missing URL or one without a scheme (`https://`) is an error. Put several side by side
+  with columns.
+
+  ````markdown
+  ```qr
+  https://pim.otte.dev/lean/
+  These slides
+  ```
+  ````
 
 Step count = number of distinct fragment steps, plus one for the summary step of `fragments: walkthrough`.
 

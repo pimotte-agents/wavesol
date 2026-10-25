@@ -242,6 +242,8 @@ CommonMark + GFM tables, plus:
 - **Images:** standard Markdown images, paths relative to the node file.
 - **Links to other nodes:** `[text](#node-id)`, e.g. `(see [the proof](#proof))`: a click flies to that
   node and Back returns. No edge needed; an unknown id is a check error.
+- **QR codes:** a ```` ```qr ```` fence with the URL on the first line (with `https://`) and optionally
+  the link text on the second; shows the code with the link below. Use columns for several.
 - **Moving equations:** `::: morph` around display equations (blank line between them): each next
   equation is a step, and parts tagged `\mm{name}{…}` move from one equation to the next. Tag numbers,
   variables and subexpressions that carry over, never bare operators; untagged parts fade.

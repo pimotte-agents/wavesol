@@ -71,6 +71,12 @@ describe("slide build", () => {
     expect(r.reports).toEqual(['3: error: link to unknown node "nope"']);
   });
 
+  it("renders ```qr as a QR code with the link below, and reports what is not a URL", async () => {
+    const r = await build("```qr\nhttps://example.org/a?b=1&c=2\nThe example\n```\n\n```qr\nexample.org\n```\n\n```qr\n```\n");
+    expect(r.html).toMatch(/<figure class="ws-qr-figure"><div class="ws-qr-code"><svg[^]*<\/svg><\/div><figcaption><a href="https:\/\/example.org\/a\?b=1&amp;c=2" target="_blank" rel="noopener">The example<\/a><\/figcaption><\/figure>/);
+    expect(r.reports).toEqual(['9: error: qr: "example.org" is not a URL (it needs a scheme, e.g. https://)', "12: error: qr: the block needs a URL"]);
+  });
+
   it("extracts notes, title and math, and reports errors with lines", async () => {
     const r = await build("# Hello $\\R$\n\n$\\nope$\n\n::: notes\nSecret\n:::\n", { notes: "Front" });
     expect(r.title).toBe("Hello");

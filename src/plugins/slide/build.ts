@@ -1,12 +1,13 @@
 // Slide nodes: Markdown → HTML at build time, with KaTeX math, Shiki code highlighting, reveal-style
 // fragments ({.fragment step=n} or ::: fragment blocks, {mark="..."} to highlight code while current),
-// ::: notes and :::: columns blocks, and [text](#node-id) links to other nodes.
+// ::: notes and :::: columns blocks, [text](#node-id) links to other nodes, and ```qr QR codes.
 import MarkdownIt, { type Env as MdEnv, type Token } from "markdown-it";
 import { attrs } from "@mdit/plugin-attrs";
 import { container } from "@mdit/plugin-container";
 import { tex } from "@mdit/plugin-tex";
 import katex from "katex";
 import { createHighlighter, bundledLanguages, type Highlighter } from "shiki";
+import { renderSVG } from "uqr";
 import { dirname, resolve } from "node:path";
 import { NODE_ID, SlideFrontmatter } from "../../model/schema.ts";
 import type { BuildCtx, BuildPlugin } from "../types.ts";
@@ -143,6 +144,7 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
   const defaultFence = md.renderer.rules.fence!;
   md.renderer.rules.fence = (tokens, idx, options, mdEnv, self) => {
     const token = tokens[idx]!;
+    if (token.info.trim().split(/\s/)[0] === "qr") return renderQr(token, mdEnv as Env);
     const figure = (mdEnv as Env).tikz?.get(token);
     const marks = (token.meta as { marks?: Mark[] } | null)?.marks;
     if (!figure && marks?.length) return highlight(h, token.content, token.info.trim().split(/\s/)[0] ?? "", marks) + "\n";
@@ -176,6 +178,25 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     return defaultImage(tokens, idx, options, env, self);
   };
   return md;
+}
+
+const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/** ```qr: the URL on the first line, optionally the link's text on the second; the code with the link below. */
+function renderQr(token: Token, env: Env): string {
+  const [url = "", text] = token.content.split("\n").map((l) => l.trim()).filter(Boolean);
+  let valid = false;
+  try {
+    valid = /^[a-z][a-z0-9+.-]*:/i.test(url) && !!new URL(url);
+  } catch {
+    // reported below
+  }
+  if (!valid) {
+    env.ctx.report("error", url ? `qr: "${url}" is not a URL (it needs a scheme, e.g. https://)` : "qr: the block needs a URL", token.map ? env.bodyLine + token.map[0] + (url ? 1 : 0) : undefined);
+    return `<pre class="math-error">${esc(token.content)}</pre>\n`;
+  }
+  const link = `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text ?? url)}</a>`;
+  return `<figure class="ws-qr-figure"><div class="ws-qr-code">${renderSVG(url, { border: 2 })}</div><figcaption>${link}</figcaption></figure>\n`;
 }
 
 const TIKZ_FENCES = { tikz: "tikzpicture", tikzcd: "tikzcd" } as const;
@@ -352,7 +373,7 @@ export const slide: BuildPlugin<Data> = {
 
     for (const t of tokens) {
       const lang = t.info.split(/\s/)[0]!;
-      if (t.map && t.type === "fence" && t.info && !(lang in bundledLanguages) && !(lang in TIKZ_FENCES)) {
+      if (t.map && t.type === "fence" && t.info && !(lang in bundledLanguages) && !(lang in TIKZ_FENCES) && lang !== "qr") {
         ctx.report("warning", `unknown code language "${t.info}", rendered as plain text`, node.bodyLine + t.map[0]);
       }
     }

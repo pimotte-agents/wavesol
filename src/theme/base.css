@@ -310,6 +310,32 @@ body {
   font-size: 0.85em;
 }
 
+/* ---------- QR codes (```qr) ---------- */
+/* dark on white whatever the theme, so phones can read it */
+.ws-slide .ws-qr-figure {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0.5em 0;
+}
+.ws-slide .ws-qr-code {
+  width: 7em;
+  padding: 0.2em;
+  border-radius: 0.3em;
+  background: #fff;
+  line-height: 0;
+}
+.ws-slide .ws-qr-code svg {
+  width: 100%;
+  height: auto;
+}
+.ws-slide .ws-qr-figure figcaption {
+  font-size: 0.7em;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
 /* ---------- TikZ ---------- */
 /* inline (```tikz in slides): sized in em by the build, so 10pt TeX text = the slide's text */
 .ws-tikz {
