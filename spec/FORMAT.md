@@ -315,7 +315,7 @@ shown or `j` is pressed.
 ### `references`
 
 Defined in `talk.yaml` only (no file): `refs: { type: references, title: References }`. Lists every
-work cited anywhere in the talk, in the bibliography's style. `check` warns when a talk cites works but
+work cited anywhere in the talk, in the bibliography's style; URLs and DOIs are links (opening in a new tab). `check` warns when a talk cites works but
 has no references node.
 
 ### `image`

@@ -98,7 +98,9 @@ export function loadBibliography(bibtex: string): Bibliography | { error: string
     },
     references(keys) {
       if (!keys.length) return "";
-      return (all.format("bibliography", { template: "apa", format: "html", entry: keys }) as string).trim();
+      const html = (all.format("bibliography", { template: "apa", format: "html", entry: keys }) as string).trim();
+      // citation-js prints URLs and DOIs as plain text; make them links (a trailing "." or ")" is not part of one)
+      return html.replace(/https?:\/\/[^\s<>"]*[^\s<>".,;:)]/g, (url) => `<a href="${url}" target="_blank" rel="noopener">${url}</a>`);
     },
   };
 }

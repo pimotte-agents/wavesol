@@ -65,4 +65,12 @@ describe("bibliography", () => {
     expect(html).toContain("de Moura, L., &#38; Ullrich, S. (2021). The Lean 4 Theorem Prover and Programming Language.");
     expect(bib().references([])).toBe("");
   });
+
+  it("makes URLs and DOIs in references links", () => {
+    const b = loadBibliography(`@online{web, author = {Doe, Jane}, title = {Page}, year = {2026}, url = {https://example.org/a?b=1&c=2}}
+@article{paper, author = {Doe, Jane}, title = {Paper}, journal = {J}, year = {2025}, doi = {10.1000/xyz}}`) as Bibliography;
+    const html = b.references(["web", "paper"]);
+    expect(html).toContain('<a href="https://example.org/a?b=1&#38;c=2" target="_blank" rel="noopener">https://example.org/a?b=1&#38;c=2</a>');
+    expect(html).toContain('<a href="https://doi.org/10.1000/xyz" target="_blank" rel="noopener">https://doi.org/10.1000/xyz</a>');
+  });
 });
