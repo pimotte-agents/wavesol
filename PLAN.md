@@ -49,11 +49,12 @@ Technical choices made without a question (revisit if they bite):
 - **Rendering:** DOM + CSS transforms on one world container rather than WebGL, so plugins are ordinary
   DOM/React and text stays selectable. `will-change: transform` only while the camera moves (pixel-identical
   to native rendering at rest, confirmed in the camera spike). Flat DOM: frames are a layout concept.
-  LOD: off-screen nodes hidden, tiny slides show a title card.
+  LOD: off-screen nodes hidden, tiny slides show a title card, far frames a larger title.
 - **Default transition:** van Wijk–Nuij "smooth zoom" (zoom out, pan, zoom in), with duration scaled by
   distance. Per-edge, per-node and global overrides: `fly` (default), `cut`, `fade`, `zoom-through`.
 - **Layout:** elkjs at build time (layered by default, long chains wrapped into rows; force = stress
-  layout fitted to 16:9, for web-like talks), hints
+  layout fitted to 16:9, then compacted towards the centre keeping a ¼-slide gap, for web-like
+  talks), hints
   (`direction`, `near: {left-of: x}`) and `pin: [x, y]`. ELK ignores layer constraints, so there is no
   `rank` hint.
 - **Tests:** vitest for unit tests, Playwright for end-to-end and visual regression (see Testing).

@@ -47,9 +47,11 @@ body {
   height: 100%;
   align-items: center;
   justify-content: center;
-  padding: 0 80px;
+  padding: 0 48px;
+  overflow: hidden;
   text-align: center;
-  font: 600 110px/1.15 var(--ws-font-heading);
+  overflow-wrap: anywhere;
+  font: 600 170px/1.1 var(--ws-font-heading);
   color: var(--ws-heading);
 }
 .ws-stage.ws-overview {
@@ -540,6 +542,11 @@ body {
   align-items: center;
   font: 600 72px/1 var(--ws-font-heading);
   color: var(--ws-heading);
+}
+/* far away (the overview): as large as the header allows */
+.ws-node.ws-far-frame .ws-frame-title {
+  font-size: 128px;
+  white-space: nowrap;
 }
 
 /* ---------- slide content ---------- */

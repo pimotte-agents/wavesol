@@ -58,3 +58,41 @@ describe("layout", () => {
     expect(round(await layout(nodes, edges))).toMatchSnapshot();
   });
 });
+
+describe("force layout density", () => {
+  // like the docs: a start, a hub with an edge to every topic, topics in a chain, some of them frames
+  const topics = ["t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8"];
+  const nodes: LayoutNode[] = [node("start"), node("hub"), node("end"), ...topics.map((t, i) => node(t, i % 2 ? { size: [2400, 1350] } : {}))];
+  const edges = [
+    { from: "start", to: "hub" },
+    ...topics.map((t) => ({ from: "hub", to: t })),
+    ...topics.slice(1).map((t, i) => ({ from: topics[i]!, to: t })),
+    { from: "t8", to: "end" },
+    { from: "end", to: "start" },
+  ];
+  const boxes = async () => {
+    const p = await layout(nodes, edges, { algorithm: "force" });
+    return nodes.map((n) => ({ id: n.id, x: p.get(n.id)!.x, y: p.get(n.id)!.y, w: n.size[0], h: n.size[1] }));
+  };
+
+  it("keeps a quarter slide between nodes", async () => {
+    const b = await boxes();
+    for (const a of b) {
+      for (const c of b) {
+        if (a === c) continue;
+        const gap = Math.max(c.x - (a.x + a.w), a.x - (c.x + c.w), c.y - (a.y + a.h), a.y - (c.y + c.h));
+        expect(gap, `${a.id}–${c.id}`).toBeGreaterThanOrEqual(1600 / 4 - 1);
+      }
+    }
+  });
+
+  it("is compact: the nodes cover a good part of their bounding box, which is near 16:9", async () => {
+    const b = await boxes();
+    const w = Math.max(...b.map((n) => n.x + n.w)) - Math.min(...b.map((n) => n.x));
+    const h = Math.max(...b.map((n) => n.y + n.h)) - Math.min(...b.map((n) => n.y));
+    const covered = b.reduce((s, n) => s + n.w * n.h, 0) / (w * h);
+    expect(covered).toBeGreaterThan(0.33);
+    expect(w / h).toBeGreaterThan(1.3);
+    expect(w / h).toBeLessThan(2.3);
+  });
+});

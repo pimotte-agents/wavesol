@@ -249,5 +249,100 @@ async function forceLayout(
       if (fill > best.fill) best = { fill, pts };
     }
   }
-  return new Map(ids.map((id, i) => [id, { x: best.pts[i]![0]! - sizes[i]!.w / 2, y: best.pts[i]![1]! - sizes[i]!.h / 2 }]));
+  const boxes = ids.map((_, i) => ({ x: best.pts[i]![0]! - sizes[i]!.w / 2, y: best.pts[i]![1]! - sizes[i]!.h / 2, w: sizes[i]!.w, h: sizes[i]!.h }));
+  compact(boxes, gap, aspect);
+  return new Map(ids.map((id, i) => [id, { x: boxes[i]!.x, y: boxes[i]!.y }]));
+}
+
+/**
+ * Pulls boxes towards their centre, one small move at a time, as long as every pair stays `gap`
+ * apart; the pull is stronger along the side that makes the shape wider (or taller) than `aspect`.
+ * Stress layouts of hub-and-spoke graphs are rings with an empty middle; this fills it in. Moving
+ * each box straight towards the centre keeps the boxes in their directions from it, so the
+ * picture (and its few crossings) stays recognisable.
+ */
+function compact(boxes: Local[], gap: number, aspect: number) {
+  if (boxes.length < 2) return;
+  pull(boxes, gap, aspect);
+  // Still too wide (or tall): a chain of boxes blocks the pull. Spread the other way, which gives
+  // them room to pass, and pull along the long side only. Kept only if the boxes end up larger on
+  // a screen of the target shape.
+  let best = { score: score(boxes, aspect), boxes: boxes.map((b) => ({ ...b })) };
+  for (let round = 0; round < 6; round++) {
+    const { w, h } = extent(boxes);
+    const shape = w / h;
+    if (Math.abs(Math.log(shape / aspect)) < 0.05) break;
+    const wide = shape > aspect;
+    const f = Math.min(Math.sqrt(wide ? shape / aspect : aspect / shape), 1.25);
+    const c = boxes.reduce((t, b) => t + (wide ? b.y + b.h / 2 : b.x + b.w / 2), 0) / boxes.length;
+    for (const b of boxes) {
+      if (wide) b.y = c + (b.y + b.h / 2 - c) * f - b.h / 2;
+      else b.x = c + (b.x + b.w / 2 - c) * f - b.w / 2;
+    }
+    pull(boxes, gap, aspect, wide ? "x" : "y");
+    const now = score(boxes, aspect);
+    if (now > best.score) best = { score: now, boxes: boxes.map((b) => ({ ...b })) };
+  }
+  best.boxes.forEach((b, i) => Object.assign(boxes[i]!, b));
+}
+
+function extent(boxes: Local[]) {
+  const w = Math.max(...boxes.map((b) => b.x + b.w)) - Math.min(...boxes.map((b) => b.x));
+  const h = Math.max(...boxes.map((b) => b.y + b.h)) - Math.min(...boxes.map((b) => b.y));
+  return { w, h };
+}
+
+/** How large the boxes come out when the whole fits a screen of shape `aspect` (×1/height). */
+function score(boxes: Local[], aspect: number) {
+  const { w, h } = extent(boxes);
+  return Math.min(aspect / w, 1 / h);
+}
+
+function pull(boxes: Local[], gap: number, aspect: number, only?: "x" | "y") {
+  const clear = (i: number, x: number, y: number) => {
+    const a = boxes[i]!;
+    return boxes.every((b, j) => j === i || Math.max(b.x - (x + a.w), x - (b.x + b.w), b.y - (y + a.h), y - (b.y + b.h)) >= gap - 1e-6);
+  };
+  const area = boxes.reduce((s, b) => s + b.w * b.h, 0);
+  const cx = boxes.reduce((s, b) => s + (b.x + b.w / 2) * b.w * b.h, 0) / area;
+  const cy = boxes.reduce((s, b) => s + (b.y + b.h / 2) * b.w * b.h, 0) / area;
+  for (let round = 0; round < 400; round++) {
+    const x0 = Math.min(...boxes.map((b) => b.x));
+    const x1 = Math.max(...boxes.map((b) => b.x + b.w));
+    const y0 = Math.min(...boxes.map((b) => b.y));
+    const y1 = Math.max(...boxes.map((b) => b.y + b.h));
+    const shape = (x1 - x0) / (y1 - y0);
+    const kx = only === "y" ? 0 : shape > aspect ? 1 : shape / aspect;
+    const ky = only === "x" ? 0 : shape > aspect ? aspect / shape : 1;
+    const stepMax = Math.hypot(x1 - x0, y1 - y0) / 50;
+    let moved = false;
+    // the outermost first, so the inner ones make room for nothing
+    const order = boxes.map((_, i) => i).sort((i, j) => dist(boxes[j]!) - dist(boxes[i]!));
+    for (const i of order) {
+      const b = boxes[i]!;
+      const dx = (cx - (b.x + b.w / 2)) * kx;
+      const dy = (cy - (b.y + b.h / 2)) * ky;
+      const len = Math.hypot(dx, dy);
+      if (len < 1) continue;
+      // the full step if it fits, else smaller ones; else slide along one axis
+      for (let step = Math.min(len, stepMax); step >= 1; step /= 2) {
+        const tries: [number, number][] = [
+          [b.x + (dx / len) * step, b.y + (dy / len) * step],
+          [b.x + Math.sign(dx) * Math.min(step, Math.abs(dx)), b.y],
+          [b.x, b.y + Math.sign(dy) * Math.min(step, Math.abs(dy))],
+        ];
+        const ok = tries.find(([x, y]) => (x !== b.x || y !== b.y) && clear(i, x, y));
+        if (ok) {
+          [b.x, b.y] = ok;
+          moved = true;
+          break;
+        }
+      }
+    }
+    if (!moved) break;
+  }
+
+  function dist(b: Local) {
+    return Math.hypot(b.x + b.w / 2 - cx, b.y + b.h / 2 - cy);
+  }
 }

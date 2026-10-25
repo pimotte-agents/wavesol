@@ -8,7 +8,7 @@ import { NavGraph, initialState, navigate, type Intent, type NavState } from "./
 const NODE_MARGIN = 0.03;
 const OVERVIEW_MARGIN = 0.05;
 /** Slides narrower than this on screen show a title card instead of their content. */
-const FAR_PX = 160;
+const FAR_PX = 300;
 /** Pointer travel (px) after which a press in the overview is a drag, not a click. */
 const DRAG_PX = 5;
 const DRAG_KEY = "wavesol:drag-mode";
@@ -484,6 +484,8 @@ export class Presentation {
       const level = off || far ? "overview" : n.id === this.nav.node ? "active" : "near";
       nodeEl.classList.toggle("ws-off", off);
       nodeEl.classList.toggle("ws-far", far);
+      // a frame far away keeps its children, but its title grows to stay readable
+      nodeEl.classList.toggle("ws-far-frame", !off && n.type === "frame" && k * 1600 < FAR_PX);
       if (nodeEl.dataset.detail !== level) {
         nodeEl.dataset.detail = level;
         this.instances.get(n.id)?.setDetail?.(level);
