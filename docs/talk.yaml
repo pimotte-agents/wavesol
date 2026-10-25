@@ -24,11 +24,12 @@ nodes:
   navigating:
     type: frame
     title: Navigating
-    children: [nav-steps, nav-edges, nav-back, nav-overview]
+    children: [nav-steps, nav-edges, nav-back, nav-overview, nav-touch]
   nav-steps: {}
   nav-edges: {}
   nav-back: {}
   nav-overview: {}
+  nav-touch: {}
 
   presenting:
     type: frame
@@ -114,7 +115,7 @@ edges:
   - lean -> lean-intro: { default: true, transition: zoom-through }
 
   # through each topic
-  - nav-steps -> nav-edges -> nav-back -> nav-overview: { default: true }
+  - nav-steps -> nav-edges -> nav-back -> nav-overview -> nav-touch: { default: true }
   - nav-presenter -> nav-phone -> poll -> transitions: { default: true }
   - format-dir -> format-talk -> format-edges -> format-nodes: { default: true }
   - slides -> fragments -> math-code -> walkthrough -> morph -> figure -> tikz -> tikz-figure -> citations: { default: true }
@@ -123,14 +124,14 @@ edges:
   - lean-intro -> lean-rev -> lean-pal: { default: true }
 
   # Space at the end of a topic goes on to the next one; or back to the hub
-  - nav-overview -> presenting: { default: true }
+  - nav-touch -> presenting: { default: true }
   - transitions -> writing: { default: true }
   - format-nodes -> content: { default: true }
   - citations -> structure: { default: true }
   - theming -> tools: { default: true }
   - ai -> lean: { default: true }
   - lean-pal -> roadmap: { default: true }
-  - nav-overview -> map: { label: "Back to the topics" }
+  - nav-touch -> map: { label: "Back to the topics" }
   - transitions -> map: { label: "Back to the topics" }
   - format-nodes -> map: { label: "Back to the topics" }
   - citations -> map: { label: "Back to the topics" }

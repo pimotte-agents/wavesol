@@ -1273,3 +1273,226 @@ body {
 .ws-phone-error p {
   font-size: 18px;
 }
+
+/* ---------- touch bars (phones, tablets) ---------- */
+/* the stage takes horizontal drags for swipes; pinching still zooms the page */
+.ws-touch-mode .ws-stage:not(.ws-overview) {
+  touch-action: pinch-zoom;
+}
+.ws-touch {
+  font: 16px/1.3 var(--ws-font-body);
+  color: var(--ws-ink);
+}
+.ws-touch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0 12px;
+  font: inherit;
+  color: var(--ws-heading);
+  background: var(--ws-card);
+  border: 1px solid var(--ws-card-border);
+  border-radius: 24px;
+  box-shadow: var(--ws-card-shadow);
+  -webkit-tap-highlight-color: transparent;
+}
+.ws-touch-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ws-touch-btn:disabled {
+  opacity: 0.35;
+}
+.ws-touch-btn.ws-on {
+  color: var(--ws-card);
+  background: var(--ws-accent);
+  border-color: var(--ws-accent);
+}
+.ws-touch-btn:active:not(:disabled) {
+  background: var(--ws-accent-soft);
+}
+
+/* portrait: bars in the space above and below the slide */
+.ws-touch-top,
+.ws-touch-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+}
+.ws-touch-top {
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: max(12px, env(safe-area-inset-top));
+  padding-bottom: 8px;
+}
+.ws-touch-title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+.ws-touch-node,
+.ws-touch-where {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ws-touch-node {
+  font: 600 17px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-touch-where {
+  font-size: 14px;
+}
+.ws-touch-bottom {
+  bottom: 0;
+  padding-top: 8px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+}
+.ws-touch-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  min-height: 8px;
+  margin-bottom: 12px;
+}
+.ws-touch-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ws-card-border);
+}
+.ws-touch-dots span.ws-on {
+  background: var(--ws-accent);
+}
+.ws-touch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ws-touch-row .ws-touch-prev,
+.ws-touch-row .ws-touch-next {
+  min-width: 72px;
+}
+.ws-touch-middle {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+.ws-touch-next-hint,
+.ws-touch-hint {
+  min-height: 1.3em;
+  margin: 8px 0 0;
+  font-size: 14px;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ws-touch-hint {
+  margin: 12px 0;
+}
+
+/* landscape: no room above or below, so the buttons float in the corners and fade while unused */
+.ws-touch-corner {
+  position: fixed;
+  z-index: 5;
+  animation: ws-touch-fade 0.5s ease 3s forwards;
+}
+@keyframes ws-touch-fade {
+  to {
+    opacity: 0.25;
+  }
+}
+.ws-touch-tl {
+  top: max(10px, env(safe-area-inset-top));
+  left: max(10px, env(safe-area-inset-left));
+}
+.ws-touch-tr {
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+}
+.ws-touch-bl {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: max(10px, env(safe-area-inset-left));
+}
+.ws-touch-br {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  right: max(10px, env(safe-area-inset-right));
+}
+.ws-touch-bc {
+  bottom: max(10px, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* sheets: the ways on from here, the menu, the gestures help */
+.ws-touch-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgb(0 0 0 / 0.25);
+}
+.ws-touch-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 16px max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  background: var(--ws-card);
+  border-radius: 16px 16px 0 0;
+  box-shadow: var(--ws-card-shadow);
+}
+.ws-touch-sheet h3 {
+  margin: 0 0 8px;
+  font: 600 17px var(--ws-font-heading);
+  color: var(--ws-heading);
+}
+.ws-touch-sheet ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ws-touch-sheet li button,
+.ws-touch-sheet li a {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 8px;
+  font: inherit;
+  text-align: left;
+  color: var(--ws-heading);
+  text-decoration: none;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--ws-card-border);
+}
+.ws-touch-sheet li:last-child button,
+.ws-touch-sheet li:last-child a {
+  border-bottom: 0;
+}
+.ws-touch-sheet dl {
+  margin: 0;
+}
+.ws-touch-sheet dt {
+  font-weight: 600;
+  color: var(--ws-heading);
+}
+.ws-touch-sheet dd {
+  margin: 0 0 10px;
+}

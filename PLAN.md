@@ -341,6 +341,14 @@ QR code; what does not open with it is ignored, which is how only paired phones 
     the network layer became generic over its message type.
   - Results are revealed with Space by default, so early votes don't sway later ones.
 
+### Touch screens (2026-10-25)
+- **Status: done.** On a device whose main pointer is touch, the projector page gets its own controls
+  (`src/runtime/ui/TouchBars.tsx`): in portrait, bars above and below the slide (overview, title and
+  section, menu; ◀, detours, ▶, step dots, "Next:" hint), with the camera fitting the node between
+  them (`Presentation.setInsets`); in landscape, floating corner buttons that fade after 3 s. Swipes
+  (≥ 50 px, mostly sideways, < 0.8 s, not in the overview or on links/tactics) step and go back.
+  Tests: `tests/e2e/touch.spec.ts` with phone emulation.
+
 ### Later / maybe
 - Animations: choose between manim pre-rendered video with `next_section()` steps (+ alpha video for
   overlays) and a JS-native animation plugin, possibly both (video first). Includes overlays: a node or

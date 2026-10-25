@@ -1,14 +1,17 @@
-// Screen-space chrome over the canvas: outgoing-edges panel, keyboard help and phone pairing.
+// Screen-space chrome over the canvas: outgoing-edges panel, keyboard help, phone pairing, and the
+// touch bars on phones and tablets.
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { renderSVG } from "uqr";
 import type { Presentation, PresentationState } from "../presentation.ts";
 import { KEY_HELP, bindKeys, type Controls, type Panel } from "../keys.ts";
 import type { AudienceHub, PhoneControl } from "../remote.ts";
 import { PairPanel } from "./PairPanel.tsx";
+import { TouchBars, useTouch } from "./TouchBars.tsx";
 
 export function Overlay({ presentation, phone, audience }: { presentation: Presentation; phone: PhoneControl; audience: AudienceHub }) {
   const [state, setState] = useState<PresentationState>(presentation.state);
   const [panel, setPanel] = useState<Panel | undefined>();
+  const touch = useTouch();
   const phoneState = useSyncExternalStore(
     useCallback((fn) => phone.onChange(fn), [phone]),
     () => phone.state,
@@ -37,6 +40,7 @@ export function Overlay({ presentation, phone, audience }: { presentation: Prese
 
   return (
     <>
+      {touch && <TouchBars presentation={presentation} state={state} />}
       {panel === "edges" && (
         <aside className="ws-panel ws-edges-panel" aria-label="Outgoing edges">
           <h3>{state.node.title}</h3>

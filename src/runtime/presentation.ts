@@ -17,6 +17,8 @@ const LASER_EASE = 0.35;
 /** The laser dot hides after this long without an update. */
 const LASER_IDLE_MS = 4000;
 /** The laser selects what it rests on this long (e.g. a Lean tactic). */
+/** A swipe: at least this far sideways (screen px), and mostly sideways. */
+const SWIPE_PX = 50;
 const LASER_DWELL_MS = 100;
 
 export interface PresentationState {
@@ -62,6 +64,8 @@ export class Presentation {
   private dwellKey?: string;
   private dwellSince = 0;
   private dwellDone = false;
+  /** Screen space the touch bars take at the top and bottom; the camera fits nodes between them. */
+  private insets = { top: 0, bottom: 0 };
 
   constructor(
     root: HTMLElement,
@@ -119,6 +123,7 @@ export class Presentation {
 
     this.bindCitations();
     this.bindNodeLinks();
+    this.bindSwipe();
     this.bindNodeDrag(); // before pan/zoom, so a node drag isn't also a pan
     this.bindPanZoom();
 
@@ -231,6 +236,37 @@ export class Presentation {
       e.stopPropagation();
       this.dispatch({ type: "goto", node: link.dataset.node! });
     });
+  }
+
+  /**
+   * Touch: a horizontal swipe from right to left is next (like Space), from left to right previous
+   * (like ←). Not in the overview, where dragging pans, nor when it starts on something to tap.
+   */
+  private bindSwipe() {
+    let start: { id: number; x: number; y: number; t: number } | undefined;
+    this.stage.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "touch" || !e.isPrimary || this.overview || this.dragging) return void (start = undefined);
+      if ((e.target as Element).closest("a, button, input, textarea, .ws-tac, .ws-cite")) return void (start = undefined);
+      start = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+    });
+    this.stage.addEventListener("pointercancel", () => (start = undefined));
+    this.stage.addEventListener("pointerup", (e) => {
+      if (!start || e.pointerId !== start.id) return;
+      const dx = e.clientX - start.x;
+      const dy = e.clientY - start.y;
+      const quick = performance.now() - start.t < 800;
+      start = undefined;
+      if (!quick || Math.abs(dx) < SWIPE_PX || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+      this.dispatch({ type: dx < 0 ? "step" : "prev" });
+    });
+  }
+
+  /** Reserves screen space at the top and bottom (touch bars): nodes are fitted between them. */
+  setInsets(top: number, bottom: number): void {
+    if (top === this.insets.top && bottom === this.insets.bottom) return;
+    this.insets = { top, bottom };
+    this.animator.stop();
+    this.applyView(this.targetView());
   }
 
   /** Drag mode (`wavesol dev` only): dragging a node pins it there, written to talk.yaml by the dev server. */
@@ -474,8 +510,11 @@ export class Presentation {
 
   private targetView(): View {
     const { vw, vh } = this.viewport();
-    if (this.overview) return fitBox(bounds(this.talk.nodes.filter((n) => n.depth === 0)), vw, vh, OVERVIEW_MARGIN);
-    return fitBox(this.nodes.get(this.nav.node)!, vw, vh, NODE_MARGIN);
+    // fit into the space between the insets, then move the view so that space's centre is the node's
+    const h = Math.max(1, vh - this.insets.top - this.insets.bottom);
+    const box = this.overview ? bounds(this.talk.nodes.filter((n) => n.depth === 0)) : this.nodes.get(this.nav.node)!;
+    const v = fitBox(box, vw, h, this.overview ? OVERVIEW_MARGIN : NODE_MARGIN);
+    return { ...v, cy: v.cy - ((this.insets.top - this.insets.bottom) / 2) * (v.w / vw) };
   }
 
   private applyView(v: View) {
