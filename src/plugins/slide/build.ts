@@ -1,6 +1,6 @@
 // Slide nodes: Markdown → HTML at build time, with KaTeX math, Shiki code highlighting, reveal-style
 // fragments ({.fragment step=n} or ::: fragment blocks, {mark="..."} to highlight code while current),
-// ::: notes and :::: columns blocks.
+// ::: notes and :::: columns blocks, and [text](#node-id) links to other nodes.
 import MarkdownIt, { type Env as MdEnv, type Token } from "markdown-it";
 import { attrs } from "@mdit/plugin-attrs";
 import { container } from "@mdit/plugin-container";
@@ -8,7 +8,7 @@ import { tex } from "@mdit/plugin-tex";
 import katex from "katex";
 import { createHighlighter, bundledLanguages, type Highlighter } from "shiki";
 import { dirname, resolve } from "node:path";
-import { SlideFrontmatter } from "../../model/schema.ts";
+import { NODE_ID, SlideFrontmatter } from "../../model/schema.ts";
 import type { BuildCtx, BuildPlugin } from "../types.ts";
 import { parseCitation, type CiteItem } from "../../build/cite.ts";
 import type { z } from "zod";
@@ -147,6 +147,24 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
     const marks = (token.meta as { marks?: Mark[] } | null)?.marks;
     if (!figure && marks?.length) return highlight(h, token.content, token.info.trim().split(/\s/)[0] ?? "", marks) + "\n";
     return figure ?? defaultFence(tokens, idx, options, mdEnv, self);
+  };
+
+  // [text](#node-id): a link to another node; the camera flies there and Back returns
+  const defaultLink = md.renderer.rules.link_open ?? ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options));
+  md.renderer.rules.link_open = (tokens, idx, options, mdEnv, self) => {
+    const env = mdEnv as Env;
+    const token = tokens[idx]!;
+    const id = String(token.attrGet("href") ?? "").match(/^#(.*)$/)?.[1];
+    if (id !== undefined && NODE_ID.test(id)) {
+      if (!env.ctx.hasNode(id)) {
+        const at = env.body.indexOf(`(#${id})`);
+        env.ctx.report("error", `link to unknown node "${id}"`, at < 0 ? undefined : env.bodyLine + env.body.slice(0, at).split("\n").length - 1);
+      }
+      token.attrSet("href", `#/${id}`);
+      token.attrJoin("class", "ws-node-link");
+      token.attrSet("data-node", id);
+    }
+    return defaultLink(tokens, idx, options, env, self);
   };
 
   const defaultImage = md.renderer.rules.image!;

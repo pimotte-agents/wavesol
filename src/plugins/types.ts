@@ -15,6 +15,8 @@ export interface BuildCtx {
   report(severity: "error" | "warning", message: string, line?: number): void;
   /** Formats a citation from the talk's bibliography (and records the works as cited). */
   cite(items: CiteItem[]): { text: string; title: string } | { error: string };
+  /** Whether the talk has a node with this id (for [text](#id) links between nodes). */
+  hasNode(id: string): boolean;
   /** The works cited anywhere in the talk, as HTML (undefined: no bibliography); complete for plugins that build last. */
   references(): string | undefined;
   /** Renders a TikZ picture to inline SVG (cached), with the talk's macros and TikZ setup. */

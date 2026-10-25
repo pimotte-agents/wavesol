@@ -257,6 +257,8 @@ The body is Markdown (CommonMark + GFM tables) with:
   (Knuth, 1984, p. 3). Hovering shows the full reference; clicking flies to the talk's `references`
   node (if it has one) with the cited works highlighted, and Back returns.
 - **Images:** standard Markdown images, paths relative to the node file.
+- **Links to other nodes:** `[text](#node-id)` links to a node of the talk: clicking it flies there,
+  like taking an edge, and Back returns. The link needs no edge. An unknown node id is an error.
 
 Step count = number of distinct fragment steps, plus one for the summary step of `fragments: walkthrough`.
 

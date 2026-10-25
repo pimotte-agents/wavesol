@@ -93,6 +93,7 @@ async function compile(dir: string): Promise<CompileResult> {
       reportIn: (f, severity, message, line, col) => diagnostics.push({ severity, file: f, line, col, message }),
       cite: (items) => (bib ? bib.cite(items) : { error: "citations need a bibliography: add refs.bib, or bibliography: in talk.yaml" }),
       references: () => bib?.references(bib.cited()),
+      hasNode: (id) => loaded.nodes.has(id),
       tikz: (body, extra?: TikzOptions) => {
         const base = talk.tikz ?? {};
         const opts: TikzOptions = {

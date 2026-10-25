@@ -118,6 +118,7 @@ export class Presentation {
     });
 
     this.bindCitations();
+    this.bindNodeLinks();
     this.bindNodeDrag(); // before pan/zoom, so a node drag isn't also a pan
     this.bindPanZoom();
 
@@ -217,6 +218,18 @@ export class Presentation {
       this.dispatch({ type: "goto", node: refs.id });
       this.marked = refs.id;
       this.instances.get(refs.id)?.mark?.(cite.dataset.keys!.split(" "));
+    });
+  }
+
+  /** [text](#node-id) links fly to that node, like taking an edge (Back returns). */
+  private bindNodeLinks() {
+    this.world.addEventListener("click", (e) => {
+      if (this.overview || this.dragging) return;
+      const link = (e.target as Element).closest<HTMLElement>("a.ws-node-link[data-node]");
+      if (!link) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.dispatch({ type: "goto", node: link.dataset.node! });
     });
   }
 

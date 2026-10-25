@@ -13,6 +13,7 @@ async function build(body: string, data: { fragments?: "lists" | "walkthrough"; 
       return { text: `(${items.map((i) => known[i.id] + (i.locator ? `, p. ${i.locator}` : "")).join("; ")})`, title: "full <ref>" };
     },
     references: () => "",
+    hasNode: (id) => ["s", "other"].includes(id),
     // stands in for LaTeX: echoes the picture, or fails on \\fail at its line
     tikz: async (b) => {
       const bad = b.split("\n").findIndex((l) => l.includes("\\fail"));
@@ -61,6 +62,13 @@ describe("slide build", () => {
       '9: error: mark "g" not found in the code block above',
       '11: error: mark "f" is only allowed on a fragment',
     ]);
+  });
+
+  it("links to other nodes with [text](#id), reporting unknown ones", async () => {
+    const r = await build("See [the other](#other), [nothing](#nope) and [a site](https://example.org).\n");
+    expect(r.html).toContain('<a href="#/other" class="ws-node-link" data-node="other">the other</a>');
+    expect(r.html).toContain('<a href="https://example.org">a site</a>');
+    expect(r.reports).toEqual(['3: error: link to unknown node "nope"']);
   });
 
   it("extracts notes, title and math, and reports errors with lines", async () => {
