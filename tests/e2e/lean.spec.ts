@@ -79,6 +79,11 @@ test("stepping moves the tokens the goals share, and Back moves them back", asyn
   await expect(info.locator(".ws-morph-copy").first()).toBeAttached();
   await expect(info.locator(".ws-goals")).toHaveCount(2);
   expect(await info.locator(".ws-goals").first().locator(".ws-atom[style*='hidden']").count()).toBeGreaterThan(0);
+  // a copy looks like its token, also where the colour comes from a parent (hypothesis names)
+  const nameColor = await info.locator(".ws-goals").first().locator(".ws-hyp-name").first().evaluate((e) => getComputedStyle(e).color);
+  const copyColors = await info.locator(".ws-morph-copy > .ws-hyp-name").evaluateAll((es) => es.map((e) => getComputedStyle(e).color));
+  expect(copyColors.length).toBeGreaterThan(0);
+  expect(new Set(copyColors)).toEqual(new Set([nameColor]));
   // afterwards only the new goals, all visible
   await expect(info.locator(".ws-morph-copy")).toHaveCount(0, { timeout: 2000 });
   await expect(info.locator(".ws-goals")).toHaveCount(1);

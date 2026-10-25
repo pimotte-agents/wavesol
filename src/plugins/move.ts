@@ -44,6 +44,13 @@ export function oldPart(el: HTMLElement, frame: Frame): OldPart {
   return { el, box: measure(el, frame), size: fontSize(el) };
 }
 
+/** Gives a copy the look its original gets from where it is (e.g. a colour set on a parent). */
+function keepLook(copy: HTMLElement, original: HTMLElement) {
+  const style = getComputedStyle(original);
+  copy.style.color = style.color;
+  copy.style.fontWeight = style.fontWeight;
+}
+
 export function reducedMotion(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -68,6 +75,7 @@ export function glide(layer: HTMLElement, frame: Frame, moving: [OldPart, HTMLEl
     const b = measure(el, frame);
     // the copy keeps the part's look: same element and font size, placed at its new box
     const copy = el.cloneNode(true) as HTMLElement;
+    keepLook(copy, el);
     const wrap = document.createElement("span");
     wrap.className = wrapClass;
     wrap.style.fontSize = getComputedStyle(el.parentElement ?? el).fontSize;
@@ -81,6 +89,7 @@ export function glide(layer: HTMLElement, frame: Frame, moving: [OldPart, HTMLEl
       oldCopy.className = "ws-morph-old";
       const oldContent = old.el.cloneNode(true) as HTMLElement;
       oldContent.style.visibility = ""; // the original is hidden while it moves on
+      keepLook(oldContent, old.el);
       oldCopy.append(oldContent);
       wrap.append(oldCopy);
     }

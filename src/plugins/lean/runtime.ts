@@ -44,7 +44,7 @@ function renderGoals(goals: Goal[]): HTMLElement {
     for (const h of g.hyps) {
       const hyp = el("div", "ws-hyp");
       const names = el("span", "ws-hyp-names");
-      h.names.forEach((n, i) => names.append(...(i ? [" "] : []), el("span", "ws-atom", n)));
+      h.names.forEach((n, i) => names.append(...(i ? [" "] : []), el("span", "ws-atom ws-hyp-name", n)));
       hyp.append(names, " ", el("span", "ws-atom", ":"), " ");
       renderCode(h.type, hyp, true);
       goal.append(hyp);
