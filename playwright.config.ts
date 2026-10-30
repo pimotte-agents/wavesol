@@ -18,5 +18,12 @@ export default defineConfig({
       // a cold build includes Lean (toolchain + SubVerso for docs/lean): about a minute on CI
       timeout: 300_000,
     },
+    {
+      // nested frames (tests/e2e/frames.spec.ts)
+      command: "node bin/wavesol.js serve tests/fixtures/frames-talk --out test-results/frames-dist --port 4181",
+      url: "http://localhost:4181/",
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
   ],
 });

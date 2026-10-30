@@ -109,7 +109,8 @@ export class Presentation {
         this.instances.set(n.id, inst);
       }
       nodeEl.addEventListener("click", (e) => {
-        if (!this.overview || this.dragged || this.dragMode) return;
+        // in the overview any node; at a frame, any node inside it, also in a nested frame
+        if (this.dragged || this.dragMode || !(this.overview || this.isInside(n.id, this.nav.node))) return;
         e.stopPropagation();
         this.dispatch({ type: "goto", node: n.id });
       });
@@ -208,6 +209,12 @@ export class Presentation {
     const halfH = (fit.w * vh) / vw / 2;
     const clamp = (x: number, c: number, r: number) => Math.min(Math.max(x, c - r), c + r);
     this.applyView({ cx: clamp(v.cx, fit.cx, halfW), cy: clamp(v.cy, fit.cy, halfH), w });
+  }
+
+  /** Whether node `id` lies inside frame `frame`, at any depth. */
+  private isInside(id: string, frame: string): boolean {
+    for (let p = this.nodes.get(id)?.parent; p; p = this.nodes.get(p)?.parent) if (p === frame) return true;
+    return false;
   }
 
   /** Clicking a citation flies to the references slide (if the talk has one), with the cited works marked. */

@@ -1,0 +1,17 @@
+# nested frames, for tests/e2e/frames.spec.ts: clicking inside the current frame
+title: Frames
+nodes:
+  start: {}
+  outer:
+    type: frame
+    title: Outer
+    children: [intro, inner]
+  intro: {}
+  inner:
+    type: frame
+    title: Inner
+    children: [deep, deeper]
+  deep: {}
+  deeper: {}
+edges:
+  - start -> outer -> intro -> inner -> deep -> deeper: { default: true }
