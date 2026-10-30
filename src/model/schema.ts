@@ -99,6 +99,10 @@ export const Talk = z.strictObject({
   layout: Layout.optional(),
   math: z.strictObject({ macros: z.string().optional() }).optional(),
   bibliography: z.string().optional().describe("BibTeX file for [@key] citations; default refs.bib if it exists."),
+  head: z
+    .string()
+    .optional()
+    .describe("HTML file that wavesol build adds to the page's <head>, e.g. an analytics script; wavesol dev leaves it out."),
   sync: Sync.optional(),
   pdf: z
     .union([

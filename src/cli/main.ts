@@ -75,7 +75,7 @@ async function buildTalk(talkDir: string, out: string, forcePdf = false): Promis
     console.error("build aborted: fix the errors above");
     return false;
   }
-  await build(viteConfig(talkDir, { build: { outDir: out, emptyOutDir: true }, plugins: [react(), wavesol(talkDir)] }));
+  await build(viteConfig(talkDir, { build: { outDir: out, emptyOutDir: true }, plugins: [react(), wavesol(talkDir, { head: true })] }));
   printDiagnostics(r);
   console.error(`built ${out}`);
   const pdf = r.talk!.pdf ?? (forcePdf ? { file: "talk.pdf", steps: "last" as const } : undefined);

@@ -12,7 +12,8 @@ import { formatDiagnostic } from "../model/compiled.ts";
 const ID = "virtual:wavesol/talk";
 const RESOLVED = "\0" + ID;
 
-export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResult) => void } = {}): Plugin {
+// `head`: add talk.yaml's head file to the page (wavesol build; not dev or check --render)
+export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResult) => void; head?: boolean } = {}): Plugin {
   let result: CompileResult | undefined;
   // one compile per state of the talk: started eagerly by the dev server, shared with the page's request
   let current: Promise<CompileResult> | undefined;
@@ -30,6 +31,13 @@ export function wavesol(talkDir: string, opts: { onDiagnostics?: (r: CompileResu
       if (id !== RESOLVED) return;
       const r = await compile();
       return `export default ${JSON.stringify({ talk: r.talk, diagnostics: r.diagnostics })};`;
+    },
+    transformIndexHtml: {
+      order: "post",
+      async handler(html) {
+        const head = opts.head ? (await compile()).head : undefined;
+        return head ? html.replace("</head>", `${head.trim()}\n  </head>`) : html;
+      },
     },
     configureServer(server: ViteDevServer) {
       // local relay for phones, as in `wavesol serve`; other upgrades (Vite's HMR) are left alone

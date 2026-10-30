@@ -152,6 +152,10 @@
       "description": "BibTeX file for [@key] citations; default refs.bib if it exists.",
       "type": "string"
     },
+    "head": {
+      "description": "HTML file that wavesol build adds to the page's <head>, e.g. an analytics script; wavesol dev leaves it out.",
+      "type": "string"
+    },
     "sync": {
       "type": "object",
       "properties": {

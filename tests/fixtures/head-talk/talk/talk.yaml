@@ -1,0 +1,4 @@
+title: Head
+head: ../shared-head.html
+nodes:
+  a: {}

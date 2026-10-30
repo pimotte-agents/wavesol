@@ -24,6 +24,8 @@ export interface CompileResult {
   frames?: Map<string, FrameSpace>;
   /** Each node's source file, relative to the talk (talk.yaml for nodes without a file). */
   files?: Map<string, string>;
+  /** talk.yaml's `head` file, for the <head> of the built page. */
+  head?: string;
 }
 
 export async function compileTalk(dir: string): Promise<CompileResult> {
@@ -73,6 +75,14 @@ async function compile(dir: string): Promise<CompileResult> {
       if ("error" in loadedBib) diagnostics.push({ severity: "error", file: bibFile, message: loadedBib.error });
       else bib = loadedBib;
     }
+  }
+  // extra HTML for the built page's <head>
+  let head: string | undefined;
+  if (talk.head) {
+    const path = join(dir, talk.head);
+    inputs.push(path);
+    if (!existsSync(path)) diagnostics.push({ severity: "error", file: "talk.yaml", message: `head ${talk.head} not found` });
+    else head = readFileSync(path, "utf8");
   }
   // every work cited anywhere, before the first citation is formatted (a citation's a/b suffix depends on all of them)
   for (const node of bib ? loaded.nodes.values() : []) {
@@ -185,5 +195,5 @@ async function compile(dir: string): Promise<CompileResult> {
     ...(talk.pdf ? { pdf: { file: (talk.pdf !== true && talk.pdf.file) || "talk.pdf", steps: (talk.pdf !== true && talk.pdf.steps) || "last" } } : {}),
   };
   const files = new Map([...loaded.nodes.values()].map((n) => [n.id, n.file ? relative(dir, n.file) : "talk.yaml"]));
-  return { talk: compiled, diagnostics, assets, inputs, frames, files };
+  return { talk: compiled, diagnostics, assets, inputs, frames, files, head };
 }
