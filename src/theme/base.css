@@ -62,10 +62,13 @@ body {
 .ws-stage.ws-panning .ws-node {
   cursor: grabbing;
 }
-.ws-overview .ws-node {
+/* clickable: every node in the overview; at a frame, the nodes inside it */
+.ws-overview .ws-node,
+.ws-node.ws-clickable {
   cursor: pointer;
 }
-.ws-overview .ws-node:hover {
+.ws-overview .ws-node:hover,
+.ws-node.ws-clickable:hover {
   outline: 12px solid var(--ws-accent);
 }
 

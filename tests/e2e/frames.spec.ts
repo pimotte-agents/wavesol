@@ -53,3 +53,32 @@ test("at a slide, clicking it doesn't navigate", async ({ page }) => {
   await click(page, "intro");
   expect(await node(page)).toBe("intro");
 });
+
+/** The hovered node's cursor and outline. */
+async function hoverStyle(page: Page, id: string) {
+  await page.locator(`.ws-node[data-id="${id}"]`).hover();
+  return page.evaluate((id) => {
+    const s = getComputedStyle(document.querySelector(`.ws-node[data-id="${id}"]`)!);
+    return { cursor: s.cursor, outline: `${s.outlineStyle} ${s.outlineWidth} ${s.outlineColor}` };
+  }, id);
+}
+
+test("at a frame, a node inside it highlights on hover as in the overview", async ({ page }) => {
+  await open(page, "#/start/0");
+  await page.keyboard.press("o");
+  await settled(page);
+  const overview = await hoverStyle(page, "intro");
+  expect(overview.cursor).toBe("pointer");
+  expect(overview.outline).toMatch(/^solid /);
+
+  await open(page, "#/outer/0");
+  expect(await hoverStyle(page, "intro")).toEqual(overview);
+  expect((await hoverStyle(page, "deeper")).outline).toBe(overview.outline);
+});
+
+test("at a slide, it doesn't highlight on hover", async ({ page }) => {
+  await open(page, "#/intro/0");
+  const style = await hoverStyle(page, "intro");
+  expect(style.cursor).not.toBe("pointer");
+  expect(style.outline).toMatch(/^none /);
+});

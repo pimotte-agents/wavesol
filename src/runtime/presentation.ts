@@ -550,6 +550,7 @@ export class Presentation {
         this.instances.get(n.id)?.setDetail?.(level);
       }
       nodeEl.classList.toggle("ws-current", n.id === this.nav.node);
+      nodeEl.classList.toggle("ws-clickable", !this.overview && this.isInside(n.id, this.nav.node));
     }
     for (const { edge, el: g } of this.edgePaths) g.classList.toggle("ws-edge-out", edge.from === this.nav.node);
   }
