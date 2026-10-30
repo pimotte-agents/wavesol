@@ -3,6 +3,8 @@
   --ws-bg: #f3f1ea;
   --ws-card: #fffdf8;
   --ws-card-border: #e3ddcf;
+  --ws-qr-bg: transparent;
+  --ws-qr-ink: #000;
   --ws-card-shadow: 0 2px 6px rgb(60 50 30 / 0.06), 0 12px 40px rgb(60 50 30 / 0.07);
   --ws-ink: #1f2328;
   --ws-heading: #1b2a3c;

@@ -4,6 +4,9 @@
   --ws-bg: #14171c;
   --ws-card: #1c2027;
   --ws-card-border: #2d333c;
+  /* light squares on dark don't scan everywhere: a light box, as in the light theme */
+  --ws-qr-bg: #fffdf8;
+  --ws-qr-ink: #000;
   --ws-card-shadow: 0 2px 6px rgb(0 0 0 / 0.3), 0 12px 40px rgb(0 0 0 / 0.35);
   --ws-ink: #e4e1da;
   --ws-heading: #f1ede4;

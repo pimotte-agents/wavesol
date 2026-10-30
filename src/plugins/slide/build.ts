@@ -196,7 +196,7 @@ function renderQr(token: Token, env: Env): string {
     return `<pre class="math-error">${esc(token.content)}</pre>\n`;
   }
   const link = `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text ?? url)}</a>`;
-  return `<figure class="ws-qr-figure"><div class="ws-qr-code">${renderSVG(url, { border: 2 })}</div><figcaption>${link}</figcaption></figure>\n`;
+  return `<figure class="ws-qr-figure"><div class="ws-qr-code">${renderSVG(url, { border: 2, whiteColor: "none", blackColor: "currentColor" })}</div><figcaption>${link}</figcaption></figure>\n`;
 }
 
 const TIKZ_FENCES = { tikz: "tikzpicture", tikzcd: "tikzcd" } as const;

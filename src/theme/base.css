@@ -314,7 +314,8 @@ body {
 }
 
 /* ---------- QR codes (```qr) ---------- */
-/* dark on white whatever the theme, so phones can read it */
+/* dark modules whatever the theme, so phones can read it: on the slide itself in a light theme,
+   on a light box in a dark one (--ws-qr-bg, --ws-qr-ink) */
 .ws-slide .ws-qr-figure {
   display: flex;
   flex-direction: column;
@@ -326,7 +327,8 @@ body {
   width: 7em;
   padding: 0.2em;
   border-radius: 0.3em;
-  background: #fff;
+  background: var(--ws-qr-bg);
+  color: var(--ws-qr-ink);
   line-height: 0;
 }
 .ws-slide .ws-qr-code svg {

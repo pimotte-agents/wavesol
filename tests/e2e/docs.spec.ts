@@ -317,6 +317,31 @@ test("the dark theme recolours the page, code highlighting and TikZ figures", as
   expect(lum(dark.bg)).toBeLessThan(lum(dark.tikz));
 });
 
+test("QR codes sit on the slide in the light theme and on a light box in the dark theme", async ({ page }) => {
+  await open(page, "#/welcome/0");
+  const look = () =>
+    page.evaluate(() => {
+      const box = document.querySelector(".ws-qr-code")!;
+      const svg = box.querySelector("svg")!;
+      return {
+        box: getComputedStyle(box).backgroundColor,
+        // what's drawn behind and as the modules inside the SVG
+        svgBg: svg.querySelector("rect")?.getAttribute("fill") ?? "none",
+        ink: getComputedStyle(svg.querySelector("path")!).fill,
+      };
+    });
+  const lum = (c: string) => c.match(/\d+/g)!.slice(0, 3).reduce((s, v) => s + Number(v), 0);
+  const light = await look();
+  expect(light.box).toBe("rgba(0, 0, 0, 0)");
+  expect(light.svgBg).toBe("none");
+  expect(lum(light.ink)).toBeLessThan(100);
+  await page.evaluate(() => (document.documentElement.dataset.theme = "academic-dark"));
+  const dark = await look();
+  // light squares on dark don't scan everywhere: dark modules on a light box
+  expect(lum(dark.box)).toBeGreaterThan(600);
+  expect(lum(dark.ink)).toBeLessThan(100);
+});
+
 test("the help panel links to the talk's PDF, which the build wrote", async ({ page }) => {
   await open(page);
   await page.keyboard.press("?");

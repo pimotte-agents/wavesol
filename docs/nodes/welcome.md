@@ -6,6 +6,10 @@ A talk is a *graph*: nodes sit on one big canvas, and the camera flies between t
 
 *press **Space** to begin*
 
+```qr
+https://github.com/pimotte-agents/wavesol
+```
+
 ::: notes
 The name is a play on the Dutch word "weefsel" (fabric).
 :::
