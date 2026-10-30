@@ -182,7 +182,10 @@ function createMarkdown(h: Highlighter): ReturnType<typeof MarkdownIt> {
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
-/** ```qr: the URL on the first line, optionally the link's text on the second; the code with the link below. */
+/**
+ * ```qr: the URL on the first line, optionally the link's text on the second; the code with the link below.
+ * ```qr {size=9em} sets the code's width (default 7em); the link's text scales with it.
+ */
 function renderQr(token: Token, env: Env): string {
   const [url = "", text] = token.content.split("\n").map((l) => l.trim()).filter(Boolean);
   let valid = false;
@@ -195,8 +198,14 @@ function renderQr(token: Token, env: Env): string {
     env.ctx.report("error", url ? `qr: "${url}" is not a URL (it needs a scheme, e.g. https://)` : "qr: the block needs a URL", token.map ? env.bodyLine + token.map[0] + (url ? 1 : 0) : undefined);
     return `<pre class="math-error">${esc(token.content)}</pre>\n`;
   }
+  const size = token.attrGet("size") === null ? null : String(token.attrGet("size"));
+  let style = "";
+  if (size !== null) {
+    if (/^\d+(\.\d+)?(em|rem|px)$/.test(size)) style = ` style="--ws-qr-size: ${size}"`;
+    else env.ctx.report("error", `qr: size "${size}" is not a length (e.g. 9em, 240px)`, token.map ? env.bodyLine + token.map[0] : undefined);
+  }
   const link = `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text ?? url)}</a>`;
-  return `<figure class="ws-qr-figure"><div class="ws-qr-code">${renderSVG(url, { border: 2, whiteColor: "none", blackColor: "currentColor" })}</div><figcaption>${link}</figcaption></figure>\n`;
+  return `<figure class="ws-qr-figure"${style}><div class="ws-qr-code">${renderSVG(url, { border: 2, whiteColor: "none", blackColor: "currentColor" })}</div><figcaption>${link}</figcaption></figure>\n`;
 }
 
 const TIKZ_FENCES = { tikz: "tikzpicture", tikzcd: "tikzcd" } as const;

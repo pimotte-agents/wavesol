@@ -71,6 +71,14 @@ describe("slide build", () => {
     expect(r.reports).toEqual(['3: error: link to unknown node "nope"']);
   });
 
+  it("```qr {size=...} sets the code's size (the link scales with it), and reports a size that isn't a length", async () => {
+    const r = await build("```qr {size=9em}\nhttps://example.org\n```\n\n```qr {size=big}\nhttps://example.org\n```\n");
+    expect(r.html).toContain('<figure class="ws-qr-figure" style="--ws-qr-size: 9em">');
+    // the bad size is reported and left out
+    expect(r.html.match(/<figure class="ws-qr-figure">/g)).toHaveLength(1);
+    expect(r.reports).toEqual(['7: error: qr: size "big" is not a length (e.g. 9em, 240px)']);
+  });
+
   it("renders ```qr as a QR code with the link below, and reports what is not a URL", async () => {
     const r = await build("```qr\nhttps://example.org/a?b=1&c=2\nThe example\n```\n\n```qr\nexample.org\n```\n\n```qr\n```\n");
     expect(r.html).toMatch(/<figure class="ws-qr-figure"><div class="ws-qr-code"><svg[^]*<\/svg><\/div><figcaption><a href="https:\/\/example.org\/a\?b=1&amp;c=2" target="_blank" rel="noopener">The example<\/a><\/figcaption><\/figure>/);
