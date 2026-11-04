@@ -743,7 +743,8 @@ body {
 .ws-slide.ws-reflowing {
   position: relative;
 }
-.ws-reflow-borders {
+.ws-reflow-borders,
+.ws-reflow-bg {
   position: absolute;
   box-sizing: border-box;
 }

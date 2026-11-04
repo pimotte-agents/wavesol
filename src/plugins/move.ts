@@ -82,6 +82,8 @@ export function glide(layer: HTMLElement, frame: Frame, moving: [OldPart, HTMLEl
     // the copy keeps the part's look: same element and font size, placed at its new box
     const copy = el.cloneNode(true) as HTMLElement;
     keepLook(copy, el);
+    // a block (e.g. a code block) keeps its width, which the copy would otherwise shrink to fit its content
+    if (getComputedStyle(el).display === "block") Object.assign(copy.style, { boxSizing: "border-box", width: `${b.w}px` });
     const wrap = document.createElement("span");
     wrap.className = wrapClass;
     wrap.style.fontSize = getComputedStyle(el.parentElement ?? el).fontSize;

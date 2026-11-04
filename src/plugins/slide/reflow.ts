@@ -1,8 +1,8 @@
 // Reflow: when a `collapse` fragment appears or disappears, the slide's layout changes (a table column comes
 // in, the other columns get narrower and their text wraps). The text then moves to its new place word by
 // word, with the magic move of ../move.ts: each word and each atomic part (formula, code block, image)
-// glides from where it was. Table lines (the cells' borders) are redrawn over the slide and stretch from
-// their old place to their new one. The new layout shows at once under a copy of the old one that fades
+// glides from where it was. Table lines (the cells' borders) and the backgrounds of inline code are redrawn
+// over the slide and stretch from their old place to their new one. The new layout shows at once under a copy of the old one that fades
 // out, so what doesn't change stays put; what appears fades in as the words arrive.
 import { fadeIn, fadeOut, frameOf, glide, measure, MOVE_MS, oldPart, reducedMotion, type Box, type Frame, type OldPart } from "../move.ts";
 
@@ -36,6 +36,56 @@ function cells(all: HTMLElement[], frame: Frame): Map<HTMLElement, Cell> {
     out.set(el, { box: measure(el, frame), style });
   }
   return out;
+}
+
+const union = (bs: Box[]): Box => {
+  const [x, y] = [Math.min(...bs.map((b) => b.x)), Math.min(...bs.map((b) => b.y))];
+  return { x, y, w: Math.max(...bs.map((b) => b.x + b.w)) - x, h: Math.max(...bs.map((b) => b.y + b.h)) - y };
+};
+
+/**
+ * The background of inline code, for words that move: one piece per run of words that are on the same line
+ * before and after (a piece per line, split where the lines break differently), from where the words were to
+ * where they go, padded as the code is.
+ */
+function codeBackgrounds(code: HTMLElement, words: HTMLElement[], before: Map<HTMLElement, OldPart>, frame: Frame) {
+  const style = getComputedStyle(code);
+  const px = (k: string) => parseFloat(style.getPropertyValue(k)) || 0;
+  const all = code.querySelectorAll(".ws-word");
+  const [first, last] = [all[0], all[all.length - 1]];
+  // as the code's own background: padded above and below, and left and right only at its start and end
+  // (a line break cuts it off square)
+  const pad = (b: Box, start: boolean, end: boolean): Box => {
+    const [l, r] = [start ? px("padding-left") : 0, end ? px("padding-right") : 0];
+    return { x: b.x - l, y: b.y - px("padding-top"), w: b.w + l + r, h: b.h + px("padding-top") + px("padding-bottom") };
+  };
+  const runs: { words: HTMLElement[]; from: Box[]; to: Box[] }[] = [];
+  for (const w of words) {
+    const [a, b] = [before.get(w)!.box, measure(w, frame)];
+    const run = runs.at(-1);
+    const sameLine = (x: Box, y: Box) => Math.abs(x.y - y.y) < x.h / 2;
+    if (run && sameLine(run.from.at(-1)!, a) && sameLine(run.to.at(-1)!, b)) {
+      run.words.push(w);
+      run.from.push(a);
+      run.to.push(b);
+    } else runs.push({ words: [w], from: [a], to: [b] });
+  }
+  const pieces = runs.map((r) => {
+    const [start, end] = [r.words[0] === first, r.words.at(-1) === last];
+    const bg = document.createElement("div");
+    bg.className = "ws-reflow-bg";
+    bg.style.backgroundColor = style.backgroundColor;
+    const radius = (corner: string, on: boolean) => (on ? style.getPropertyValue(`border-${corner}-radius`) : "0");
+    bg.style.borderRadius = [radius("top-left", start), radius("top-right", end), radius("bottom-right", end), radius("bottom-left", start)].join(" ");
+    return { el: bg, from: pad(union(r.from), start, end), to: pad(union(r.to), start, end) };
+  });
+  // runs next to each other on a line join up across the space between them
+  for (const [p, q] of pieces.slice(1).map((q, i) => [pieces[i]!, q] as const)) {
+    for (const k of ["from", "to"] as const) {
+      if (Math.abs(p[k].y - q[k].y) < p[k].h / 2 && q[k].x > p[k].x + p[k].w) p[k].w = q[k].x - p[k].x;
+    }
+  }
+  return pieces;
 }
 
 /** Elements that move as a whole; their text is not split into words. */
@@ -83,6 +133,7 @@ export function setupReflow(slide: HTMLElement): Reflow {
   const index = new Map(all.map((el, i) => [el, i]));
   const tableCells = [...slide.querySelectorAll<HTMLElement>("th, td")];
   const cellIndex = new Map(tableCells.map((el, i) => [el, i]));
+  const codes = [...slide.querySelectorAll<HTMLElement>("code")].filter((c) => !c.closest(ATOMIC));
   let running: Animation[] = [];
   let cleanup = () => {};
 
@@ -130,6 +181,20 @@ export function setupReflow(slide: HTMLElement): Reflow {
         oldCells[cellIndex.get(el)!]!.style.borderColor = "transparent";
         bare.push(el);
       }
+      // inline code: its background moves with its words, in pieces that join up again where they arrive
+      const oldCodes = [...old.querySelectorAll<HTMLElement>("code")].filter((c) => !c.closest(ATOMIC));
+      codes.forEach((code, i) => {
+        const words = moving.filter((w) => code.contains(w));
+        if (!words.length) return;
+        for (const bg of codeBackgrounds(code, words, before, frame)) {
+          layer.prepend(bg.el);
+          running.push(bg.el.animate([place(bg.from), place(bg.to)], { duration: MOVE_MS, easing: EASE, fill: "both" }));
+        }
+        code.style.backgroundColor = "transparent";
+        oldCodes[i]!.style.backgroundColor = "transparent";
+        bare.push(code);
+      });
+
       running.push(...glide(layer, frame, moving.map((el) => [before.get(el)!, el]), "ws-morph-copy"));
 
       const anims = running;
@@ -138,7 +203,10 @@ export function setupReflow(slide: HTMLElement): Reflow {
         layer.remove();
         slide.classList.remove("ws-reflowing");
         for (const el of moving) el.style.visibility = "";
-        for (const el of bare) el.style.borderColor = "";
+        for (const el of bare) {
+          el.style.borderColor = "";
+          el.style.backgroundColor = "";
+        }
         for (const a of anims) a.cancel();
         cleanup = () => {};
       };

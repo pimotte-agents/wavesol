@@ -313,6 +313,10 @@ test("collapse: a column makes room and the text moves to its new place word by 
   // the table lines are redrawn over the slide while they move; the cells draw none of their own
   await expect(slide.locator(".ws-reflow-borders").first()).toBeAttached();
   expect(await row.evaluate((e) => getComputedStyle(e).borderBottomColor)).toBe("rgba(0, 0, 0, 0)");
+  // and so is the background of inline code whose words move: in pieces, one per run of words on a line
+  const code = slide.locator("td code", { hasText: "Since" }).first(); // the slide's own, not the fading copy
+  await expect(slide.locator(".ws-reflow-bg").first()).toBeAttached();
+  expect(await code.evaluate((e) => getComputedStyle(e).backgroundColor)).toBe("rgba(0, 0, 0, 0)");
   await page.waitForTimeout(300);
   const mid = (await copy.boundingBox())!;
   // the line under "Verbose Lean" is on its way down: lower than where it was, higher than where it goes
@@ -326,6 +330,8 @@ test("collapse: a column makes room and the text moves to its new place word by 
   expect(lineY).toBeGreaterThan(rowFrom.y + rowFrom.height + 1);
   expect(lineY).toBeLessThan(rowTo.y + rowTo.height - 1);
   expect(await row.evaluate((e) => getComputedStyle(e).borderBottomColor)).not.toBe("rgba(0, 0, 0, 0)");
+  expect(await code.evaluate((e) => getComputedStyle(e).backgroundColor)).not.toBe("rgba(0, 0, 0, 0)");
+  await expect(slide.locator(".ws-reflow-bg")).toHaveCount(0);
   const to = (await lean.boundingBox())!;
   expect(to.y).toBeGreaterThan(from.y + 10); // wrapped onto the next line
   expect(mid.y).toBeGreaterThan(from.y + 1);
