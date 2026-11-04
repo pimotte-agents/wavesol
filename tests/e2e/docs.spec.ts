@@ -302,15 +302,30 @@ test("collapse: a column makes room and the text moves to its new place word by 
   const verbose = slide.locator("td .ws-word", { hasText: /^Verbose$/ }).first();
   const from = (await lean.boundingBox())!;
   expect(from.y).toBeCloseTo((await verbose.boundingBox())!.y, 0);
+  const row = slide.locator("td", { hasText: "Verbose" }).first();
+  const rowFrom = (await row.boundingBox())!;
 
   await page.keyboard.press("Space");
   // mid-move: copies glide over the slide, the old layout fades out above the new one
   await expect(slide.locator(".ws-morph-copy").first()).toBeAttached();
   await expect(slide.locator(".ws-reflow-old")).toHaveCount(1);
   const copy = slide.locator(".ws-morph-copy", { hasText: /^Lean$/ }).first();
+  // the table lines are redrawn over the slide while they move; the cells draw none of their own
+  await expect(slide.locator(".ws-reflow-borders").first()).toBeAttached();
+  expect(await row.evaluate((e) => getComputedStyle(e).borderBottomColor)).toBe("rgba(0, 0, 0, 0)");
   await page.waitForTimeout(300);
   const mid = (await copy.boundingBox())!;
-  await expect(slide.locator(".ws-morph-copy, .ws-reflow-old")).toHaveCount(0, { timeout: 2000 });
+  // the line under "Verbose Lean" is on its way down: lower than where it was, higher than where it goes
+  const lineY = await slide.locator(".ws-reflow-borders").evaluateAll((els, x) => {
+    const r = els.map((e) => e.getBoundingClientRect()).find((b) => Math.abs(b.left - x) < 2 && b.top > 0);
+    return r ? r.bottom : -1;
+  }, rowFrom.x);
+  await expect(slide.locator(".ws-morph-copy, .ws-reflow-old, .ws-reflow-borders")).toHaveCount(0, { timeout: 2000 });
+  const rowTo = (await row.boundingBox())!;
+  expect(rowTo.y + rowTo.height).toBeGreaterThan(rowFrom.y + rowFrom.height + 10);
+  expect(lineY).toBeGreaterThan(rowFrom.y + rowFrom.height + 1);
+  expect(lineY).toBeLessThan(rowTo.y + rowTo.height - 1);
+  expect(await row.evaluate((e) => getComputedStyle(e).borderBottomColor)).not.toBe("rgba(0, 0, 0, 0)");
   const to = (await lean.boundingBox())!;
   expect(to.y).toBeGreaterThan(from.y + 10); // wrapped onto the next line
   expect(mid.y).toBeGreaterThan(from.y + 1);
