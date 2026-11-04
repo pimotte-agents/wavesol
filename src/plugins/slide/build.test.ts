@@ -32,6 +32,26 @@ describe("slide build", () => {
     expect(r.html).toContain('class="fragment fade-up"');
   });
 
+  it("takes effects as classes or bare attributes; a header cell's fragment is its whole column", async () => {
+    const r = await build("A {.fragment .collapse}\n\nB {.fragment collapse}\n\n| x | y {.fragment collapse step=2} | z {.fragment} |\n|--|--|--|\n| 1 | 2 | 3 {.fragment step=5} |\n| 4 | 5 | 6 |\n");
+    expect(r.reports).toEqual([]);
+    expect(r.html).toContain('<p class="fragment collapse" data-step="1">A</p>');
+    expect(r.html).toContain('<p class="fragment collapse" data-step="2">B</p>');
+    // column y: the header's step and effects on every body cell
+    expect(r.html.match(/<td class="fragment collapse" data-step="2">/g)).toHaveLength(2);
+    // column z: header at step 3; a cell that is a fragment itself keeps its own step
+    expect(r.html).toContain('<th class="fragment" data-step="3">z</th>');
+    expect(r.html).toContain('<td class="fragment" data-step="4">3</td>');
+    expect(r.html).toContain('<td class="fragment" data-step="3">6</td>');
+    expect(r.html).toContain("<td>1</td>");
+    expect(r.steps.length).toBeGreaterThan(0);
+  });
+
+  it("reports collapse on a body cell", async () => {
+    const r = await build("| x | y |\n|--|--|\n| 1 | 2 {.fragment collapse} |\n");
+    expect(r.reports).toEqual(["3: error: collapse on a table cell: put it on the column's header cell"]);
+  });
+
   it("makes top-level list items fragments with fragments: lists", async () => {
     const r = await build("- a\n- b\n  - nested\n", { fragments: "lists" });
     expect(r.steps).toEqual([1, 2]);

@@ -207,6 +207,10 @@ CommonMark + GFM tables, plus:
   `{.fragment step=2}` / `::: fragment step=2` puts it in step 2 explicitly; fragments with the same
   step appear together. Optional effect: `.fade-up`, `.highlight`, `.fade-out` (default: fade in),
   e.g. `{.fragment .fade-up}` or `::: fragment fade-up`.
+- **`collapse`** (with any effect): the fragment takes no space until it shows (with `fade-out`: once
+  it has faded), and the text around it moves to its new place word by word. A fragment on a table
+  header cell is the whole column, so `| Name | Detail {.fragment collapse} |` lets a column come in
+  and the others make room. Put `collapse` on the header cell only (a body cell is an error).
 - **`fragments: lists`** in frontmatter: every top-level list item becomes a fragment.
 - **`fragments: walkthrough`** in frontmatter: like `lists`, but while an item is current the earlier
   items are greyed out, and one extra step at the end shows the whole slide normally again.

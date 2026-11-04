@@ -49,18 +49,24 @@ function keepLook(copy: HTMLElement, original: HTMLElement) {
   const style = getComputedStyle(original);
   copy.style.color = style.color;
   copy.style.fontWeight = style.fontWeight;
+  copy.style.fontStyle = style.fontStyle;
+  copy.style.fontFamily = style.fontFamily;
 }
 
 export function reducedMotion(): boolean {
   return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+/** Fades old content out, as the moving parts leave. */
+export const fadeOut = (el: HTMLElement) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: "ease-out", fill: "forwards" });
+
+/** Fades new content in, timed so that it appears as the moving parts arrive. */
+export const fadeIn = (el: HTMLElement) =>
+  el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, delay: MOVE_MS - FADE_MS, easing: "ease-in", fill: "backwards" });
+
 /** Fades the old content out and the new in, timed so the moving parts arrive as the new appears. */
 export function crossfade(from: HTMLElement, to: HTMLElement): Animation[] {
-  return [
-    from.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FADE_MS, easing: "ease-out", fill: "forwards" }),
-    to.animate([{ opacity: 0 }, { opacity: 1 }], { duration: FADE_MS, delay: MOVE_MS - FADE_MS, easing: "ease-in", fill: "backwards" }),
-  ];
+  return [fadeOut(from), fadeIn(to)];
 }
 
 /**

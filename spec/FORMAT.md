@@ -194,7 +194,13 @@ The body is Markdown (CommonMark + GFM tables) with:
   images). A fragment comes one step after the previous fragment; `{.fragment step=2}` or
   `::: fragment step=2` puts it in step 2 explicitly, and fragments with the same step appear
   together. Optional effect: `.fade-up`, `.highlight` or `.fade-out` (default: fade in), e.g.
-  `{.fragment .fade-up}` or `::: fragment fade-up`.
+  `{.fragment .fade-up}` or `::: fragment fade-up`; in `{...}` the dot may be left out
+  (`{.fragment collapse}`).
+- **`collapse`** (combines with the effects): the fragment takes no space while hidden (with
+  `.fade-out`: once faded out), so the slide's layout changes when it comes or goes; the text moves
+  to its new place word by word. A fragment on a **table header cell** is its whole column: the body
+  cells below it get its step and effects, unless they are fragments themselves. `collapse` is only
+  allowed on the header cell, e.g. `| Name | Detail {.fragment collapse} |`.
 - **Frontmatter `fragments: lists`:** every top-level list item becomes a fragment.
 - **Frontmatter `fragments: walkthrough`:** as `lists`, and while an item is the current step, the
   items before it are greyed out. One extra step after the last item shows the slide as a whole again,

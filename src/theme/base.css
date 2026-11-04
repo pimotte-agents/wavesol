@@ -734,6 +734,22 @@ body {
 .ws-slide .fragment.fade-out.visible {
   opacity: 0.15;
 }
+/* collapse: takes no space while hidden (for fade-out: once faded out) */
+.ws-slide .fragment.collapse:not(.fade-out):not(.visible),
+.ws-slide .fragment.collapse.fade-out.visible {
+  display: none;
+}
+/* while the layout changes (./plugins/slide/reflow.ts): the old layout, over the slide, fading out */
+.ws-slide.ws-reflowing {
+  position: relative;
+}
+.ws-reflow-old {
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  box-sizing: inherit;
+  pointer-events: none;
+}
 .ws-slide .fragment.highlight.visible {
   background-color: var(--ws-accent-soft);
   border-radius: 8px;

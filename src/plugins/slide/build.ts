@@ -229,8 +229,51 @@ async function renderTikzFences(tokens: Token[], env: Env) {
   }
 }
 
+/** Fragment effects; in `{...}` attributes they may also be written without the dot (`{.fragment collapse}`). */
+const EFFECTS = ["fade-up", "fade-out", "highlight", "collapse"];
+
+const hasClass = (t: Token, c: string) => String(t.attrGet("class") ?? "").split(/\s+/).includes(c);
+
+/**
+ * A fragment on a table header cell reveals its whole column: the body cells below it that are not fragments
+ * themselves get its effects, and after numbering its step. `collapse` (the column takes no space until it
+ * shows, see ./reflow.ts) is only allowed on the header cell. Returns, per header cell, the cells that follow it.
+ */
+function tableColumns(tokens: Token[], report?: (message: string, line?: number) => void): Map<Token, Token[]> {
+  const columns = new Map<Token, Token[]>();
+  let headers: Token[] = [];
+  let col = 0;
+  let line: number | undefined;
+  for (const t of tokens) {
+    if (t.type === "table_open") {
+      headers = [];
+      line = t.map?.[0];
+    } else if (t.type === "tr_open") col = 0;
+    else if (t.type === "th_open") headers[col++] = t;
+    else if (t.type === "td_open") {
+      const header = headers[col++];
+      if (hasClass(t, "collapse")) report?.("collapse on a table cell: put it on the column's header cell", line);
+      if (header && hasClass(header, "fragment") && !hasClass(t, "fragment")) columns.set(header, [...(columns.get(header) ?? []), t]);
+    }
+  }
+  return columns;
+}
+
 /** Assigns data-step to fragment tokens and returns the number of distinct steps. */
-export function assignFragments(tokens: Token[], mode?: "lists" | "walkthrough"): number {
+export function assignFragments(tokens: Token[], mode?: "lists" | "walkthrough", report?: (message: string, line?: number) => void): number {
+  // {.fragment collapse}: effects written as bare attributes become classes
+  const effects = (ts: Token[]) => {
+    for (const t of ts) {
+      for (const e of EFFECTS) {
+        if (t.attrGet(e) === null) continue;
+        t.attrs = t.attrs!.filter(([k]) => k !== e);
+        t.attrJoin("class", e);
+      }
+      if (t.children) effects(t.children);
+    }
+  };
+  effects(tokens);
+  const columns = tableColumns(tokens, report);
   if (mode) {
     let listDepth = 0;
     for (const t of tokens) {
@@ -284,6 +327,13 @@ export function assignFragments(tokens: Token[], mode?: "lists" | "walkthrough")
   for (const f of fragments) {
     f.token.attrs = (f.token.attrs ?? []).filter(([k]) => k !== "step");
     f.token.attrSet("data-step", String(ranks.indexOf(f.step) + 1));
+  }
+  for (const [header, cells] of columns) {
+    const classes = String(header.attrGet("class")).split(/\s+/).filter((c) => c === "fragment" || EFFECTS.includes(c));
+    for (const cell of cells) {
+      for (const c of classes) cell.attrJoin("class", c);
+      cell.attrSet("data-step", header.attrGet("data-step")!);
+    }
   }
   for (const m of morphSteps) m.token.meta = { ...(m.token.meta ?? {}), morphStep: m.step > 0 ? ranks.indexOf(m.step) + 1 : 0 };
   return ranks.length;
@@ -374,8 +424,9 @@ export const slide: BuildPlugin<Data> = {
     const tokens = md.parse(node.body, env);
     await renderTikzFences(tokens, env);
     const { slide: slideTokens, notes: noteTokens } = extractNotes(tokens);
-    const items = assignFragments(slideTokens, node.data.fragments);
-    assignMarks(slideTokens, (message, line) => ctx.report("error", message, line === undefined ? undefined : node.bodyLine + line));
+    const error = (message: string, line?: number) => ctx.report("error", message, line === undefined ? undefined : node.bodyLine + line);
+    const items = assignFragments(slideTokens, node.data.fragments, error);
+    assignMarks(slideTokens, error);
     // walkthrough: one more step at the end shows the slide as a whole again
     const walkthrough = node.data.fragments === "walkthrough" && items > 0;
     const steps = walkthrough ? items + 1 : items;

@@ -7,7 +7,7 @@ This paragraph is the first step. {.fragment}
 
 ::: fragment fade-up
 A `::: fragment` block wraps anything (math, code, images) and can take an effect: `fade-up`,
-`highlight` or `fade-out`.
+`highlight`, `fade-out`, or [`collapse`](#collapse).
 :::
 
 ```markdown

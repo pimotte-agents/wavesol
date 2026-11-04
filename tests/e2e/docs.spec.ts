@@ -293,6 +293,40 @@ test("morph: tagged parts glide to their new place between steps, and back", asy
   expect(await block.locator(".ws-morph-step.ws-morph-shown").evaluate((e) => getComputedStyle(e).opacity)).toBe("1");
 });
 
+test("collapse: a column makes room and the text moves to its new place word by word, and back", async ({ page }) => {
+  await open(page, "#/collapse/1");
+  await settled(page);
+  const slide = page.locator('.ws-node[data-id="collapse"] .ws-slide');
+  // "Lean" of "Verbose Lean": on one line with its first word, until the Style column takes its room
+  const lean = slide.locator("td .ws-word", { hasText: /^Lean$/ }).first();
+  const verbose = slide.locator("td .ws-word", { hasText: /^Verbose$/ }).first();
+  const from = (await lean.boundingBox())!;
+  expect(from.y).toBeCloseTo((await verbose.boundingBox())!.y, 0);
+
+  await page.keyboard.press("Space");
+  // mid-move: copies glide over the slide, the old layout fades out above the new one
+  await expect(slide.locator(".ws-morph-copy").first()).toBeAttached();
+  await expect(slide.locator(".ws-reflow-old")).toHaveCount(1);
+  const copy = slide.locator(".ws-morph-copy", { hasText: /^Lean$/ }).first();
+  await page.waitForTimeout(300);
+  const mid = (await copy.boundingBox())!;
+  await expect(slide.locator(".ws-morph-copy, .ws-reflow-old")).toHaveCount(0, { timeout: 2000 });
+  const to = (await lean.boundingBox())!;
+  expect(to.y).toBeGreaterThan(from.y + 10); // wrapped onto the next line
+  expect(mid.y).toBeGreaterThan(from.y + 1);
+  expect(mid.y).toBeLessThan(to.y - 1);
+  expect(await lean.evaluate((e) => getComputedStyle(e).visibility)).toBe("visible");
+  const style = slide.locator("th", { hasText: "Style" });
+  expect(await style.evaluate((e) => getComputedStyle(e).opacity)).toBe("1");
+
+  // back: the column goes, the words move back
+  await page.keyboard.press("ArrowLeft");
+  await expect(slide.locator(".ws-morph-copy").first()).toBeAttached();
+  await expect(slide.locator(".ws-morph-copy, .ws-reflow-old")).toHaveCount(0, { timeout: 2000 });
+  await expect(style).toBeHidden();
+  expect((await lean.boundingBox())!.y).toBeCloseTo(from.y, 0);
+});
+
 test("the dark theme recolours the page, code highlighting and TikZ figures", async ({ page }) => {
   await open(page);
   const t = (await talk(page)) as unknown as { nodes: { id: string; type: string }[] };
