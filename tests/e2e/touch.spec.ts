@@ -81,6 +81,14 @@ test.describe("phone, portrait", () => {
     expect((await nav(page)).node).toBe(detour.to);
   });
 
+  test("▲ goes up to the frame the slide is in; there is none at the top level", async ({ page }) => {
+    await open(page);
+    await expect(page.getByRole("button", { name: /^Up to/ })).toHaveCount(0);
+    await open(page, "#/nav-touch/0");
+    await page.getByRole("button", { name: "Up to Navigating" }).click();
+    expect((await nav(page)).node).toBe("navigating");
+  });
+
   test("steps show as dots", async ({ page }) => {
     await open(page, "#/fragments/0");
     const dots = page.locator(".ws-touch-dots span");

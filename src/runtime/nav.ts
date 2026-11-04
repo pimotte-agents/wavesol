@@ -16,6 +16,8 @@ export type Intent =
   | { type: "prev" }
   | { type: "edge"; index: number }
   | { type: "back" }
+  /** to the frame the current node is in */
+  | { type: "up" }
   | { type: "goto"; node: string; step?: number };
 
 export interface NavResult {
@@ -31,6 +33,7 @@ export class NavGraph {
   private steps = new Map<string, number>();
   private out = new Map<string, CompiledEdge[]>();
   private nodeTransition = new Map<string, TransitionSpec | undefined>();
+  private parents = new Map<string, string>();
   private defaultTransition: TransitionSpec;
 
   constructor(talk: CompiledTalk) {
@@ -38,6 +41,7 @@ export class NavGraph {
       this.steps.set(n.id, n.steps);
       this.out.set(n.id, []);
       this.nodeTransition.set(n.id, n.transition);
+      if (n.parent) this.parents.set(n.id, n.parent);
     }
     for (const e of talk.edges) this.out.get(e.from)!.push(e);
     // a frame also has an edge to every node inside it, after its own edges: from a frame you can
@@ -58,6 +62,14 @@ export class NavGraph {
   }
   stepsOf(id: string): number {
     return this.steps.get(id) ?? 0;
+  }
+  /** The transition set on the node itself in talk.yaml, if any. */
+  ownTransition(id: string): TransitionSpec | undefined {
+    return this.nodeTransition.get(id);
+  }
+  /** The frame a node is in, if any. */
+  parentOf(id: string): string | undefined {
+    return this.parents.get(id);
   }
   outgoing(id: string): CompiledEdge[] {
     return this.out.get(id) ?? [];
@@ -94,6 +106,12 @@ export function navigate(g: NavGraph, s: NavState, intent: Intent): NavResult {
     case "edge": {
       const edge = g.outgoing(s.node)[intent.index];
       return edge ? move(edge.to, 0, edge) : none;
+    }
+    case "up": {
+      // the reverse of a frame's edges to its children: zoom-through unless the frame sets a transition
+      const parent = g.parentOf(s.node);
+      if (!parent) return none;
+      return move(parent, 0, { from: s.node, to: parent, transition: g.ownTransition(parent) ?? "zoom-through" });
     }
     case "back": {
       const prev = s.history.at(-1);

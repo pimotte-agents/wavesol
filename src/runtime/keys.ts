@@ -22,8 +22,9 @@ export interface Controls {
 }
 
 export const KEY_HELP: [string, string][] = [
-  ["Space / → / PageDown", "next step, then the default edge"],
+  ["Space / → / ↓ / PageDown", "next step, then the default edge"],
   ["← / PageUp", "previous step, then back"],
+  ["↑", "up to the frame this node is in"],
   ["1 – 9", "take the n-th outgoing edge"],
   ["Backspace", "back (history)"],
   ["o", "overview; click a node to fly there"],
@@ -53,9 +54,11 @@ export function bindKeys(p: Controls, togglePanel: (panel: Panel | undefined) =>
         p.dispatch({ type: "step" });
         break;
       case "ArrowLeft":
-      case "ArrowUp":
       case "PageUp":
         p.dispatch({ type: "prev" });
+        break;
+      case "ArrowUp":
+        p.dispatch({ type: "up" });
         break;
       case "Backspace":
         p.dispatch({ type: "back" });

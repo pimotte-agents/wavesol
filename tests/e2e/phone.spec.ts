@@ -73,6 +73,7 @@ test("pair with the QR link; the phone drives the projector and follows it", asy
   // phone → projector: Next, an edge, Back, Prev
   const t = await talk(projector);
   const start = await nav(projector);
+  await expect(phone.getByRole("button", { name: "Up" })).toBeDisabled(); // the start is not in a frame
   await phone.getByRole("button", { name: "Next" }).tap();
   await expect.poll(() => nav(projector)).not.toEqual(start);
   const out = t.edges.filter((e) => e.from === (start.node));

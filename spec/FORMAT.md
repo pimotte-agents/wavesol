@@ -289,6 +289,9 @@ buttons, `1`–`9`, the phone). These come after the frame's own edges in `child
 `zoom-through` unless the child sets a transition, are not drawn, and are never the default edge.
 List an edge explicitly to give it a label, a position or `default: true`.
 
+The way back out needs no edge either: **up** (↑, the ▲ touch button, Up on the phone) goes from any
+node to the frame it is in, with `zoom-through` unless the frame sets a transition. Back returns.
+
 ### `tikz`
 
 A TikZ picture filling the node: the file's body is the picture (TikZ commands, or a whole

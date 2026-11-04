@@ -91,6 +91,17 @@ describe("frames", () => {
     expect(take(3)).toMatchObject({ state: { node: "z" }, transition: "cut" });
   });
 
+  it("up goes to the frame a node is in, with zoom-through; back returns", () => {
+    const at = initialState(fg, { node: "z", step: 0 }, "s");
+    const up = navigate(fg, at, { type: "up" });
+    expect(up).toMatchObject({ state: { node: "f", step: 0 }, kind: "move", transition: "zoom-through" });
+    expect(navigate(fg, up.state, { type: "back" }).state.node).toBe("z");
+  });
+
+  it("up does nothing outside a frame", () => {
+    for (const node of ["s", "f"]) expect(navigate(fg, initialState(fg, { node, step: 0 }, "s"), { type: "up" }).kind).toBe("none");
+  });
+
   it("the default edge and other nodes are unchanged", () => {
     expect(navigate(fg, initialState(fg, { node: "f", step: 0 }, "s"), { type: "step" }).state.node).toBe("y");
     expect(fg.outgoing("x")).toEqual([]);

@@ -75,6 +75,9 @@ export function Phone({ talk, peer, net }: { talk: CompiledTalk; peer: SyncPeer;
         <button className="ws-phone-back" disabled={!s?.history.length} onClick={() => send({ type: "back" })}>
           Back
         </button>
+        <button className="ws-phone-up" disabled={!node?.parent} onClick={() => send({ type: "up" })}>
+          Up
+        </button>
         <button className="ws-phone-prev" onClick={() => send({ type: "prev" })}>
           Prev
         </button>

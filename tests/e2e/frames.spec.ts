@@ -82,3 +82,15 @@ test("at a slide, it doesn't highlight on hover", async ({ page }) => {
   expect(style.cursor).not.toBe("pointer");
   expect(style.outline).toMatch(/^none /);
 });
+
+test("↑ goes up to the enclosing frame, one level at a time; Backspace returns", async ({ page }) => {
+  await open(page, "#/deeper/0");
+  await page.keyboard.press("ArrowUp");
+  expect(await node(page)).toBe("inner");
+  await page.keyboard.press("ArrowUp");
+  expect(await node(page)).toBe("outer");
+  await page.keyboard.press("ArrowUp"); // outer is at the top level
+  expect(await node(page)).toBe("outer");
+  await page.keyboard.press("Backspace");
+  expect(await node(page)).toBe("inner");
+});

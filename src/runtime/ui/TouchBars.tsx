@@ -27,6 +27,7 @@ const PREV = "M15 5 8 12l7 7";
 const NEXT = "m9 5 7 7-7 7";
 const OVERVIEW = "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z";
 const MENU = "M4 7h16M4 12h16M4 17h16";
+const UP = "M5 15l7-7 7 7";
 const DETOURS = "M7 3v18M7 10c0 4 10 3 10 8v3M14 6l3-3 3 3M17 3v5";
 
 type Sheet = "edges" | "menu" | "gestures";
@@ -92,6 +93,11 @@ export function TouchBars({ presentation, state }: { presentation: Presentation;
   const nextButton = (
     <button className="ws-touch-btn ws-touch-next" aria-label="Next" disabled={!canNext} onClick={go(() => presentation.dispatch({ type: "step" }))}>
       <Icon d={NEXT} />
+    </button>
+  );
+  const upButton = parent && (
+    <button className="ws-touch-btn ws-touch-up" aria-label={`Up to ${parent.title}`} onClick={go(() => presentation.dispatch({ type: "up" }))}>
+      <Icon d={UP} />
     </button>
   );
   const detourButton = detours.length > 0 && (
@@ -187,7 +193,10 @@ export function TouchBars({ presentation, state }: { presentation: Presentation;
         {!overview && (
           <>
             <div className="ws-touch-corner ws-touch-bl">{prevButton}</div>
-            <div className="ws-touch-corner ws-touch-bc">{detourButton}</div>
+            <div className="ws-touch-corner ws-touch-bc">
+              {upButton}
+              {detourButton}
+            </div>
             <div className="ws-touch-corner ws-touch-br">{nextButton}</div>
           </>
         )}
@@ -220,7 +229,10 @@ export function TouchBars({ presentation, state }: { presentation: Presentation;
             </div>
             <div className="ws-touch-row">
               {prevButton}
-              <div className="ws-touch-middle">{detourButton}</div>
+              <div className="ws-touch-middle">
+                {upButton}
+                {detourButton}
+              </div>
               {nextButton}
             </div>
             <div className="ws-touch-next-hint ws-muted">{nav.step >= steps && next ? `Next: ${next.edge.label ?? next.target.title}` : " "}</div>

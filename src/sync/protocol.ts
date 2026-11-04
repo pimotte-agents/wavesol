@@ -56,7 +56,7 @@ export interface Transport<M = Message> {
   close(): void;
 }
 
-const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "goto", "overview", "pointer", "pair", "blackout"]);
+const INTENT_TYPES = new Set(["step", "prev", "edge", "back", "up", "goto", "overview", "pointer", "pair", "blackout"]);
 /** How many recent intent ids the host remembers to drop replays. */
 const SEEN_LIMIT = 500;
 

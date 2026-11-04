@@ -1228,7 +1228,7 @@ body {
 }
 .ws-phone-nav {
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr;
+  grid-template-columns: 1fr 1fr 1fr 2fr;
   gap: 8px;
   height: 22vh;
   min-height: 96px;
@@ -1418,6 +1418,7 @@ body {
   flex: 1;
   display: flex;
   justify-content: center;
+  gap: 12px;
 }
 .ws-touch-next-hint,
 .ws-touch-hint {
@@ -1461,6 +1462,8 @@ body {
   right: max(10px, env(safe-area-inset-right));
 }
 .ws-touch-bc {
+  display: flex;
+  gap: 12px;
   bottom: max(10px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
