@@ -1,4 +1,4 @@
-# nested frames, for tests/e2e/frames.spec.ts: clicking inside the current frame
+# nested frames, for tests/e2e/frames.spec.ts: clicking inside the current frame; inner previews titles
 title: Frames
 nodes:
   start: {}
@@ -10,6 +10,7 @@ nodes:
   inner:
     type: frame
     title: Inner
+    preview: titles
     children: [deep, deeper]
   deep: {}
   deeper: {}

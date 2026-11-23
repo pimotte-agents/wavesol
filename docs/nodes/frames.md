@@ -11,6 +11,7 @@ background:
 ```
 
 - Children are drawn **smaller**, inside the frame's box.
+- `preview: titles` shows the children as title cards, except the current one: a frame as a diagram.
 - Visiting a frame shows it whole; `zoom-through` transitions fit well.
 - From a frame, every node inside it is an edge: press its number, or click any node in it (also in a nested frame), to go in.
 - **↑** goes up from a node to the frame it is in (Back returns).

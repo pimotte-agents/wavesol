@@ -94,3 +94,14 @@ test("↑ goes up to the enclosing frame, one level at a time; Backspace returns
   await page.keyboard.press("Backspace");
   expect(await node(page)).toBe("inner");
 });
+
+test("a frame with preview: titles shows its children as title cards, except the current one", async ({ page }) => {
+  const far = (id: string) => page.locator(`.ws-node[data-id="${id}"]`).evaluate((el) => el.classList.contains("ws-far"));
+  await open(page, "#/inner/0");
+  expect([await far("deep"), await far("deeper")]).toEqual([true, true]);
+  await open(page, "#/deep/0");
+  expect(await far("deep")).toBe(false); // (deeper is off screen now)
+  // a frame without it shows its children's content
+  await open(page, "#/outer/0");
+  expect(await far("intro")).toBe(false);
+});

@@ -318,6 +318,14 @@
                 },
                 "additionalProperties": false
               },
+              "preview": {
+                "description": "Frame only: how its children look while they are not the current node; titles shows title cards (default content).",
+                "type": "string",
+                "enum": [
+                  "content",
+                  "titles"
+                ]
+              },
               "pin": {
                 "type": "array",
                 "prefixItems": [

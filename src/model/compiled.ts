@@ -10,6 +10,8 @@ export interface CompiledNode {
   title: string;
   parent?: string;
   children: string[];
+  /** Frames: `titles` shows the children as title cards while they are not the current node. */
+  preview?: "content" | "titles";
   depth: number;
   /** World-space box. `w`/`h` include `scale`. */
   x: number;

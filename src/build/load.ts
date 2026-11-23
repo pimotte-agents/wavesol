@@ -69,6 +69,7 @@ export function loadTalk(dir: string): { talk?: LoadedTalk; diagnostics: Diagnos
     if (entry.children && !isFrame) diagnostics.push(at(src, ["nodes", id, "children"], `only frames have children (${id} is a ${nodes.get(id)?.type})`));
     if (!isFrame) {
       if (entry.layout) diagnostics.push(at(src, ["nodes", id, "layout"], "only frames have a layout"));
+      if (entry.preview) diagnostics.push(at(src, ["nodes", id, "preview"], "only frames have a preview"));
       continue;
     }
     (entry.children ?? []).forEach((child, i) => {

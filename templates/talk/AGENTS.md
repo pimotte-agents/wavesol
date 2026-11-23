@@ -58,6 +58,7 @@ Top-level keys:
   - `title` — display title; defaults to frontmatter title, first heading, then id
   - `children` — frame only: ids of the nodes inside it (a node has at most one parent frame)
   - `layout` — frame only: layout for its children (same shape as top-level `layout`)
+  - `preview: titles` — frame only: show its children as title cards except the current one (default `content`)
   - `pin: [x, y]` — exact position, overrides the layout; `size: [w, h]` (default 1600×900; frames
     default to 1×–2× that, growing with their children); `scale: <number>`
   - `near`: `{ left-of | right-of | above | below: <id> }` layout hint
@@ -190,6 +191,8 @@ checker warns otherwise) and link it from the end of the talk.
 Defined in `talk.yaml` only — **it has no file**. It renders its title and draws its children inside
 its box; visiting a frame shows it whole (0 steps). A frame automatically has an edge to each of its
 children (after its own edges), so only add `frame -> child` edges for a label or `default: true`.
+With `preview: titles` it shows its children as title cards (except the current one): good for a
+diagram of components whose slides are opened from the frame.
 
 ## Slide Markdown
 

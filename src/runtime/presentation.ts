@@ -539,7 +539,9 @@ export class Presentation {
       const sy = ty + n.y * k;
       const sw = n.w * k;
       const off = sx > vw || sy > vh || sx + sw < 0 || sy + n.h * k < 0;
-      const far = !off && sw < FAR_PX && n.type !== "frame";
+      // far away, or in a frame that previews its children as titles (unless it is the current node)
+      const titlesOnly = n.parent !== undefined && this.nodes.get(n.parent)?.preview === "titles" && n.id !== this.nav.node;
+      const far = !off && n.type !== "frame" && (sw < FAR_PX || titlesOnly);
       const level = off || far ? "overview" : n.id === this.nav.node ? "active" : "near";
       nodeEl.classList.toggle("ws-off", off);
       nodeEl.classList.toggle("ws-far", far);

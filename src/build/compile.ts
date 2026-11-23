@@ -159,6 +159,7 @@ async function compile(dir: string): Promise<CompileResult> {
       title: (n.data.title as string | undefined) ?? b.title ?? id,
       parent: loaded.parents.get(id),
       children: (n.entry.children ?? []).filter((c) => loaded.parents.get(c) === id),
+      preview: n.entry.preview,
       depth: depth(id),
       x: p.x,
       y: p.y,

@@ -31,6 +31,10 @@ export const NodeEntry = z
     title: z.string().optional(),
     children: z.array(NodeId).optional(),
     layout: Layout.optional(),
+    preview: z
+      .enum(["content", "titles"])
+      .optional()
+      .describe("Frame only: how its children look while they are not the current node; titles shows title cards (default content)."),
     pin: Vec2.optional(),
     size: Vec2.optional(),
     scale: z.number().positive().optional(),

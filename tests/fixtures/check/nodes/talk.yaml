@@ -3,7 +3,7 @@ nodes:
   a: { title: From talk.yaml }
   b: {}
   c: { type: video }
-  d: { children: [a] }
+  d: { children: [a], preview: titles }
   e: { type: frame, file: nodes/e.md }
 edges:
   - a -> b -> c -> d

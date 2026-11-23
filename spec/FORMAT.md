@@ -102,6 +102,7 @@ The key is the node id. The value has these fields, all optional:
 | `title` | Display title (edge buttons, overview title cards, presenter view). Defaults to the frontmatter title, else the slide's first `#` heading, else the id. |
 | `children` | `frame` only: ids of the nodes inside it. A node has at most one parent frame. |
 | `layout` | `frame` only: layout settings for the frame's children, same shape as the top-level `layout`. |
+| `preview` | `frame` only: `content` (default) or `titles`. With `titles`, the frame's children show as title cards, as far-away slides do, unless they are the current node: visiting the frame shows a diagram of titles. Nested frames are not affected. |
 | `pin` | `[x, y]` position of the top-left corner in the layout space of the node's level. At the top level that is world units. Inside a frame it is the frame's own layout space, which is then scaled to fit the frame. **Drag mode** in `wavesol dev` (key `d`) writes pins: drag a node (a frame takes its children along) and its entry in `talk.yaml` gets `pin`, the rest of the file unchanged; a `near` hint on it is removed. Inside a frame the node keeps its place relative to its siblings, and the frame then re-fits its content. |
 | `size` | `[w, h]`: the size the node's content is laid out at, default 1600×900 (16:9). Frames default to 1600×900 × 0.75·√children, between 1× and 2× (4 children: 1.5×). |
 | `scale` | Uniform scale of the node on the canvas (default 1); the node takes `size × scale` space. |
