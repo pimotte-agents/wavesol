@@ -28,6 +28,8 @@ export interface NavResult {
 }
 
 const HISTORY_LIMIT = 200;
+/** Moves between slides at most this many slide widths apart use `transitions.local`. */
+export const LOCAL_DISTANCE = 2.5;
 
 export class NavGraph {
   private steps = new Map<string, number>();
@@ -35,6 +37,9 @@ export class NavGraph {
   private nodeTransition = new Map<string, TransitionSpec | undefined>();
   private parents = new Map<string, string>();
   private defaultTransition: TransitionSpec;
+  private localTransition: TransitionSpec | undefined;
+  /** Slides (not frames), for deciding whether a move is local. */
+  private boxes = new Map<string, { cx: number; cy: number; w: number }>();
 
   constructor(talk: CompiledTalk) {
     for (const n of talk.nodes) {
@@ -42,6 +47,7 @@ export class NavGraph {
       this.out.set(n.id, []);
       this.nodeTransition.set(n.id, n.transition);
       if (n.parent) this.parents.set(n.id, n.parent);
+      if (n.type !== "frame") this.boxes.set(n.id, { cx: n.x + n.w / 2, cy: n.y + n.h / 2, w: n.w });
     }
     for (const e of talk.edges) this.out.get(e.from)!.push(e);
     // a frame also has an edge to every node inside it, after its own edges: from a frame you can
@@ -55,6 +61,7 @@ export class NavGraph {
       }
     }
     this.defaultTransition = talk.transitions.default;
+    this.localTransition = talk.transitions.local;
   }
 
   has(id: string): boolean {
@@ -74,9 +81,22 @@ export class NavGraph {
   outgoing(id: string): CompiledEdge[] {
     return this.out.get(id) ?? [];
   }
-  /** Edge transition > target node transition > talk default. */
-  transitionTo(target: string, edge?: CompiledEdge): TransitionSpec {
-    return edge?.transition ?? this.nodeTransition.get(target) ?? this.defaultTransition;
+  /**
+   * Edge transition > target node transition > talk `local` (between nearby slides) > talk default.
+   * Two slides are nearby when neither is a frame and their centres are at most
+   * LOCAL_DISTANCE times the wider one's width apart.
+   */
+  transitionTo(target: string, edge?: CompiledEdge, from?: string): TransitionSpec {
+    const own = edge?.transition ?? this.nodeTransition.get(target);
+    if (own !== undefined) return own;
+    if (this.localTransition !== undefined && from !== undefined && this.isLocal(from, target)) return this.localTransition;
+    return this.defaultTransition;
+  }
+  private isLocal(a: string, b: string): boolean {
+    const p = this.boxes.get(a);
+    const q = this.boxes.get(b);
+    if (!p || !q) return false;
+    return Math.hypot(p.cx - q.cx, p.cy - q.cy) <= LOCAL_DISTANCE * Math.max(p.w, q.w);
   }
 }
 
@@ -91,7 +111,7 @@ export function navigate(g: NavGraph, s: NavState, intent: Intent): NavResult {
   const move = (node: string, step: number, edge?: CompiledEdge): NavResult => ({
     state: { node, step, history: [...s.history, { node: s.node, step: s.step }].slice(-HISTORY_LIMIT) },
     kind: "move",
-    transition: g.transitionTo(node, edge),
+    transition: g.transitionTo(node, edge, s.node),
   });
 
   switch (intent.type) {
@@ -116,7 +136,7 @@ export function navigate(g: NavGraph, s: NavState, intent: Intent): NavResult {
     case "back": {
       const prev = s.history.at(-1);
       if (!prev) return none;
-      return { state: { ...prev, history: s.history.slice(0, -1) }, kind: "move", transition: g.transitionTo(prev.node) };
+      return { state: { ...prev, history: s.history.slice(0, -1) }, kind: "move", transition: g.transitionTo(prev.node, undefined, s.node) };
     }
     case "goto": {
       if (!g.has(intent.node)) return none;

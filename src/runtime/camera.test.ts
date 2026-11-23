@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { directZoom, fitBox, panBy, smoothZoom, zoomAt, type View } from "./camera.ts";
+import { directZoom, fitBox, pan, panBy, smoothZoom, zoomAt, type View } from "./camera.ts";
 
 const close = (a: View, b: View) => {
   expect(a.cx).toBeCloseTo(b.cx, 6);
@@ -40,6 +40,18 @@ describe("camera paths", () => {
       const v = p.at(t);
       expect((ax - v.cx) / v.w).toBeCloseTo((ax - frame.cx) / frame.w, 6);
     }
+  });
+
+  it("pan moves straight across without zooming out between equal views", () => {
+    const a: View = { cx: 0, cy: 0, w: 1600 };
+    const b: View = { cx: 1800, cy: 0, w: 1600 };
+    const p = pan(a, b);
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(p.at(t).w).toBeCloseTo(1600);
+      expect(p.at(t).cx).toBeCloseTo(1800 * t);
+    }
+    expect(p.duration).toBeLessThan(pan(a, { cx: 6400, cy: 0, w: 1600 }).duration);
+    expect(pan(a, { cx: 1e6, cy: 0, w: 1600 }).duration).toBe(1200);
   });
 
   it("fitBox fits by the limiting dimension with margin", () => {

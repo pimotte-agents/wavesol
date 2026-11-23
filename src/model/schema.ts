@@ -4,15 +4,15 @@ import { z } from "zod";
 export const NODE_ID = /^[a-z0-9][a-z0-9_-]*$/;
 export const NodeId = z.string().regex(NODE_ID, "node ids match [a-z0-9][a-z0-9_-]*");
 
-export const TransitionName = z.enum(["fly", "cut", "fade", "zoom-through"]);
+export const TransitionName = z.enum(["fly", "pan", "cut", "fade", "zoom-through"]);
 export const Transition = z.union([
   TransitionName,
   z.strictObject({
     type: TransitionName,
-    duration: z.number().positive().optional().describe("Milliseconds. Default for fly: scaled by distance."),
+    duration: z.number().positive().optional().describe("Milliseconds. Default for fly and pan: scaled by distance."),
     easing: z.string().optional().describe("CSS easing keyword or cubic-bezier(...)."),
   }),
-], { error: "expected fly, cut, fade, zoom-through, or { type, duration, easing }" });
+], { error: "expected fly, pan, cut, fade, zoom-through, or { type, duration, easing }" });
 
 const Direction = z.enum(["right", "down", "left", "up"]);
 export const Layout = z.strictObject({
@@ -99,7 +99,12 @@ export const Talk = z.strictObject({
       vars: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
     })
     .optional(),
-  transitions: z.strictObject({ default: Transition.optional() }).optional(),
+  transitions: z
+    .strictObject({
+      default: Transition.optional(),
+      local: Transition.optional().describe("Used instead of default between two nearby slides (not frames), e.g. pan."),
+    })
+    .optional(),
   layout: Layout.optional(),
   math: z.strictObject({ macros: z.string().optional() }).optional(),
   bibliography: z.string().optional().describe("BibTeX file for [@key] citations; default refs.bib if it exists."),

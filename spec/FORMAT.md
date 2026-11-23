@@ -45,7 +45,8 @@ theme:
     font-body: "Source Serif 4"
 
 transitions:
-  default: fly                     # fly | cut | fade | zoom-through, or { type, duration, easing }
+  default: fly                     # fly | pan | cut | fade | zoom-through, or { type, duration, easing }
+  local: pan                       # optional: used instead of default between nearby slides
 
 layout:
   algorithm: layered               # layered | force | grid | manual (manual: only pins; unpinned nodes go on a grid)
@@ -135,13 +136,18 @@ Either a name or `{ type, duration, easing }`:
 
 - `fly` (default): smooth zoom, i.e. zoom out, pan, zoom in. Duration scales with distance unless
   `duration` (ms) is given.
+- `pan`: move straight across without zooming out; if the sizes differ, the zoom changes along the
+  way. Duration scales with distance unless `duration` is given.
 - `zoom-through`: zoom straight into or out of the target (good for frame ↔ child).
 - `fade`: cross-fade at the target camera position.
 - `cut`: instant.
 
 `easing` is a CSS easing keyword or `cubic-bezier(...)`.
 
-Precedence: edge `transition` > target node `transition` > `transitions.default`.
+Precedence: edge `transition` > target node `transition` > `transitions.local` (only between nearby
+slides) > `transitions.default`. Two slides are nearby when neither is a frame and their centres are at
+most 2.5 times the wider one's width apart; this covers neighbours in a frame or along the main path, so
+`local: pan` slides over to them while longer jumps keep the zoom-out of `fly`.
 
 ### Phone controller
 

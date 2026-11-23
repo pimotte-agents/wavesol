@@ -43,7 +43,8 @@ export interface CompiledTalk {
   meta: { title: string; subtitle?: string; authors?: string[]; date?: string; venue?: string };
   start: string;
   theme: { base: string; vars: Record<string, string> };
-  transitions: { default: TransitionSpec };
+  /** `local`: used instead of `default` between nearby slides (see NavGraph.transitionTo). */
+  transitions: { default: TransitionSpec; local?: TransitionSpec };
   nodes: CompiledNode[];
   edges: CompiledEdge[];
   /** The PDF `wavesol build` writes next to the site (file name), if the talk asks for one. */

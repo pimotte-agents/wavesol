@@ -70,6 +70,7 @@
               "type": "string",
               "enum": [
                 "fly",
+                "pan",
                 "cut",
                 "fade",
                 "zoom-through"
@@ -82,13 +83,57 @@
                   "type": "string",
                   "enum": [
                     "fly",
+                    "pan",
                     "cut",
                     "fade",
                     "zoom-through"
                   ]
                 },
                 "duration": {
-                  "description": "Milliseconds. Default for fly: scaled by distance.",
+                  "description": "Milliseconds. Default for fly and pan: scaled by distance.",
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                "easing": {
+                  "description": "CSS easing keyword or cubic-bezier(...).",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "local": {
+          "description": "Used instead of default between two nearby slides (not frames), e.g. pan.",
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "fly",
+                "pan",
+                "cut",
+                "fade",
+                "zoom-through"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "fly",
+                    "pan",
+                    "cut",
+                    "fade",
+                    "zoom-through"
+                  ]
+                },
+                "duration": {
+                  "description": "Milliseconds. Default for fly and pan: scaled by distance.",
                   "type": "number",
                   "exclusiveMinimum": 0
                 },
@@ -420,6 +465,7 @@
                     "type": "string",
                     "enum": [
                       "fly",
+                      "pan",
                       "cut",
                       "fade",
                       "zoom-through"
@@ -432,13 +478,14 @@
                         "type": "string",
                         "enum": [
                           "fly",
+                          "pan",
                           "cut",
                           "fade",
                           "zoom-through"
                         ]
                       },
                       "duration": {
-                        "description": "Milliseconds. Default for fly: scaled by distance.",
+                        "description": "Milliseconds. Default for fly and pan: scaled by distance.",
                         "type": "number",
                         "exclusiveMinimum": 0
                       },
@@ -494,6 +541,7 @@
                       "type": "string",
                       "enum": [
                         "fly",
+                        "pan",
                         "cut",
                         "fade",
                         "zoom-through"
@@ -506,13 +554,14 @@
                           "type": "string",
                           "enum": [
                             "fly",
+                            "pan",
                             "cut",
                             "fade",
                             "zoom-through"
                           ]
                         },
                         "duration": {
-                          "description": "Milliseconds. Default for fly: scaled by distance.",
+                          "description": "Milliseconds. Default for fly and pan: scaled by distance.",
                           "type": "number",
                           "exclusiveMinimum": 0
                         },

@@ -105,3 +105,17 @@ test("a frame with preview: titles shows its children as title cards, except the
   await open(page, "#/outer/0");
   expect(await far("intro")).toBe(false);
 });
+
+test("in a preview: titles frame, the slide being left stays in full until the camera stops", async ({ page }) => {
+  const classes = (id: string) => page.locator(`.ws-node[data-id="${id}"]`).evaluate((el) => ({ far: el.classList.contains("ws-far"), off: el.classList.contains("ws-off") }));
+  await open(page, "#/deep/0");
+  await page.keyboard.press(" ");
+  // two frames into the move, deep is still on screen and shown in full
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  expect(await node(page)).toBe("deeper");
+  expect(await classes("deep")).toEqual({ far: false, off: false });
+  // once the camera has stopped it is a title card (or off screen)
+  await settled(page);
+  const after = await classes("deep");
+  expect(after.far || after.off).toBe(true);
+});

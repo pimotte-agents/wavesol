@@ -73,6 +73,16 @@ export function directZoom(a: View, b: View): Path {
   };
 }
 
+/**
+ * Pan: straight to the target without zooming out (`directZoom`'s path); if the sizes differ the zoom
+ * changes along the way. Duration scales with the distance in slide widths.
+ */
+export function pan(a: View, b: View): Path {
+  const widths = Math.hypot(b.cx - a.cx, b.cy - a.cy) / Math.min(a.w, b.w);
+  const zoom = Math.abs(Math.log(b.w / a.w));
+  return { at: directZoom(a, b).at, duration: Math.min(1200, 350 + 200 * widths + 300 * zoom) };
+}
+
 export const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);
 
 function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
@@ -138,7 +148,7 @@ export class Animator {
         })
         .then(() => undefined);
     }
-    const path = s.type === "zoom-through" ? directZoom(from, to) : smoothZoom(from, to);
+    const path = s.type === "zoom-through" ? directZoom(from, to) : s.type === "pan" ? pan(from, to) : smoothZoom(from, to);
     const natural = s.type === "fly" ? Math.min(2500, Math.max(400, path.duration / 1.2)) : path.duration;
     const duration = (explicit ?? natural) / speed;
     this.hooks.moving(true);

@@ -37,8 +37,10 @@ Top-level keys:
 - `start`: first node id; defaults to the first key of `nodes`.
 - `theme`: `{ base: academic-light, accent: "#hex", vars: { ... } }` — `vars` are CSS custom
   properties without the `--ws-` prefix. `base` is `academic-light` (default) or `academic-dark`.
-- `transitions.default`: `fly` (default) | `cut` | `fade` | `zoom-through`, or
-  `{ type, duration, easing }`.
+- `transitions.default`: `fly` (default) | `pan` | `cut` | `fade` | `zoom-through`, or
+  `{ type, duration, easing }`. `transitions.local` (e.g. `pan`) replaces the default between nearby
+  slides (not frames, centres at most 2.5 slide widths apart), so neighbours slide over without the
+  zoom-out while longer jumps keep `fly`.
 - `layout`: `{ algorithm: layered | force | grid | manual, direction: right | down | left | up,
   spacing: <number>, wrap: <bool> }`. Use `layered` (default) for a talk with a main line and detours,
   `force` for a web of topics without one main path. Layered layouts wrap long chains into rows unless

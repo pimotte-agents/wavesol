@@ -61,6 +61,9 @@ export class Presentation {
   private focus?: number;
   /** The references node with works marked by a citation click. */
   private marked?: string;
+  /** The node the camera is moving away from: kept in full (not a title card) until the move ends. */
+  private leaving?: string;
+  private leavingToken = 0;
   private dwellKey?: string;
   private dwellSince = 0;
   private dwellDone = false;
@@ -173,11 +176,22 @@ export class Presentation {
       this.focus = undefined;
       this.instances.get(this.nav.node)?.setFocus?.(undefined);
     }
+    const from = this.nav.node;
     this.nav = result.state;
     if (result.kind === "move") this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: false });
     if (result.kind === "step") this.instances.get(this.nav.node)?.setStep(this.nav.step, { animate: true });
     if (result.kind === "move" || wasOverview !== this.overview) {
-      void this.animator.run(this.view, this.targetView(), result.transition ?? "fly");
+      const run = this.animator.run(this.view, this.targetView(), result.transition ?? "fly");
+      if (result.kind === "move") {
+        // the slide being left stays in full while it moves off screen, then turns into a title card
+        const token = ++this.leavingToken;
+        this.leaving = from;
+        void run.then(() => {
+          if (token !== this.leavingToken) return; // a newer move took over
+          this.leaving = undefined;
+          this.applyView(this.view);
+        });
+      }
     }
     this.writeHash();
     this.emit();
@@ -542,8 +556,10 @@ export class Presentation {
       const sy = ty + n.y * k;
       const sw = n.w * k;
       const off = sx > vw || sy > vh || sx + sw < 0 || sy + n.h * k < 0;
-      // far away, or in a frame that previews its children as titles (unless it is the current node)
-      const titlesOnly = n.parent !== undefined && this.nodes.get(n.parent)?.preview === "titles" && n.id !== this.nav.node;
+      // far away, or in a frame that previews its children as titles (unless it is the current node,
+      // or the node the camera is still moving away from)
+      const titlesOnly =
+        n.parent !== undefined && this.nodes.get(n.parent)?.preview === "titles" && n.id !== this.nav.node && n.id !== this.leaving;
       const far = !off && n.type !== "frame" && (sw < FAR_PX || titlesOnly);
       const level = off || far ? "overview" : n.id === this.nav.node ? "active" : "near";
       nodeEl.classList.toggle("ws-off", off);

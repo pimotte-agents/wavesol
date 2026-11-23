@@ -192,7 +192,7 @@ async function compile(dir: string): Promise<CompileResult> {
     },
     start: loaded.start,
     theme: { base: talk.theme?.base ?? "academic-light", vars },
-    transitions: { default: talk.transitions?.default ?? "fly" },
+    transitions: { default: talk.transitions?.default ?? "fly", local: talk.transitions?.local },
     nodes,
     edges: loaded.edges,
     sync: { phone: talk.sync?.phone ?? true, relays: talk.sync?.relays, ice: talk.sync?.ice ?? [] },

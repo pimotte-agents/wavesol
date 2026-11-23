@@ -107,4 +107,30 @@ describe("frames", () => {
     expect(fg.outgoing("x")).toEqual([]);
     expect(fg.outgoing("s").map((e) => e.to)).toEqual(["f"]);
   });
+
+  it("uses transitions.local between nearby slides, unless the edge or node sets one", () => {
+    const at = (id: string, x: number, transition?: "cut") => ({ ...node(id, 0, transition), x });
+    const frame = { ...node("f"), type: "frame", children: [], x: 1800 };
+    const lg = new NavGraph({
+      ...talk,
+      transitions: { default: "fly", local: "pan" },
+      nodes: [at("p", 0), at("q", 1800), at("far", 20000), at("own", 3600, "cut"), frame],
+      edges: [
+        { from: "p", to: "q", default: true },
+        { from: "q", to: "far", label: "far" },
+        { from: "q", to: "own", label: "own" },
+        { from: "p", to: "f", label: "frame" },
+        { from: "p", to: "q", label: "edge", transition: "fade" },
+      ],
+    });
+    const take = (from: string, index: number) => navigate(lg, initialState(lg, { node: from, step: 0 }, from), { type: "edge", index }).transition;
+    expect(take("p", 0)).toBe("pan"); // 1800 apart, within 2.5 slide widths
+    expect(take("q", 0)).toBe("fly"); // too far
+    expect(take("q", 1)).toBe("cut"); // the node's own transition wins
+    expect(take("p", 1)).toBe("fly"); // frames are never local
+    expect(take("p", 2)).toBe("fade"); // the edge's transition wins
+    // back is local too
+    const there = navigate(lg, initialState(lg, { node: "p", step: 0 }, "p"), { type: "step" }).state;
+    expect(navigate(lg, there, { type: "back" }).transition).toBe("pan");
+  });
 });
