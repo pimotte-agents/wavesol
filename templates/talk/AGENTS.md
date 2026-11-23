@@ -185,6 +185,7 @@ short (2–9). A poll has one step when results are revealed: give it a default 
 Defined in `talk.yaml` only — **no file**: `refs: { type: references, title: References }`. Lists
 every work cited with `[@key]` anywhere in the talk; clicking a citation flies there. Add one whenever the talk cites anything (the
 checker warns otherwise) and link it from the end of the talk.
+A long list splits itself into pages (one per step); don't enlarge its `size` to make it fit.
 
 ### `frame`
 

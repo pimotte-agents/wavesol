@@ -227,9 +227,12 @@ export class Presentation {
       const cite = (e.target as Element).closest<HTMLElement>(".ws-cite[data-keys]");
       if (!cite) return;
       e.stopPropagation();
-      this.dispatch({ type: "goto", node: refs.id });
+      // clear earlier marks first, then go to the page (step) that shows the first cited work
+      if (this.marked !== undefined) this.instances.get(this.marked)?.mark?.([]);
+      this.marked = undefined;
+      const step = this.instances.get(refs.id)?.mark?.(cite.dataset.keys!.split(" "));
+      this.dispatch({ type: "goto", node: refs.id, step: typeof step === "number" ? step : 0 });
       this.marked = refs.id;
-      this.instances.get(refs.id)?.mark?.(cite.dataset.keys!.split(" "));
     });
   }
 

@@ -45,4 +45,9 @@ describe("print order", () => {
     const t = talk([node("a"), node("b")], [{ from: "a", to: "b", default: true }, { from: "b", to: "a", default: true }]);
     expect(printOrder(t, "last").map((p) => p.node)).toEqual(["a", "b"]);
   });
+
+  it("a paged node (references) is printed at every step, also with steps: last", () => {
+    const t = talk([node("a", 2), node("refs", 1, { paged: true })], [{ from: "a", to: "refs", default: true }]);
+    expect(printOrder(t, "last")).toEqual([{ node: "a", step: 2 }, { node: "refs", step: 0 }, { node: "refs", step: 1 }]);
+  });
 });

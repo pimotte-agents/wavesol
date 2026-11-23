@@ -86,6 +86,7 @@ export async function checkRender(dir: string, files: Map<string, string>, shots
         if (!root.closest(".ws-type-frame")) over(root, "the content");
         for (const info of root.querySelectorAll(".ws-lean-info")) over(info, "the Lean infoview");
         for (const code of root.querySelectorAll(".ws-lean-code")) over(code, "the Lean code");
+        for (const list of root.querySelectorAll(".ws-references-list")) over(list, "the references");
         for (const img of root.querySelectorAll("img")) {
           if (!img.complete || !img.naturalWidth) out.push({ node, step, message: `image ${img.getAttribute("src")} did not load` });
         }

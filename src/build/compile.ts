@@ -89,6 +89,7 @@ async function compile(dir: string): Promise<CompileResult> {
     for (const m of `${node.body}\n${JSON.stringify(node.data)}`.matchAll(/\[(@[^\]]+)\]/g)) bib!.expect((parseCitation(m[1]!) ?? []).map((i) => i.id));
   }
 
+  const fontSize = parseFloat(String(talk.theme?.vars?.["font-size"] ?? "")) || 36;
   const built = new Map<string, Awaited<ReturnType<(typeof buildPlugins)[string]["build"]>>>();
   // nodes that list what others produce (references) come last
   const order = [...loaded.nodes.values()].sort((a, b) => Number(!!buildPlugins[a.type]!.buildLast) - Number(!!buildPlugins[b.type]!.buildLast));
@@ -97,6 +98,7 @@ async function compile(dir: string): Promise<CompileResult> {
     const file = node.file ? relative(dir, node.file) : "talk.yaml";
     const ctx: BuildCtx = {
       talkDir: dir,
+      fontSize,
       macros,
       asset,
       report: (severity, message, line) => diagnostics.push({ severity, file, line, message }),
@@ -116,7 +118,7 @@ async function compile(dir: string): Promise<CompileResult> {
       },
     };
     try {
-      built.set(node.id, await buildPlugins[node.type]!.build({ id: node.id, data: node.data, body: node.body, file: node.file, bodyLine: node.bodyLine }, ctx));
+      built.set(node.id, await buildPlugins[node.type]!.build({ id: node.id, data: node.data, body: node.body, file: node.file, bodyLine: node.bodyLine, size: (node.entry.size as [number, number] | undefined) ?? NODE_SIZE }, ctx));
     } catch (e) {
       diagnostics.push({ severity: "error", file, message: `${node.type} build failed: ${e instanceof Error ? e.message : String(e)}` });
     }
@@ -168,6 +170,7 @@ async function compile(dir: string): Promise<CompileResult> {
       scale: p.scale,
       size,
       steps: b.steps,
+      paged: b.paged,
       notes: b.notes,
       transition: n.entry.transition,
       data: b.data,

@@ -341,6 +341,13 @@ Defined in `talk.yaml` only (no file): `refs: { type: references, title: Referen
 work cited anywhere in the talk, in the bibliography's style; URLs and DOIs are links (opening in a new tab). `check` warns when a talk cites works but
 has no references node.
 
+A list too long for the slide is split into pages, one per step, titled "References (1/3)" and so
+on; the PDF prints every page, also with `pdf: { steps: last }`. The build estimates how many pages
+are needed from the length of the entries (and the node's `size` and the theme's `font-size`); the
+browser then spreads the entries evenly over those pages, shrinking their text a little if they still
+don't fit. Clicking a citation goes to the page with the cited work. `check --render` reports a page
+that overflows.
+
 ### `image`
 
 ```markdown

@@ -11,6 +11,7 @@ export interface Page {
 
 export function printOrder(talk: CompiledTalk, steps: "last" | "all"): Page[] {
   const graph = new NavGraph(talk);
+  const byId = new Map(talk.nodes.map((n) => [n.id, n]));
   const order: string[] = [];
   const seen = new Set<string>();
   const add = (id: string) => {
@@ -24,6 +25,7 @@ export function printOrder(talk: CompiledTalk, steps: "last" | "all"): Page[] {
   for (const n of talk.nodes) add(n.id);
   return order.flatMap((id) => {
     const n = graph.stepsOf(id);
-    return steps === "all" ? Array.from({ length: n + 1 }, (_, step) => ({ node: id, step })) : [{ node: id, step: n }];
+    // a paged node (references) is printed at every step: each is a page of its own
+    return steps === "all" || byId.get(id)?.paged ? Array.from({ length: n + 1 }, (_, step) => ({ node: id, step })) : [{ node: id, step: n }];
   });
 }

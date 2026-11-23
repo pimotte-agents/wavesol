@@ -1527,3 +1527,14 @@ body {
 .ws-touch-sheet dd {
   margin: 0 0 10px;
 }
+
+/* references: the list fills the slide below the heading; a long list has a page per step */
+.ws-references {
+  display: flex;
+  flex-direction: column;
+}
+.ws-references-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

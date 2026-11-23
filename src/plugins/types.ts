@@ -7,6 +7,8 @@ import type { CiteItem } from "../build/cite.ts";
 
 export interface BuildCtx {
   talkDir: string;
+  /** The slide font size in px (the theme's `font-size`, default 36). */
+  fontSize: number;
   /** KaTeX macros from macros.tex. */
   macros: Record<string, string>;
   /** Register a file (absolute path) for the output; returns its URL relative to the page. */
@@ -34,6 +36,8 @@ export interface BuildNode<D> {
   file?: string;
   /** 1-based line of the first body line in `file`. */
   bodyLine: number;
+  /** The size the node's content is laid out at (`size` in talk.yaml, default 1600×900). */
+  size: [number, number];
 }
 
 export interface BuildResult {
@@ -43,6 +47,8 @@ export interface BuildResult {
   notes?: string;
   /** Title derived from content (e.g. first heading), used when none is given explicitly. */
   title?: string;
+  /** Each step is a page of its own rather than adding to the last (references): the PDF prints every step. */
+  paged?: boolean;
 }
 
 export interface BuildPlugin<D = unknown> {
@@ -71,8 +77,8 @@ export interface NodeInstance {
   pointAt?(target: Element): { step: number; focus?: number } | undefined;
   /** Shows a focus within the current step (from pointAt), or the step itself again (undefined). */
   setFocus?(focus: number | undefined): void;
-  /** Marks items by id (a references node: the works a clicked citation cites); [] clears. */
-  mark?(ids: string[]): void;
+  /** Marks items by id (a references node: the works a clicked citation cites); [] clears. Returns the step that shows the first of them, if any. */
+  mark?(ids: string[]): number | void;
   /** Live data from the projector, e.g. a poll's votes and join link; plugin-specific. */
   setLive?(live: unknown): void;
   setDetail?(level: Detail): void;

@@ -22,6 +22,8 @@ export interface CompiledNode {
   scale: number;
   size: [number, number];
   steps: number;
+  /** Each step is a page of its own (references): printed at every step, whatever the PDF's `steps`. */
+  paged?: boolean;
   notes?: string;
   transition?: TransitionSpec;
   /** Plugin-specific payload from the plugin's build hook. */

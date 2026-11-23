@@ -4,7 +4,7 @@ import type { BuildCtx } from "../types.ts";
 
 async function build(body: string, data: { fragments?: "lists" | "walkthrough"; notes?: string } = {}) {
   const reports: string[] = [];
-  const ctx: BuildCtx = { talkDir: "/", macros: { "\\R": "\\mathbb{R}" }, asset: (p) => `assets/${p.split("/").pop()}`, report: (s, m, l) => reports.push(`${l ?? "-"}: ${s}: ${m}`), reportIn: (f, s, m, l) => reports.push(`${f}:${l ?? "-"}: ${s}: ${m}`),
+  const ctx: BuildCtx = { talkDir: "/", fontSize: 36, macros: { "\\R": "\\mathbb{R}" }, asset: (p) => `assets/${p.split("/").pop()}`, report: (s, m, l) => reports.push(`${l ?? "-"}: ${s}: ${m}`), reportIn: (f, s, m, l) => reports.push(`${f}:${l ?? "-"}: ${s}: ${m}`),
     // a two-entry bibliography
     cite: (items) => {
       const known: Record<string, string> = { knuth1984: "Knuth, 1984", moura2021: "de Moura & Ullrich, 2021" };
@@ -20,7 +20,7 @@ async function build(body: string, data: { fragments?: "lists" | "walkthrough"; 
       return bad >= 0 ? { error: "LaTeX: boom", line: bad + 1 } : { svg: `<svg class="ws-tikz">${b}</svg>`, width: 10, height: 5 };
     },
   };
-  const r = await slide.build({ id: "s", data, body, bodyLine: 3, file: "/talk/nodes/s.md" }, ctx);
+  const r = await slide.build({ id: "s", data, body, bodyLine: 3, file: "/talk/nodes/s.md", size: [1600, 900] }, ctx);
   const steps = [...(r.data as SlideData).html.matchAll(/data-step="(\d+)"/g)].map((m) => Number(m[1]));
   return { ...r, html: (r.data as SlideData).html, steps, reports };
 }
